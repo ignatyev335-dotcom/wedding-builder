@@ -1,0 +1,53 @@
+"use client";
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+import type { OptionalModule, QuizDraft, ThemeCode } from "@/entities/wedding/model";
+
+type QuizStore = QuizDraft & {
+  step: number;
+  setNames: (partnerOneName: string, partnerTwoName: string) => void;
+  setWeddingDate: (weddingDate: string) => void;
+  setTheme: (theme: ThemeCode) => void;
+  toggleModule: (module: OptionalModule) => void;
+  setAcceptedTerms: (acceptedTerms: boolean) => void;
+  next: () => void;
+  back: () => void;
+  reset: () => void;
+};
+
+const initialState: QuizDraft & { step: number } = {
+  step: 1,
+  partnerOneName: "",
+  partnerTwoName: "",
+  weddingDate: "",
+  theme: "MINIMAL",
+  modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP"],
+  acceptedTerms: false,
+};
+
+export const useQuizStore = create<QuizStore>()(
+  persist(
+    (set) => ({
+      ...initialState,
+      setNames: (partnerOneName, partnerTwoName) =>
+        set({ partnerOneName, partnerTwoName }),
+      setWeddingDate: (weddingDate) => set({ weddingDate }),
+      setTheme: (theme) => set({ theme }),
+      toggleModule: (module) =>
+        set((state) => ({
+          modules: state.modules.includes(module)
+            ? state.modules.filter((item) => item !== module)
+            : [...state.modules, module],
+        })),
+      setAcceptedTerms: (acceptedTerms) => set({ acceptedTerms }),
+      next: () => set((state) => ({ step: Math.min(3, state.step + 1) })),
+      back: () => set((state) => ({ step: Math.max(1, state.step - 1) })),
+      reset: () => set(initialState),
+    }),
+    {
+      name: "wedding-builder-quiz",
+    },
+  ),
+);

@@ -1,0 +1,286 @@
+"use client";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  MapPin,
+  Palette,
+  Route,
+  Shirt,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import type { OptionalModule, ThemeCode } from "@/entities/wedding/model";
+import { quizSchema } from "@/features/onboarding/model/quiz-schema";
+import { useQuizStore } from "@/features/onboarding/model/quiz-store";
+
+const themes: Array<{
+  code: ThemeCode;
+  title: string;
+  description: string;
+  className: string;
+}> = [
+  { code: "MINIMAL", title: "Минимализм", description: "Воздух и типографика", className: "theme-minimal" },
+  { code: "BOHO", title: "Бохо", description: "Теплые природные тона", className: "theme-boho" },
+  { code: "CLASSIC", title: "Классика", description: "Торжественно и нежно", className: "theme-classic" },
+  { code: "MODERN", title: "Модерн", description: "Смело и графично", className: "theme-modern" },
+];
+
+const modules: Array<{
+  code: OptionalModule;
+  title: string;
+  description: string;
+  icon: typeof Users;
+}> = [
+  { code: "RSVP", title: "Умный опрос гостей", description: "Подтверждение участия и теплые пожелания", icon: Users },
+  { code: "DRESS_CODE", title: "Пожелания по стилю", description: "Палитра и деликатные подсказки по образам", icon: Shirt },
+  { code: "TIMELINE", title: "Таймлайн", description: "Красивое расписание дня", icon: Route },
+  { code: "TRANSFER", title: "Трансфер", description: "Сбор заявок на поездку", icon: CalendarDays },
+  { code: "MAP", title: "Карта", description: "Место и удобный маршрут", icon: MapPin },
+];
+
+export function QuizWizard() {
+  const router = useRouter();
+  const store = useQuizStore();
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateCurrentStep = () => {
+    if (store.step === 1) {
+      if (store.partnerOneName.trim().length < 2 || store.partnerTwoName.trim().length < 2) {
+        setError("Пожалуйста, укажите оба имени.");
+        return false;
+      }
+      if (!store.weddingDate) {
+        setError("Выберите дату свадьбы.");
+        return false;
+      }
+    }
+
+    setError("");
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      store.next();
+    }
+  };
+
+  const handleSubmit = async () => {
+    const payload = {
+      partnerOneName: store.partnerOneName,
+      partnerTwoName: store.partnerTwoName,
+      weddingDate: store.weddingDate,
+      theme: store.theme,
+      modules: store.modules,
+      acceptedTerms: store.acceptedTerms,
+    };
+    const parsed = quizSchema.safeParse(payload);
+
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Проверьте введенные данные.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/wedding-sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const result = (await response.json()) as { id?: string; error?: string };
+
+      if (!response.ok || !result.id) {
+        throw new Error(result.error ?? "Не удалось создать сайт.");
+      }
+
+      localStorage.removeItem("wedding-builder-quiz");
+      window.location.href = `/constructor?siteId=${encodeURIComponent(result.id)}`;
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Не удалось создать сайт. Попробуйте еще раз.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="quiz-layout">
+      <header className="quiz-header">
+        <button
+          className="icon-button"
+          type="button"
+          aria-label="Назад"
+          onClick={() => (store.step === 1 ? router.push("/") : store.back())}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span className="brand">vowly</span>
+        <span className="step-label">{store.step} из 3</span>
+      </header>
+
+      <div className="progress-track">
+        <div style={{ width: `${(store.step / 3) * 100}%` }} />
+      </div>
+
+      <section className="quiz-card">
+        {store.step === 1 && (
+          <div className="step-content">
+            <span className="step-icon"><Sparkles size={22} /></span>
+            <p className="eyebrow">Начнем с главного</p>
+            <h1>Как вас зовут?</h1>
+            <p className="step-description">
+              Эти имена станут первой красивой деталью вашего приглашения.
+            </p>
+            <div className="field-grid">
+              <label className="field">
+                <span>Имя жениха</span>
+                <input
+                  autoFocus
+                  value={store.partnerOneName}
+                  onChange={(event) =>
+                    store.setNames(event.target.value, store.partnerTwoName)
+                  }
+                  placeholder="Александр"
+                />
+              </label>
+              <label className="field">
+                <span>Имя невесты</span>
+                <input
+                  value={store.partnerTwoName}
+                  onChange={(event) =>
+                    store.setNames(store.partnerOneName, event.target.value)
+                  }
+                  placeholder="Валентина"
+                />
+              </label>
+            </div>
+            <label className="field">
+              <span>Дата свадьбы</span>
+              <div className="input-with-icon">
+                <CalendarDays size={18} />
+                <input
+                  type="date"
+                  value={store.weddingDate}
+                  onChange={(event) => store.setWeddingDate(event.target.value)}
+                />
+              </div>
+            </label>
+          </div>
+        )}
+
+        {store.step === 2 && (
+          <div className="step-content">
+            <span className="step-icon"><Palette size={22} /></span>
+            <p className="eyebrow">Настроение</p>
+            <h1>Какой стиль ближе?</h1>
+            <p className="step-description">
+              Это только начало: тему можно будет сменить в любой момент.
+            </p>
+            <div className="theme-grid">
+              {themes.map((theme) => (
+                <button
+                  key={theme.code}
+                  className={`theme-card ${theme.className} ${
+                    store.theme === theme.code ? "is-selected" : ""
+                  }`}
+                  type="button"
+                  onClick={() => store.setTheme(theme.code)}
+                >
+                  <span className="theme-check"><Check size={15} /></span>
+                  <span className="theme-monogram">A &amp; A</span>
+                  <strong>{theme.title}</strong>
+                  <small>{theme.description}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {store.step === 3 && (
+          <div className="step-content">
+            <span className="step-icon"><Sparkles size={22} /></span>
+            <p className="eyebrow">Последний штрих</p>
+            <h1>Что добавить на сайт?</h1>
+            <p className="step-description">
+              Мы соберем структуру автоматически. Позже блоки можно менять местами.
+            </p>
+            <div className="module-list">
+              {modules.map((module) => {
+                const Icon = module.icon;
+                const selected = store.modules.includes(module.code);
+
+                return (
+                  <button
+                    key={module.code}
+                    className={`module-option ${selected ? "is-selected" : ""}`}
+                    type="button"
+                    onClick={() => store.toggleModule(module.code)}
+                  >
+                    <span className="module-icon"><Icon size={20} /></span>
+                    <span>
+                      <strong>{module.title}</strong>
+                      <small>{module.description}</small>
+                    </span>
+                    <span className="checkbox">{selected && <Check size={15} />}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <label className="legal-consent">
+              <input
+                type="checkbox"
+                checked={store.acceptedTerms}
+                onChange={(event) =>
+                  store.setAcceptedTerms(event.currentTarget.checked)
+                }
+              />
+              <span>
+                Я даю согласие на обработку персональных данных и принимаю
+                условия <a href="#">Пользовательского соглашения</a>.
+              </span>
+            </label>
+          </div>
+        )}
+
+        {error && <p className="form-error" role="alert">{error}</p>}
+
+        <footer className="quiz-footer">
+          {store.step > 1 && (
+            <button className="secondary-button" type="button" onClick={store.back}>
+              Назад
+            </button>
+          )}
+          {store.step < 3 ? (
+            <button className="primary-button" type="button" onClick={handleNext}>
+              Продолжить <ArrowRight size={18} />
+            </button>
+          ) : (
+            <button
+              className="primary-button"
+              type="button"
+              disabled={isSubmitting || !store.acceptedTerms}
+              onClick={handleSubmit}
+            >
+              {isSubmitting ? "Создаем..." : "Создать мой сайт"}
+              {!isSubmitting && <Sparkles size={18} />}
+            </button>
+          )}
+        </footer>
+      </section>
+      <p className="autosave-note">Ваши ответы сохраняются автоматически</p>
+    </main>
+  );
+}
