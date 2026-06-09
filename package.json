@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "dev:stable": "npm run build && next start",
+    "dev": "node scripts/stable-dev.mjs",
+    "dev:stable": "node scripts/stable-dev.mjs",
+    "dev:hot": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

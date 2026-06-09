@@ -11,6 +11,7 @@ const builderModules: BuilderModule[] = [
   "TIMELINE",
   "TRANSFER",
   "MAP",
+  "COUNTDOWN",
 ];
 
 const fallbackTimeline = [
@@ -49,7 +50,12 @@ export async function getWeddingBuilderData(
     partnerOneName: site.data.partnerOneName,
     partnerTwoName: site.data.partnerTwoName,
     weddingDate: site.data.weddingDate.toISOString().slice(0, 10),
-    currentTheme: site.theme === "BOHO" ? "BOHO" : "MINIMAL",
+    ceremonyTime: site.data.ceremonyTime ?? "16:00",
+    venueName: site.data.venueName ?? "Место проведения",
+    venueAddress: site.data.venueAddress ?? "",
+    mapLatitude: site.data.mapLatitude,
+    mapLongitude: site.data.mapLongitude,
+    currentTheme: site.theme,
     moduleVisibility: Object.fromEntries(
       builderModules.map((module) => [module, enabledModules.has(module)]),
     ) as Record<BuilderModule, boolean>,
@@ -82,14 +88,16 @@ export async function getWeddingBuilderData(
         : null,
     guests: site.guests.map((guest) => ({
       id: guest.id,
-      name: guest.guestName,
-      status:
-        guest.attendance === "ATTENDING"
-          ? "ATTENDING"
-          : guest.attendance === "NOT_ATTENDING"
-            ? "NOT_ATTENDING"
-            : "PENDING",
+      name: guest.name,
+      phone: guest.phone,
+      status: guest.status,
+      magicToken: guest.magicToken,
+      invitationUrl: guest.magicToken
+        ? `/wedding/${site.slug}?guest=${guest.magicToken}`
+        : null,
       dietaryRestrictions: guest.dietaryRestrictions ?? "",
+      foodPreference: guest.foodPreference ?? "",
+      allergies: guest.allergies ?? "",
       drinks: (JSON.parse(guest.alcoholPreferences) as string[]).join(", "),
       needsTransport: guest.needsTransport,
       respondedAt: (guest.respondedAt ?? guest.createdAt).toISOString(),

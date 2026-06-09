@@ -13,6 +13,7 @@ export function ConstructorFromQuiz() {
     "TIMELINE",
     "TRANSFER",
     "MAP",
+    "COUNTDOWN",
   ];
 
   const initialData: WeddingBuilderData = {
@@ -21,7 +22,22 @@ export function ConstructorFromQuiz() {
     partnerOneName: quiz.partnerOneName || "Анна",
     partnerTwoName: quiz.partnerTwoName || "Антон",
     weddingDate: quiz.weddingDate || "2026-09-12",
-    currentTheme: quiz.theme === "BOHO" ? "BOHO" : "MINIMAL",
+    ceremonyTime: quiz.ceremonyTime || "16:00",
+    venueName: "Усадьба «Лесная»",
+    venueAddress: "Московская область",
+    mapLatitude: null,
+    mapLongitude: null,
+    currentTheme: quiz.theme,
+    fontCode: "PLAYFAIR",
+    blockOrder: [
+      "COUNTDOWN",
+      "TIMELINE",
+      "DRESS_CODE",
+      "MAP",
+      "TRANSFER",
+      "WISHLIST",
+      "RSVP",
+    ],
     moduleVisibility: Object.fromEntries(
       modules.map((module) => [module, selected.has(module)]),
     ) as Record<BuilderModule, boolean>,
@@ -47,7 +63,15 @@ export function ConstructorFromQuiz() {
       "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
     wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
     wishlistItems: [],
+    noFlowersEnabled: false,
+    noFlowersText:
+      "Пожалуйста, не дарите нам цветы: мы улетаем в путешествие. Будем рады, если вы замените их бутылочкой любимого вина или книгой.",
+    transferDescription:
+      "Для вашего удобства мы организуем трансфер до площадки и обратно.",
+    transferTime: "14:30",
+    transferMeetingPoint: "Центр города",
     postWeddingMode: false,
+    postWeddingPhotoUrl: "",
   };
 
   return <ConstructorClient initialData={initialData} />;

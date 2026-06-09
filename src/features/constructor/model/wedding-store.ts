@@ -5,6 +5,8 @@ import { persist } from "zustand/middleware";
 
 import type {
   BuilderModule,
+  ContentBlockCode,
+  FontCode,
   GuestResponse,
   PackageCode,
   PremiumFeatureCode,
@@ -19,7 +21,16 @@ type WeddingStore = WeddingBuilderData & {
   initialize: (data: WeddingBuilderData) => void;
   setNames: (partnerOneName: string, partnerTwoName: string) => void;
   setWeddingDate: (weddingDate: string) => void;
+  setCeremonyTime: (ceremonyTime: string) => void;
+  setVenueName: (venueName: string) => void;
+  setVenueAddress: (venueAddress: string) => void;
+  setMapCoordinates: (
+    mapLatitude: number | null,
+    mapLongitude: number | null,
+  ) => void;
   setCurrentTheme: (theme: ThemeCode) => void;
+  setFontCode: (fontCode: FontCode) => void;
+  reorderBlocks: (active: ContentBlockCode, over: ContentBlockCode) => void;
   toggleModule: (module: BuilderModule) => void;
   setMusicTrack: (track: string | null) => void;
   addTimelineEvent: () => void;
@@ -33,12 +44,30 @@ type WeddingStore = WeddingBuilderData & {
   togglePremiumFeature: (feature: PremiumFeatureCode) => void;
   setSelectedPackage: (selectedPackage: PackageCode) => void;
   setTelegramProfile: (profile: TelegramProfile) => void;
-  addGuest: (guest: Omit<GuestResponse, "id" | "respondedAt">) => void;
+  addGuest: (
+    guest: Omit<
+      GuestResponse,
+      | "id"
+      | "respondedAt"
+      | "phone"
+      | "magicToken"
+      | "invitationUrl"
+    >,
+  ) => void;
+  setGuests: (guests: GuestResponse[]) => void;
+  prependGuest: (guest: GuestResponse) => void;
+  updateGuest: (guest: GuestResponse) => void;
   setCoverPhoto: (coverPhoto: string | null) => void;
   addGalleryPhotos: (photos: string[]) => void;
   removeGalleryPhoto: (index: number) => void;
+  reorderGalleryPhotos: (activeIndex: number, overIndex: number) => void;
   setInvitationText: (invitationText: string) => void;
   setWishlistText: (wishlistText: string) => void;
+  setNoFlowersEnabled: (noFlowersEnabled: boolean) => void;
+  setNoFlowersText: (noFlowersText: string) => void;
+  setTransferDescription: (transferDescription: string) => void;
+  setTransferTime: (transferTime: string) => void;
+  setTransferMeetingPoint: (transferMeetingPoint: string) => void;
   addWishlistItem: () => void;
   updateWishlistItem: (
     id: string,
@@ -47,6 +76,7 @@ type WeddingStore = WeddingBuilderData & {
   ) => void;
   removeWishlistItem: (id: string) => void;
   setPostWeddingMode: (postWeddingMode: boolean) => void;
+  setPostWeddingPhotoUrl: (postWeddingPhotoUrl: string) => void;
 };
 
 const defaultVisibility: Record<BuilderModule, boolean> = {
@@ -55,13 +85,29 @@ const defaultVisibility: Record<BuilderModule, boolean> = {
   TIMELINE: true,
   TRANSFER: false,
   MAP: true,
+  COUNTDOWN: true,
 };
 
 const initialState: WeddingBuilderData = {
   partnerOneName: "Анна",
   partnerTwoName: "Антон",
   weddingDate: "2026-09-12",
+  ceremonyTime: "16:00",
+  venueName: "Усадьба «Лесная»",
+  venueAddress: "Московская область",
+  mapLatitude: null,
+  mapLongitude: null,
   currentTheme: "MINIMAL",
+  fontCode: "PLAYFAIR",
+  blockOrder: [
+    "COUNTDOWN",
+    "TIMELINE",
+    "DRESS_CODE",
+    "MAP",
+    "TRANSFER",
+    "WISHLIST",
+    "RSVP",
+  ],
   moduleVisibility: defaultVisibility,
   musicTrack: null,
   timelineEvents: [
@@ -85,7 +131,15 @@ const initialState: WeddingBuilderData = {
     "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
   wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
   wishlistItems: [],
+  noFlowersEnabled: false,
+  noFlowersText:
+    "Пожалуйста, не дарите нам цветы: мы улетаем в путешествие. Будем рады, если вы замените их бутылочкой любимого вина или книгой.",
+  transferDescription:
+    "Для вашего удобства мы организуем трансфер до площадки и обратно.",
+  transferTime: "14:30",
+  transferMeetingPoint: "Центр города",
   postWeddingMode: false,
+  postWeddingPhotoUrl: "",
 };
 
 export const useWeddingStore = create<WeddingStore>()(
@@ -104,7 +158,27 @@ export const useWeddingStore = create<WeddingStore>()(
       setNames: (partnerOneName, partnerTwoName) =>
         set({ partnerOneName, partnerTwoName }),
       setWeddingDate: (weddingDate) => set({ weddingDate }),
+      setCeremonyTime: (ceremonyTime) => set({ ceremonyTime }),
+      setVenueName: (venueName) => set({ venueName }),
+      setVenueAddress: (venueAddress) => set({ venueAddress }),
+      setMapCoordinates: (mapLatitude, mapLongitude) =>
+        set({ mapLatitude, mapLongitude }),
       setCurrentTheme: (currentTheme) => set({ currentTheme }),
+      setFontCode: (fontCode) => set({ fontCode }),
+      reorderBlocks: (active, over) =>
+        set((state) => {
+          const from = state.blockOrder.indexOf(active);
+          const to = state.blockOrder.indexOf(over);
+
+          if (from < 0 || to < 0 || from === to) {
+            return state;
+          }
+
+          const blockOrder = [...state.blockOrder];
+          const [moved] = blockOrder.splice(from, 1);
+          blockOrder.splice(to, 0, moved);
+          return { blockOrder };
+        }),
       toggleModule: (module) =>
         set((state) => ({
           moduleVisibility: {
@@ -155,15 +229,27 @@ export const useWeddingStore = create<WeddingStore>()(
             {
               ...guest,
               id: crypto.randomUUID(),
+              phone: "",
+              magicToken: null,
+              invitationUrl: null,
               respondedAt: new Date().toISOString(),
             },
             ...state.guests,
           ],
         })),
+      setGuests: (guests) => set({ guests }),
+      prependGuest: (guest) =>
+        set((state) => ({
+          guests: [guest, ...state.guests.filter((item) => item.id !== guest.id)],
+        })),
+      updateGuest: (guest) =>
+        set((state) => ({
+          guests: state.guests.map((item) => (item.id === guest.id ? guest : item)),
+        })),
       setCoverPhoto: (coverPhoto) => set({ coverPhoto }),
       addGalleryPhotos: (photos) =>
         set((state) => ({
-          galleryPhotos: [...state.galleryPhotos, ...photos].slice(0, 8),
+          galleryPhotos: [...state.galleryPhotos, ...photos].slice(0, 30),
         })),
       removeGalleryPhoto: (index) =>
         set((state) => ({
@@ -171,12 +257,36 @@ export const useWeddingStore = create<WeddingStore>()(
             (_, currentIndex) => currentIndex !== index,
           ),
         })),
+      reorderGalleryPhotos: (activeIndex, overIndex) =>
+        set((state) => {
+          if (
+            activeIndex === overIndex ||
+            activeIndex < 0 ||
+            overIndex < 0 ||
+            activeIndex >= state.galleryPhotos.length ||
+            overIndex >= state.galleryPhotos.length
+          ) {
+            return state;
+          }
+
+          const galleryPhotos = [...state.galleryPhotos];
+          const [movedPhoto] = galleryPhotos.splice(activeIndex, 1);
+          galleryPhotos.splice(overIndex, 0, movedPhoto);
+          return { galleryPhotos };
+        }),
       setInvitationText: (invitationText) => set({ invitationText }),
       setWishlistText: (wishlistText) => set({ wishlistText }),
+      setNoFlowersEnabled: (noFlowersEnabled) => set({ noFlowersEnabled }),
+      setNoFlowersText: (noFlowersText) => set({ noFlowersText }),
+      setTransferDescription: (transferDescription) =>
+        set({ transferDescription }),
+      setTransferTime: (transferTime) => set({ transferTime }),
+      setTransferMeetingPoint: (transferMeetingPoint) =>
+        set({ transferMeetingPoint }),
       addWishlistItem: () =>
         set((state) => ({
           wishlistItems:
-            state.wishlistItems.length >= 3
+            state.wishlistItems.length >= 8
               ? state.wishlistItems
               : [
                   ...state.wishlistItems,
@@ -194,6 +304,8 @@ export const useWeddingStore = create<WeddingStore>()(
           wishlistItems: state.wishlistItems.filter((item) => item.id !== id),
         })),
       setPostWeddingMode: (postWeddingMode) => set({ postWeddingMode }),
+      setPostWeddingPhotoUrl: (postWeddingPhotoUrl) =>
+        set({ postWeddingPhotoUrl }),
     }),
     {
       name: "wedding-builder-constructor",
@@ -203,7 +315,14 @@ export const useWeddingStore = create<WeddingStore>()(
         partnerOneName: state.partnerOneName,
         partnerTwoName: state.partnerTwoName,
         weddingDate: state.weddingDate,
+        ceremonyTime: state.ceremonyTime,
+        venueName: state.venueName,
+        venueAddress: state.venueAddress,
+        mapLatitude: state.mapLatitude,
+        mapLongitude: state.mapLongitude,
         currentTheme: state.currentTheme,
+        fontCode: state.fontCode,
+        blockOrder: state.blockOrder,
         moduleVisibility: state.moduleVisibility,
         musicTrack: state.musicTrack,
         timelineEvents: state.timelineEvents,
@@ -214,8 +333,14 @@ export const useWeddingStore = create<WeddingStore>()(
         guests: state.guests,
         wishlistText: state.wishlistText,
         wishlistItems: state.wishlistItems,
+        noFlowersEnabled: state.noFlowersEnabled,
+        noFlowersText: state.noFlowersText,
+        transferDescription: state.transferDescription,
+        transferTime: state.transferTime,
+        transferMeetingPoint: state.transferMeetingPoint,
         invitationText: state.invitationText,
         postWeddingMode: state.postWeddingMode,
+        postWeddingPhotoUrl: state.postWeddingPhotoUrl,
         initializedSiteId: state.initializedSiteId,
       }),
     },

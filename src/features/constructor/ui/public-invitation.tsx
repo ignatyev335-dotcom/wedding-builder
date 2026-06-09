@@ -2,14 +2,19 @@
 
 import { useEffect } from "react";
 
-import type { WeddingBuilderData } from "@/entities/wedding/model";
+import type {
+  PersonalizedGuest,
+  WeddingBuilderData,
+} from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 
 export function PublicInvitation({
   initialData,
+  personalizedGuest,
 }: {
   initialData: WeddingBuilderData;
+  personalizedGuest: PersonalizedGuest | null;
 }) {
   const initialize = useWeddingStore((state) => state.initialize);
 
@@ -19,7 +24,7 @@ export function PublicInvitation({
 
   return (
     <main className="public-invitation">
-      <InvitationPreview />
+      <InvitationPreview personalizedGuest={personalizedGuest} />
     </main>
   );
 }

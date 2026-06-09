@@ -3,5 +3,5 @@ export default function ConstructorLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return <>{children}</>;
 }

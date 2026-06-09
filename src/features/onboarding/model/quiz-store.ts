@@ -9,6 +9,7 @@ type QuizStore = QuizDraft & {
   step: number;
   setNames: (partnerOneName: string, partnerTwoName: string) => void;
   setWeddingDate: (weddingDate: string) => void;
+  setCeremonyTime: (ceremonyTime: string) => void;
   setTheme: (theme: ThemeCode) => void;
   toggleModule: (module: OptionalModule) => void;
   setAcceptedTerms: (acceptedTerms: boolean) => void;
@@ -22,8 +23,9 @@ const initialState: QuizDraft & { step: number } = {
   partnerOneName: "",
   partnerTwoName: "",
   weddingDate: "",
+  ceremonyTime: "",
   theme: "MINIMAL",
-  modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP"],
+  modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP", "COUNTDOWN"],
   acceptedTerms: false,
 };
 
@@ -34,6 +36,7 @@ export const useQuizStore = create<QuizStore>()(
       setNames: (partnerOneName, partnerTwoName) =>
         set({ partnerOneName, partnerTwoName }),
       setWeddingDate: (weddingDate) => set({ weddingDate }),
+      setCeremonyTime: (ceremonyTime) => set({ ceremonyTime }),
       setTheme: (theme) => set({ theme }),
       toggleModule: (module) =>
         set((state) => ({

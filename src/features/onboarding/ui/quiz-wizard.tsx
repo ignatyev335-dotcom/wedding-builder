@@ -29,6 +29,9 @@ const themes: Array<{
   { code: "BOHO", title: "Бохо", description: "Теплые природные тона", className: "theme-boho" },
   { code: "CLASSIC", title: "Классика", description: "Торжественно и нежно", className: "theme-classic" },
   { code: "MODERN", title: "Модерн", description: "Смело и графично", className: "theme-modern" },
+  { code: "ROMANTIC", title: "Романтика", description: "Пудровые тона и нежность", className: "theme-romantic" },
+  { code: "BOTANICAL", title: "Ботаника", description: "Зелень и природная свежесть", className: "theme-botanical" },
+  { code: "EDITORIAL", title: "Editorial", description: "Как обложка модного журнала", className: "theme-editorial" },
 ];
 
 const modules: Array<{
@@ -42,6 +45,7 @@ const modules: Array<{
   { code: "TIMELINE", title: "Таймлайн", description: "Красивое расписание дня", icon: Route },
   { code: "TRANSFER", title: "Трансфер", description: "Сбор заявок на поездку", icon: CalendarDays },
   { code: "MAP", title: "Карта", description: "Место и удобный маршрут", icon: MapPin },
+  { code: "COUNTDOWN", title: "Таймер до свадьбы", description: "Дни, часы и минуты до вашего события", icon: CalendarDays },
 ];
 
 export function QuizWizard() {
@@ -58,6 +62,10 @@ export function QuizWizard() {
       }
       if (!store.weddingDate) {
         setError("Выберите дату свадьбы.");
+        return false;
+      }
+      if (!store.ceremonyTime) {
+        setError("Укажите точное время начала мероприятия.");
         return false;
       }
     }
@@ -77,6 +85,7 @@ export function QuizWizard() {
       partnerOneName: store.partnerOneName,
       partnerTwoName: store.partnerTwoName,
       weddingDate: store.weddingDate,
+      ceremonyTime: store.ceremonyTime,
       theme: store.theme,
       modules: store.modules,
       acceptedTerms: store.acceptedTerms,
@@ -175,6 +184,17 @@ export function QuizWizard() {
                   type="date"
                   value={store.weddingDate}
                   onChange={(event) => store.setWeddingDate(event.target.value)}
+                />
+              </div>
+            </label>
+            <label className="field">
+              <span>Точное время начала</span>
+              <div className="input-with-icon">
+                <CalendarDays size={18} />
+                <input
+                  type="time"
+                  value={store.ceremonyTime}
+                  onChange={(event) => store.setCeremonyTime(event.target.value)}
                 />
               </div>
             </label>

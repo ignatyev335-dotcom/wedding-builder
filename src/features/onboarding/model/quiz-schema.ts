@@ -9,6 +9,9 @@ export const quizSchema = z.object({
     .string()
     .min(1, "Выберите дату свадьбы")
     .refine((value) => !Number.isNaN(Date.parse(value)), "Некорректная дата"),
+  ceremonyTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, "Укажите точное время начала"),
   theme: z.enum(themeCodes),
   modules: z.array(z.enum(optionalModules)).max(optionalModules.length),
   acceptedTerms: z.literal(true, {

@@ -1,4 +1,12 @@
-export const themeCodes = ["MINIMAL", "BOHO", "CLASSIC", "MODERN"] as const;
+export const themeCodes = [
+  "MINIMAL",
+  "BOHO",
+  "CLASSIC",
+  "MODERN",
+  "ROMANTIC",
+  "BOTANICAL",
+  "EDITORIAL",
+] as const;
 export type ThemeCode = (typeof themeCodes)[number];
 
 export const optionalModules = [
@@ -7,6 +15,7 @@ export const optionalModules = [
   "TIMELINE",
   "TRANSFER",
   "MAP",
+  "COUNTDOWN",
 ] as const;
 export type OptionalModule = (typeof optionalModules)[number];
 
@@ -14,12 +23,34 @@ export type QuizDraft = {
   partnerOneName: string;
   partnerTwoName: string;
   weddingDate: string;
+  ceremonyTime: string;
   theme: ThemeCode;
   modules: OptionalModule[];
   acceptedTerms: boolean;
 };
 
 export type BuilderModule = OptionalModule;
+
+export const fontCodes = [
+  "GREAT_VIBES",
+  "PINYON",
+  "ALEX_BRUSH",
+  "PLAYFAIR",
+  "CORMORANT",
+  "MONTSERRAT",
+] as const;
+export type FontCode = (typeof fontCodes)[number];
+
+export const contentBlockCodes = [
+  "COUNTDOWN",
+  "TIMELINE",
+  "DRESS_CODE",
+  "MAP",
+  "TRANSFER",
+  "WISHLIST",
+  "RSVP",
+] as const;
+export type ContentBlockCode = (typeof contentBlockCodes)[number];
 
 export type TimelineEvent = {
   id: string;
@@ -48,17 +79,29 @@ export type TelegramProfile = {
   name: string;
 } | null;
 
-export const guestStatuses = ["PENDING", "ATTENDING", "NOT_ATTENDING"] as const;
+export const guestStatuses = ["PENDING", "ACCEPTED", "DECLINED"] as const;
 export type GuestStatus = (typeof guestStatuses)[number];
 
 export type GuestResponse = {
   id: string;
   name: string;
+  phone: string;
   status: GuestStatus;
+  magicToken: string | null;
+  invitationUrl: string | null;
   dietaryRestrictions: string;
+  foodPreference: string;
+  allergies: string;
   drinks: string;
   needsTransport: boolean;
   respondedAt: string;
+};
+
+export type PersonalizedGuest = Pick<
+  GuestResponse,
+  "id" | "name" | "status"
+> & {
+  magicToken: string;
 };
 
 export type WishlistItem = {
@@ -76,7 +119,14 @@ export type WeddingBuilderData = {
   partnerOneName: string;
   partnerTwoName: string;
   weddingDate: string;
+  ceremonyTime: string;
+  venueName: string;
+  venueAddress: string;
+  mapLatitude: number | null;
+  mapLongitude: number | null;
   currentTheme: ThemeCode;
+  fontCode: FontCode;
+  blockOrder: ContentBlockCode[];
   moduleVisibility: Record<BuilderModule, boolean>;
   musicTrack: string | null;
   timelineEvents: TimelineEvent[];
@@ -90,5 +140,11 @@ export type WeddingBuilderData = {
   invitationText: string;
   wishlistText: string;
   wishlistItems: WishlistItem[];
+  noFlowersEnabled: boolean;
+  noFlowersText: string;
+  transferDescription: string;
+  transferTime: string;
+  transferMeetingPoint: string;
   postWeddingMode: boolean;
+  postWeddingPhotoUrl: string;
 };

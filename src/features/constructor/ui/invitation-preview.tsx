@@ -2,6 +2,8 @@
 
 import {
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Gift,
   ImagePlus,
@@ -15,9 +17,11 @@ import {
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { GuestStatus } from "@/entities/wedding/model";
-import { imageToDataUrl } from "@/features/constructor/lib/image-to-data-url";
-import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
+import type {
+  GuestResponse,
+  GuestStatus,
+  PersonalizedGuest,
+} from "@/entities/wedding/model";
 import { tracks } from "@/features/constructor/model/tracks";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 
@@ -28,12 +32,23 @@ const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
   timeZone: "UTC",
 });
 
-export function InvitationPreview() {
+export function InvitationPreview({
+  personalizedGuest = null,
+}: {
+  personalizedGuest?: PersonalizedGuest | null;
+}) {
   const {
     partnerOneName,
     partnerTwoName,
     weddingDate,
+    ceremonyTime,
+    venueName,
+    venueAddress,
+    mapLatitude,
+    mapLongitude,
     currentTheme,
+    fontCode,
+    blockOrder,
     moduleVisibility,
     musicTrack,
     timelineEvents,
@@ -42,20 +57,30 @@ export function InvitationPreview() {
     galleryPhotos,
     wishlistText,
     wishlistItems,
+    noFlowersEnabled,
+    noFlowersText,
+    transferDescription,
+    transferTime,
+    transferMeetingPoint,
     invitationText,
     postWeddingMode,
-    addGalleryPhotos,
+    postWeddingPhotoUrl,
     addGuest,
+    updateGuest,
   } = useWeddingStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isRsvpOpen, setIsRsvpOpen] = useState(false);
+  const [isRsvpOpen, setIsRsvpOpen] = useState(Boolean(personalizedGuest));
   const [isRsvpSent, setIsRsvpSent] = useState(false);
-  const [guestName, setGuestName] = useState("");
-  const [guestStatus, setGuestStatus] = useState<GuestStatus>("ATTENDING");
+  const [guestName, setGuestName] = useState(personalizedGuest?.name ?? "");
+  const [guestStatus, setGuestStatus] = useState<GuestStatus>("ACCEPTED");
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+  const [foodPreference, setFoodPreference] = useState("Мясо");
+  const [allergies, setAllergies] = useState("");
   const [drinks, setDrinks] = useState("");
   const [needsTransport, setNeedsTransport] = useState(false);
+  const [isRsvpSaving, setIsRsvpSaving] = useState(false);
+  const [rsvpError, setRsvpError] = useState("");
   const selectedTrack = useMemo(
     () => tracks.find((track) => track.id === musicTrack) ?? null,
     [musicTrack],
@@ -123,34 +148,70 @@ export function InvitationPreview() {
       name: guestName.trim(),
       status: guestStatus,
       dietaryRestrictions: dietaryRestrictions.trim(),
+      foodPreference,
+      allergies: allergies.trim(),
       drinks: drinks.trim(),
       needsTransport,
     });
     setIsRsvpSent(true);
     setGuestName("");
     setDietaryRestrictions("");
+    setFoodPreference("Мясо");
+    setAllergies("");
     setDrinks("");
     setNeedsTransport(false);
   };
 
-  const uploadGuestPhotos = async (files: FileList | null) => {
-    if (!files?.length) {
+  const submitPersonalizedRsvp = async (status: "ACCEPTED" | "DECLINED") => {
+    if (!personalizedGuest) {
       return;
     }
 
-    const available = Math.max(0, 8 - galleryPhotos.length);
-    const photos = await Promise.all(
-      Array.from(files)
-        .slice(0, available)
-        .map((file) => imageToDataUrl(file, 1200)),
-    );
-    addGalleryPhotos(photos);
-    await persistSiteExtras().catch(() => undefined);
+    setIsRsvpSaving(true);
+    setRsvpError("");
+
+    try {
+      const response = await fetch(
+        `/api/guests/${encodeURIComponent(personalizedGuest.magicToken)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status,
+            dietaryRestrictions,
+            foodPreference,
+            allergies,
+            drinks,
+            needsTransport,
+          }),
+        },
+      );
+      const data = (await response.json()) as {
+        guest?: GuestResponse;
+        error?: string;
+      };
+
+      if (!response.ok || !data.guest) {
+        throw new Error(data.error || "Не удалось сохранить ответ.");
+      }
+
+      updateGuest(data.guest);
+      setGuestStatus(status);
+      setIsRsvpSent(true);
+    } catch (requestError) {
+      setRsvpError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Не удалось сохранить ответ.",
+      );
+    } finally {
+      setIsRsvpSaving(false);
+    }
   };
 
   return (
     <article
-      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()}`}
+      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()}`}
       onClick={playSelectedTrack}
     >
       {selectedTrack && (
@@ -210,46 +271,54 @@ export function InvitationPreview() {
         <section className="wedding-module wedding-gallery">
           <span>Love Story</span>
           <h2>Моменты нашей истории</h2>
-          <div>
-            {galleryPhotos.map((photo, index) => (
-              <Image
-                key={`${photo.slice(-20)}-${index}`}
-                src={photo}
-                alt={`Love Story ${index + 1}`}
-                width={420}
-                height={520}
-                unoptimized
-              />
-            ))}
-          </div>
+          <LoveStoryGallery photos={galleryPhotos} />
         </section>
       )}
 
+      <div className="wedding-sortable-blocks">
       {postWeddingMode && (
-        <section className="wedding-module post-wedding-gallery">
+        <section className="wedding-module post-wedding-thanks">
           <ImagePlus size={19} />
-          <span>Общие воспоминания</span>
-          <h2>Добавьте фотографии с праздника</h2>
-          <p>Пусть этот альбом соберет моменты, которые увидели именно вы.</p>
-          {galleryPhotos.length < 8 ? (
-            <label>
+          <span>Спасибо, что были рядом</span>
+          <h2>Этот день стал особенным благодаря вам</h2>
+          <p>
+            Поделитесь фотографиями и видео, которые сохранили самые теплые
+            моменты нашего праздника.
+          </p>
+          {postWeddingPhotoUrl ? (
+            <a
+              href={postWeddingPhotoUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => event.stopPropagation()}
+            >
               <ImagePlus size={16} />
-              Загрузить фотографии
-              <input
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => void uploadGuestPhotos(event.target.files)}
-              />
-            </label>
+              Поделиться своими фото
+              <ExternalLink size={13} />
+            </a>
           ) : (
-            <small className="post-gallery-full">Альбом уже наполнен воспоминаниями</small>
+            <small>Молодожены скоро добавят ссылку для фотографий</small>
           )}
         </section>
       )}
 
+      {!postWeddingMode && moduleVisibility.COUNTDOWN && (
+        <section
+          className="wedding-module wedding-countdown"
+          style={{ order: blockOrder.indexOf("COUNTDOWN") }}
+        >
+          <CalendarDays size={19} />
+          <span>До нашей встречи</span>
+          <h2>Считаем мгновения вместе</h2>
+          <Countdown weddingDate={weddingDate} ceremonyTime={ceremonyTime} />
+        </section>
+      )}
+
       {!postWeddingMode && moduleVisibility.TIMELINE && (
-        <section className="wedding-module">
+        <section
+          className="wedding-module"
+          style={{ order: blockOrder.indexOf("TIMELINE") }}
+        >
           <CalendarDays size={19} />
           <span>Программа дня</span>
           <h2>Все важные моменты рядом</h2>
@@ -265,7 +334,10 @@ export function InvitationPreview() {
       )}
 
       {!postWeddingMode && moduleVisibility.DRESS_CODE && (
-        <section className="wedding-module wedding-dress">
+        <section
+          className="wedding-module wedding-dress"
+          style={{ order: blockOrder.indexOf("DRESS_CODE") }}
+        >
           <Shirt size={19} />
           <span>Пожелания по стилю</span>
           <h2>Натуральные и спокойные оттенки</h2>
@@ -278,30 +350,61 @@ export function InvitationPreview() {
       )}
 
       {moduleVisibility.MAP && (
-        <section className="wedding-module wedding-location">
+        <section
+          className="wedding-module wedding-location"
+          style={{ order: blockOrder.indexOf("MAP") }}
+        >
           <MapPin size={19} />
-          <span>Место</span>
-          <h2>Усадьба «Лесная»</h2>
-          <p>Московская область, 24 км от города</p>
-          <button type="button">Открыть карту</button>
+          <span>Место проведения</span>
+          <h2>{venueName || "До встречи на празднике"}</h2>
+          <p>{venueAddress || "Укажите адрес площадки в конструкторе"}</p>
+          {venueAddress && (
+            <InteractiveYandexMap
+              address={venueAddress}
+              latitude={mapLatitude}
+              longitude={mapLongitude}
+            />
+          )}
         </section>
       )}
 
       {moduleVisibility.TRANSFER && (
-        <section className="wedding-module">
+        <section
+          className="wedding-module"
+          style={{ order: blockOrder.indexOf("TRANSFER") }}
+        >
           <CalendarDays size={19} />
-          <span>Трансфер</span>
+          <span>Забота о дороге</span>
           <h2>Мы поможем добраться до площадки</h2>
-          <p>Отправление от центра города в 14:30.</p>
+          <p>{transferDescription}</p>
+          <div className="transfer-details">
+            <span>
+              <strong>{transferTime}</strong>
+              <small>время сбора</small>
+            </span>
+            <span>
+              <strong>{transferMeetingPoint}</strong>
+              <small>место сбора</small>
+            </span>
+          </div>
         </section>
       )}
 
       {(wishlistText || wishlistItems.length > 0) && (
-        <section className="wedding-module wedding-wishlist">
+        <section
+          className="wedding-module wedding-wishlist"
+          style={{ order: blockOrder.indexOf("WISHLIST") }}
+        >
           <Gift size={19} />
           <span>Подарки</span>
           <h2>Ваше присутствие — уже подарок</h2>
           <p>{wishlistText}</p>
+          {noFlowersEnabled && (
+            <blockquote className="no-flowers-note">
+              <span>Без цветов</span>
+              <p>{noFlowersText}</p>
+            </blockquote>
+          )}
           {wishlistItems.length > 0 && (
             <div>
               {wishlistItems.map((item) => (
@@ -323,11 +426,73 @@ export function InvitationPreview() {
       )}
 
       {!postWeddingMode && moduleVisibility.RSVP && (
-        <section className="wedding-module wedding-rsvp">
+        <section
+          className="wedding-module wedding-rsvp"
+          style={{ order: blockOrder.indexOf("RSVP") }}
+        >
           <Users size={19} />
           <span>Умный опрос гостей</span>
           <h2>Вы будете с нами?</h2>
-          {!isRsvpOpen ? (
+          {personalizedGuest && !isRsvpSent ? (
+            <div className="rsvp-form" onClick={(event) => event.stopPropagation()}>
+              <p className="personal-rsvp-copy">
+                Дорогой(ая) {personalizedGuest.name}, мы очень ждем тебя!
+                Сможешь разделить этот день с нами?
+              </p>
+              <label>
+                <span>Предпочтение в еде</span>
+                <select
+                  value={foodPreference}
+                  onChange={(event) => setFoodPreference(event.target.value)}
+                >
+                  <option value="Мясо">Мясо</option>
+                  <option value="Рыба">Рыба</option>
+                  <option value="Веган">Веган</option>
+                </select>
+              </label>
+              <label>
+                <span>Аллергии</span>
+                <input
+                  value={allergies}
+                  placeholder="Например, орехи или лактоза"
+                  onChange={(event) => setAllergies(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Предпочтения по напиткам</span>
+                <input
+                  value={drinks}
+                  placeholder="Вино, безалкогольные напитки"
+                  onChange={(event) => setDrinks(event.target.value)}
+                />
+              </label>
+              <label className="rsvp-checkbox">
+                <input
+                  type="checkbox"
+                  checked={needsTransport}
+                  onChange={(event) => setNeedsTransport(event.target.checked)}
+                />
+                <span>Нужен трансфер</span>
+              </label>
+              <div className="personal-rsvp-actions">
+                <button
+                  type="button"
+                  disabled={isRsvpSaving}
+                  onClick={() => void submitPersonalizedRsvp("ACCEPTED")}
+                >
+                  Да, буду
+                </button>
+                <button
+                  type="button"
+                  disabled={isRsvpSaving}
+                  onClick={() => void submitPersonalizedRsvp("DECLINED")}
+                >
+                  К сожалению, не смогу
+                </button>
+              </div>
+              {rsvpError && <p className="rsvp-error">{rsvpError}</p>}
+            </div>
+          ) : !isRsvpOpen ? (
             <button
               type="button"
               onClick={(event) => {
@@ -365,26 +530,37 @@ export function InvitationPreview() {
               </label>
               <div className="rsvp-status">
                 <button
-                  className={guestStatus === "ATTENDING" ? "is-selected" : ""}
+                  className={guestStatus === "ACCEPTED" ? "is-selected" : ""}
                   type="button"
-                  onClick={() => setGuestStatus("ATTENDING")}
+                  onClick={() => setGuestStatus("ACCEPTED")}
                 >
                   Я приду
                 </button>
                 <button
-                  className={guestStatus === "NOT_ATTENDING" ? "is-selected" : ""}
+                  className={guestStatus === "DECLINED" ? "is-selected" : ""}
                   type="button"
-                  onClick={() => setGuestStatus("NOT_ATTENDING")}
+                  onClick={() => setGuestStatus("DECLINED")}
                 >
                   Не смогу
                 </button>
               </div>
               <label>
-                <span>Аллергии и питание</span>
+                <span>Предпочтение в еде</span>
+                <select
+                  value={foodPreference}
+                  onChange={(event) => setFoodPreference(event.target.value)}
+                >
+                  <option value="Мясо">Мясо</option>
+                  <option value="Рыба">Рыба</option>
+                  <option value="Веган">Веган</option>
+                </select>
+              </label>
+              <label>
+                <span>Аллергии</span>
                 <input
-                  value={dietaryRestrictions}
-                  placeholder="Например, без лактозы"
-                  onChange={(event) => setDietaryRestrictions(event.target.value)}
+                  value={allergies}
+                  placeholder="Например, орехи или лактоза"
+                  onChange={(event) => setAllergies(event.target.value)}
                 />
               </label>
               <label>
@@ -408,6 +584,180 @@ export function InvitationPreview() {
           )}
         </section>
       )}
+      </div>
     </article>
+  );
+}
+
+function LoveStoryGallery({ photos }: { photos: string[] }) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activePhoto, setActivePhoto] = useState(0);
+
+  const scrollToPhoto = (index: number) => {
+    const carousel = carouselRef.current;
+    const slide = carousel?.children.item(index) as HTMLElement | null;
+
+    if (!carousel || !slide) {
+      return;
+    }
+
+    carousel.scrollTo({
+      left: slide.offsetLeft,
+      behavior: "smooth",
+    });
+  };
+
+  const updateActivePhoto = () => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const center = carousel.scrollLeft + carousel.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    Array.from(carousel.children).forEach((child, index) => {
+      const slide = child as HTMLElement;
+      const slideCenter = slide.offsetLeft + slide.clientWidth / 2;
+      const distance = Math.abs(center - slideCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setActivePhoto(closestIndex);
+  };
+
+  return (
+    <div className="love-story-carousel">
+      <div
+        className="love-story-track"
+        ref={carouselRef}
+        onScroll={updateActivePhoto}
+      >
+        {photos.map((photo, index) => (
+          <figure key={`${photo.slice(-20)}-${index}`}>
+            <Image
+              src={photo}
+              alt={`Love Story ${index + 1}`}
+              width={560}
+              height={700}
+              unoptimized
+            />
+          </figure>
+        ))}
+      </div>
+      <div className="love-story-controls">
+        <button
+          type="button"
+          aria-label="Предыдущая фотография"
+          disabled={activePhoto === 0}
+          onClick={(event) => {
+            event.stopPropagation();
+            scrollToPhoto(Math.max(0, activePhoto - 1));
+          }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span>
+          {activePhoto + 1} / {photos.length}
+        </span>
+        <button
+          type="button"
+          aria-label="Следующая фотография"
+          disabled={activePhoto === photos.length - 1}
+          onClick={(event) => {
+            event.stopPropagation();
+            scrollToPhoto(Math.min(photos.length - 1, activePhoto + 1));
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function InteractiveYandexMap({
+  address,
+  latitude,
+  longitude,
+}: {
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+}) {
+  const hasCoordinates = latitude !== null && longitude !== null;
+  const mapSource = hasCoordinates
+    ? `https://yandex.ru/map-widget/v1/?ll=${longitude}%2C${latitude}&z=16&pt=${longitude},${latitude},pm2rdm`
+    : `https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(address)}&z=15`;
+  const routeUrl = hasCoordinates
+    ? `https://yandex.ru/maps/?rtext=~${latitude},${longitude}&rtt=auto`
+    : `https://yandex.ru/maps/?text=${encodeURIComponent(address)}`;
+
+  return (
+    <div className="wedding-map">
+      <iframe
+        src={mapSource}
+        title={`Карта: ${address}`}
+        loading="lazy"
+        allowFullScreen
+      />
+      <a
+        href={routeUrl}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <MapPin size={15} />
+        Построить маршрут
+        <ExternalLink size={13} />
+      </a>
+    </div>
+  );
+}
+
+function Countdown({
+  weddingDate,
+  ceremonyTime,
+}: {
+  weddingDate: string;
+  ceremonyTime: string;
+}) {
+  const target = useMemo(
+    () => new Date(`${weddingDate}T${ceremonyTime || "00:00"}:00`).getTime(),
+    [ceremonyTime, weddingDate],
+  );
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, target - Date.now()),
+  );
+
+  useEffect(() => {
+    const update = () => setRemaining(Math.max(0, target - Date.now()));
+    update();
+    const interval = window.setInterval(update, 1000);
+    return () => window.clearInterval(interval);
+  }, [target]);
+
+  const days = Math.floor(remaining / 86_400_000);
+  const hours = Math.floor((remaining / 3_600_000) % 24);
+  const minutes = Math.floor((remaining / 60_000) % 60);
+  const seconds = Math.floor((remaining / 1000) % 60);
+
+  return (
+    <div className="countdown-grid">
+      {[
+        ["Дней", days],
+        ["Часов", hours],
+        ["Минут", minutes],
+        ["Секунд", seconds],
+      ].map(([label, value]) => (
+        <div key={label}>
+          <strong>{String(value).padStart(2, "0")}</strong>
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
   );
 }

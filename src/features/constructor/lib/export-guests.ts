@@ -2,8 +2,8 @@ import type { GuestResponse } from "@/entities/wedding/model";
 
 const statusLabels = {
   PENDING: "Ждем ответа",
-  ATTENDING: "Идет",
-  NOT_ATTENDING: "Не идет",
+  ACCEPTED: "Придет",
+  DECLINED: "Отказ",
 } as const;
 
 function csvCell(value: string | boolean) {
@@ -12,11 +12,12 @@ function csvCell(value: string | boolean) {
 }
 
 export function exportGuestsToCsv(guests: GuestResponse[]) {
-  const headers = ["Имя", "Статус", "Аллергии / еда", "Напитки", "Трансфер"];
+  const headers = ["Имя", "Статус", "Еда", "Аллергии", "Напитки", "Трансфер"];
   const rows = guests.map((guest) => [
     guest.name,
     statusLabels[guest.status],
-    guest.dietaryRestrictions || "Нет",
+    guest.foodPreference || "Не указано",
+    guest.allergies || "Нет",
     guest.drinks || "Не указано",
     guest.needsTransport,
   ]);

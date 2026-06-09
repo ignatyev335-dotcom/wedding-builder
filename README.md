@@ -20,17 +20,16 @@ npm run db:push
 npm run dev
 ```
 
-Если на Windows отладчик Next.js падает внутри `segmentExplorerNodeAdd`,
-очистите кэш и запустите стабильный режим без DevTools:
+На Windows команда `npm run dev` по умолчанию запускает стабильный локальный
+режим без Next.js DevTools. Он использует отдельный кэш `.next-stable`, поэтому
+ошибка `segmentExplorerNodeAdd` не влияет на приложение:
 
 ```powershell
-Remove-Item -Recurse -Force .next
-npm run dev:stable
+npm run dev
 ```
 
-Проблема особенно воспроизводима, когда абсолютный путь проекта содержит
-кириллицу. Для полноценного hot reload также подойдет копия проекта в пути
-только с латинскими символами, например `C:\projects\wedding-builder`.
+Экспериментальный режим с hot reload доступен командой `npm run dev:hot`, но
+Next.js 16.2.7 может ронять в нем внутренний Segment Explorer на Windows.
 
 Команда `npm run db:push` создает автономную базу `prisma/dev.db`. Пароли,
 PostgreSQL и отдельный сервер базы данных не требуются.

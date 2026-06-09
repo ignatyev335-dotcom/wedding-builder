@@ -26,6 +26,9 @@ enum ThemeCode {
   BOHO
   CLASSIC
   MODERN
+  ROMANTIC
+  BOTANICAL
+  EDITORIAL
 }
 
 enum ModuleType {
@@ -38,13 +41,13 @@ enum ModuleType {
   MAP
   MUSIC
   GALLERY
+  COUNTDOWN
 }
 
-enum AttendanceStatus {
+enum GuestStatus {
   PENDING
-  ATTENDING
-  NOT_ATTENDING
-  MAYBE
+  ACCEPTED
+  DECLINED
 }
 
 enum OrderStatus {
@@ -144,22 +147,26 @@ model SiteModule {
 
 model Guest {
   id                  String           @id @default(cuid())
-  weddingSiteId       String
+  siteId              String           @map("weddingSiteId")
   customSlug          String?
-  guestName           String
-  attendance          AttendanceStatus @default(PENDING)
+  name                String           @map("guestName")
+  phone               String
+  status              GuestStatus      @default(PENDING) @map("attendance")
+  magicToken          String           @unique
   alcoholPreferences  String           @default("[]")
   needsTransport      Boolean          @default(false)
   dietaryRestrictions String?
+  foodPreference      String?
+  allergies           String?
   plusOneName         String?
   message             String?
   respondedAt         DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
-  weddingSite         WeddingSite      @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+  weddingSite         WeddingSite      @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
-  @@unique([weddingSiteId, customSlug])
-  @@index([weddingSiteId, attendance])
+  @@unique([siteId, customSlug])
+  @@index([siteId, status])
 }
 
 model Order {

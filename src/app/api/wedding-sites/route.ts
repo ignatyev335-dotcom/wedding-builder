@@ -64,6 +64,7 @@ export async function POST(request: Request) {
               partnerOneName: data.partnerOneName.trim(),
               partnerTwoName: data.partnerTwoName.trim(),
               weddingDate: new Date(`${data.weddingDate}T12:00:00.000Z`),
+              ceremonyTime: data.ceremonyTime,
               welcomeText: "Будем счастливы разделить этот день с вами.",
               timeline: JSON.stringify([
                 { id: "arrival", time: "16:00", title: "Сбор гостей" },

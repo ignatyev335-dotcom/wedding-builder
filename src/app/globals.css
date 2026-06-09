@@ -3,6 +3,15 @@
 :root {
   --font-sans: "Segoe UI", Arial, sans-serif;
   --font-display: Georgia, "Times New Roman", serif;
+  --font-great-vibes: "Great Vibes", "Segoe Script", cursive;
+  --font-pinyon: "Pinyon Script", "Segoe Script", cursive;
+  --font-alex-brush: "Alex Brush", "Segoe Script", cursive;
+  --font-playfair: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-cormorant: "Cormorant Garamond", Garamond, Georgia, serif;
+  --font-montserrat: Montserrat, "Segoe UI", Arial, sans-serif;
+  --font-lora: Lora, Cambria, Georgia, serif;
+  --font-caveat: Caveat, "Segoe Print", "Bradley Hand", cursive;
+  --font-cinzel: Cinzel, "Baskerville", Georgia, serif;
   --ink: #1d211d;
   --muted: #6f746e;
   --cream: #f6f3ed;
@@ -431,6 +440,9 @@ a {
 .theme-boho { background: #e5d3bf; }
 .theme-classic { background: #e9e1e3; }
 .theme-modern { color: white; background: #313a36; }
+.theme-romantic { background: linear-gradient(145deg, #f4e7e8, #dcbfc5); }
+.theme-botanical { color: white; background: linear-gradient(145deg, #71806a, #344637); }
+.theme-editorial { color: white; background: linear-gradient(135deg, #181818 0 48%, #f1eee7 49%); }
 
 .theme-check {
   width: 24px;
@@ -762,25 +774,33 @@ a {
 
 .constructor-layout {
   height: calc(100svh - 68px);
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(500px, 43vw) 1fr;
+  overflow: hidden;
 }
 
 .constructor-sidebar {
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-columns: 92px 1fr;
+  overflow: hidden;
   background: #fff;
   border-right: 1px solid #dcded8;
 }
 
 .constructor-tabs {
+  min-height: 0;
   padding: 18px 10px;
   display: flex;
   flex-direction: column;
   gap: 7px;
+  overflow-y: auto;
   background: #f7f7f4;
   border-right: 1px solid #e6e7e2;
+  scrollbar-width: thin;
 }
 
 .constructor-tabs button {
@@ -805,8 +825,12 @@ a {
 }
 
 .constructor-editor {
+  height: 100%;
+  min-height: 0;
   padding: 38px clamp(24px, 3vw, 44px) 50px;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 
@@ -1325,6 +1349,69 @@ a {
   border-radius: 11px;
 }
 
+.gallery-upload-grid > div {
+  cursor: grab;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.gallery-upload-grid > div:active {
+  cursor: grabbing;
+}
+
+.gallery-upload-grid > div.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.gallery-drag-handle {
+  min-height: 23px;
+  padding: 0 7px;
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: white;
+  background: rgba(39, 44, 38, 0.68);
+  border-radius: 99px;
+  font-size: 0.48rem;
+  backdrop-filter: blur(8px);
+}
+
+.gallery-bulk-upload {
+  min-height: 56px;
+  margin-bottom: 10px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #657261;
+  background: white;
+  border: 1px dashed #cbd0c7;
+  border-radius: 13px;
+  cursor: pointer;
+}
+
+.gallery-bulk-upload > span {
+  display: grid;
+  gap: 2px;
+}
+
+.gallery-bulk-upload strong {
+  color: #4b5548;
+  font-size: 0.61rem;
+}
+
+.gallery-bulk-upload small {
+  color: #93988f;
+  font-size: 0.5rem;
+}
+
+.gallery-bulk-upload input {
+  display: none;
+}
+
 .gallery-upload-grid > div button {
   width: 26px;
   height: 26px;
@@ -1371,6 +1458,167 @@ a {
   display: grid;
   justify-items: center;
   gap: 5px;
+}
+
+.venue-editor {
+  display: grid;
+  gap: 11px;
+}
+
+.venue-editor > label {
+  display: grid;
+  gap: 5px;
+}
+
+.venue-editor label > span,
+.venue-editor > small {
+  color: #8b9188;
+  font-size: 0.53rem;
+}
+
+.venue-editor input,
+.venue-editor textarea {
+  width: 100%;
+  padding: 10px 11px;
+  color: #343a33;
+  background: #fff;
+  border: 1px solid #dfe2da;
+  border-radius: 10px;
+  outline: none;
+  font: inherit;
+  font-size: 0.61rem;
+  resize: vertical;
+}
+
+.venue-editor input:focus,
+.venue-editor textarea:focus {
+  border-color: #87977f;
+  box-shadow: 0 0 0 3px rgba(100, 115, 95, 0.1);
+}
+
+.venue-coordinate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.venue-coordinate-grid label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.address-autocomplete {
+  position: relative;
+  display: grid;
+  gap: 5px;
+}
+
+.address-suggestions {
+  max-height: 220px;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #dfe2da;
+  border-radius: 12px;
+  box-shadow: 0 18px 38px rgba(42, 48, 40, 0.14);
+}
+
+.address-suggestions > small {
+  padding: 12px;
+  display: block;
+  color: #8a9087;
+  font-size: 0.55rem;
+}
+
+.address-suggestions button {
+  width: 100%;
+  padding: 10px 12px;
+  display: grid;
+  gap: 3px;
+  color: #3d453b;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #eef0eb;
+  cursor: pointer;
+  text-align: left;
+}
+
+.address-suggestions button:hover {
+  background: #f5f7f2;
+}
+
+.address-suggestions strong {
+  font-size: 0.59rem;
+  font-weight: 650;
+}
+
+.address-suggestions small {
+  color: #969b93;
+  font-size: 0.48rem;
+}
+
+.transfer-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.transfer-editor > label,
+.transfer-editor > div label {
+  display: grid;
+  gap: 5px;
+}
+
+.transfer-editor > div {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  gap: 8px;
+}
+
+.transfer-editor span {
+  color: #8b9188;
+  font-size: 0.53rem;
+}
+
+.transfer-editor input,
+.transfer-editor textarea {
+  width: 100%;
+  padding: 10px 11px;
+  background: #fff;
+  border: 1px solid #dfe2da;
+  border-radius: 10px;
+  outline: none;
+  font: inherit;
+  font-size: 0.61rem;
+  resize: vertical;
+}
+
+.no-flowers-setting {
+  padding: 11px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e7e9e3;
+  border-bottom: 1px solid #e7e9e3;
+}
+
+.no-flowers-setting > div {
+  display: grid;
+  gap: 3px;
+}
+
+.no-flowers-setting strong {
+  font-size: 0.62rem;
+}
+
+.no-flowers-setting small {
+  color: #8d928a;
+  font-size: 0.5rem;
 }
 
 .palette-editor input {
@@ -1494,6 +1742,108 @@ a {
     radial-gradient(circle at 20% 10%, #f8e7d4, transparent 38%),
     #d9b89d;
   border-radius: 38px 12px 38px 12px;
+}
+
+.theme-sample-classic .theme-sample {
+  color: #f8f2e7;
+  background: linear-gradient(145deg, #5f2632, #2f151c);
+}
+
+.theme-sample-modern .theme-sample {
+  color: #111111;
+  background: linear-gradient(135deg, #f2efea 50%, #d9ff45 50%);
+}
+
+.theme-sample-romantic .theme-sample {
+  color: #875d68;
+  background: linear-gradient(145deg, #f6e8eb, #dcbfc7);
+}
+
+.theme-sample-botanical .theme-sample {
+  color: #f5f1e7;
+  background: linear-gradient(145deg, #75836c, #344537);
+}
+
+.theme-sample-editorial .theme-sample {
+  color: white;
+  background: linear-gradient(135deg, #1d1d1c 0 54%, #ddd8ce 55%);
+}
+
+.font-option-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.font-option {
+  min-height: 108px;
+  padding: 13px;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 4px;
+  color: #343a33;
+  background: #fff;
+  border: 1px solid #dfe1db;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.font-option.is-selected {
+  border-color: #586754;
+  box-shadow: 0 0 0 2px rgba(88, 103, 84, 0.12);
+}
+
+.font-option > span {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.font-option strong {
+  margin-top: 6px;
+  font-size: 0.63rem;
+}
+
+.font-option small {
+  color: #8b9088;
+  font-size: 0.52rem;
+}
+
+.font-great_vibes { font-family: var(--font-great-vibes), cursive; }
+.font-pinyon { font-family: var(--font-pinyon), cursive; }
+.font-alex_brush { font-family: var(--font-alex-brush), cursive; }
+.font-playfair { font-family: var(--font-playfair), Georgia, serif; }
+.font-cormorant { font-family: var(--font-cormorant), Georgia, serif; }
+.font-montserrat { font-family: var(--font-montserrat), "Segoe UI", sans-serif; }
+
+.draggable-content-block {
+  position: relative;
+  padding-left: 25px;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.draggable-content-block.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+}
+
+.drag-handle {
+  width: 24px;
+  position: absolute;
+  z-index: 3;
+  top: 20px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  color: #a4aaa1;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .constructor-theme-card > span:nth-child(2) {
@@ -2398,6 +2748,82 @@ a {
   line-height: 1;
 }
 
+.guest-quick-form {
+  margin-top: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: #f7f7f3;
+  border: 1px solid #e1e4dc;
+  border-radius: 18px;
+}
+
+.guest-quick-form > div {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 3px;
+}
+
+.guest-quick-form strong {
+  font-size: 0.72rem;
+}
+
+.guest-quick-form small,
+.guest-quick-form label span {
+  color: #8c9189;
+  font-size: 0.52rem;
+}
+
+.guest-quick-form label {
+  display: grid;
+  gap: 5px;
+}
+
+.guest-quick-form input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  background: white;
+  border: 1px solid #dfe2da;
+  border-radius: 11px;
+  outline: none;
+  font-size: 0.65rem;
+}
+
+.guest-quick-form input:focus {
+  border-color: #87977f;
+  box-shadow: 0 0 0 3px rgba(100, 115, 95, 0.1);
+}
+
+.guest-quick-form > button {
+  min-height: 39px;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: white;
+  background: #455342;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.guest-quick-form > button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.guest-form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #a14f47;
+  font-size: 0.55rem;
+}
+
 .guests-toolbar {
   margin: 20px 0 10px;
   display: flex;
@@ -2501,6 +2927,16 @@ a {
   background: #eaf4e8;
 }
 
+.status-accepted {
+  color: #497048;
+  background: #eaf4e8;
+}
+
+.status-declined {
+  color: #905e58;
+  background: #f7eae8;
+}
+
 .status-not_attending {
   color: #905e58;
   background: #f7eae8;
@@ -2531,6 +2967,41 @@ a {
   font-size: 0.5rem;
   line-height: 1.3;
   text-overflow: ellipsis;
+}
+
+.guest-link-cell {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.guest-link-cell > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7d847a;
+  font-size: 0.5rem;
+}
+
+.guest-link-cell button {
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #465443;
+  background: #edf1e9;
+  border: 0;
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 0.5rem;
+  font-weight: 800;
+}
+
+.guest-link-cell button:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .guest-table dt {
@@ -2611,12 +3082,15 @@ a {
 }
 
 .constructor-preview-area {
+  min-height: 0;
   min-width: 480px;
-  padding: 62px 30px 30px;
+  padding: 58px 30px 24px;
   position: relative;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+  overscroll-behavior: none;
   background:
     linear-gradient(rgba(255, 255, 255, 0.42) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.42) 1px, transparent 1px),
@@ -2644,16 +3118,33 @@ a {
   font-size: 0.58rem;
 }
 
-.constructor-phone {
+.constructor-device {
+  max-width: 100%;
+  max-height: 100%;
   width: 390px;
-  height: min(844px, calc(100svh - 105px));
+  height: 100%;
   padding: 10px;
   position: relative;
+  flex: 0 0 auto;
   background: #111311;
   border-radius: 48px;
   box-shadow:
     0 38px 75px rgba(49, 54, 47, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+  transition:
+    width 260ms ease,
+    border-radius 260ms ease;
+}
+
+.constructor-mobile {
+  width: min(390px, 100%);
+}
+
+.constructor-desktop {
+  width: min(1120px, 100%);
+  padding: 8px;
+  background: #262a26;
+  border-radius: 20px;
 }
 
 .constructor-phone-bar {
@@ -2668,16 +3159,81 @@ a {
   border-radius: 99px;
 }
 
-.constructor-phone-screen {
+.constructor-browser-bar {
+  height: 34px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aeb3ac;
+}
+
+.constructor-browser-bar i {
+  width: 7px;
+  height: 7px;
+  background: #697068;
+  border-radius: 50%;
+}
+
+.constructor-browser-bar span {
+  min-width: 180px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  color: #9ea49d;
+  background: #363b36;
+  border-radius: 6px;
+  font-size: 0.52rem;
+}
+
+.constructor-device-screen {
   height: 100%;
   overflow: hidden auto;
   background: #fff;
   border-radius: 39px;
+  overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
-.constructor-phone-screen::-webkit-scrollbar {
+.constructor-mobile .constructor-device-screen {
+  border-radius: 39px;
+}
+
+.constructor-desktop .constructor-device-screen {
+  height: calc(100% - 34px);
+  border-radius: 12px;
+}
+
+.constructor-device-screen::-webkit-scrollbar {
   display: none;
+}
+
+.constructor-desktop .wedding-site-preview {
+  width: 100%;
+}
+
+.constructor-desktop .wedding-hero {
+  min-height: 720px;
+}
+
+.constructor-desktop .wedding-hero h1 {
+  font-size: clamp(5rem, 8vw, 8.5rem);
+}
+
+.constructor-desktop .wedding-welcome,
+.constructor-desktop .wedding-module {
+  padding-right: clamp(70px, 12vw, 180px);
+  padding-left: clamp(70px, 12vw, 180px);
+}
+
+.constructor-desktop .love-story-track {
+  grid-auto-columns: 36%;
+  margin-right: calc(clamp(70px, 12vw, 180px) * -1);
+  margin-left: calc(clamp(70px, 12vw, 180px) * -1);
+  padding-right: clamp(70px, 12vw, 180px);
+  padding-left: clamp(70px, 12vw, 180px);
 }
 
 .wedding-site-preview {
@@ -2692,12 +3248,10 @@ a {
 
 .public-invitation {
   width: 100%;
-  max-width: 520px;
   min-height: 100svh;
   margin: 0 auto;
   overflow: hidden;
-  background: #f7f6f2;
-  box-shadow: 0 0 60px rgba(42, 48, 41, 0.08);
+  background: var(--theme-bg, #f7f6f2);
 }
 
 .public-invitation .wedding-welcome,
@@ -2757,12 +3311,13 @@ a {
 }
 
 .wedding-theme-minimal {
-  --theme-bg: #f7f6f2;
-  --theme-surface: #efeee9;
-  --theme-text: #20231f;
-  --theme-muted: #72766f;
-  --theme-accent: #333a32;
-  --theme-display: var(--font-display), Georgia, serif;
+  --theme-bg: #ffffff;
+  --theme-surface: #f4f4f1;
+  --theme-text: #171917;
+  --theme-muted: #737770;
+  --theme-accent: #171917;
+  --theme-body: var(--font-montserrat), "Segoe UI", sans-serif;
+  --theme-display: var(--font-playfair), Georgia, serif;
   --theme-radius: 0;
 }
 
@@ -2777,6 +3332,148 @@ a {
   background:
     radial-gradient(circle at 9% 8%, rgba(255, 250, 238, 0.85), transparent 16rem),
     var(--theme-bg);
+}
+
+.wedding-theme-classic {
+  --theme-bg: #f7f1f3;
+  --theme-surface: #eee1e5;
+  --theme-text: #49383f;
+  --theme-muted: #8c727b;
+  --theme-accent: #7d5966;
+  --theme-radius: 18px;
+}
+
+.wedding-theme-modern {
+  --theme-bg: #11110f;
+  --theme-surface: #1d1c18;
+  --theme-text: #f6eedc;
+  --theme-muted: #b9ad92;
+  --theme-accent: #cba95d;
+  --theme-body: var(--font-montserrat), "Segoe UI", sans-serif;
+  --theme-display: var(--font-cormorant), Georgia, serif;
+  --theme-radius: 4px;
+  background:
+    radial-gradient(circle at 72% 12%, rgba(203, 169, 93, 0.14), transparent 30rem),
+    var(--theme-bg);
+}
+
+.wedding-theme-romantic {
+  --theme-bg: #fff6f7;
+  --theme-surface: #f7e4e8;
+  --theme-text: #704b56;
+  --theme-muted: #a17984;
+  --theme-accent: #a55f72;
+  --theme-body: var(--font-playfair), Georgia, serif;
+  --theme-display: var(--font-great-vibes), cursive;
+  --theme-radius: 34px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(232, 184, 197, 0.32), transparent 24rem),
+    var(--theme-bg);
+}
+
+.wedding-theme-botanical {
+  --theme-bg: #e8eee4;
+  --theme-surface: #d3dfce;
+  --theme-text: #263c2c;
+  --theme-muted: #607264;
+  --theme-accent: #385b42;
+  --theme-body: var(--font-cormorant), Georgia, serif;
+  --theme-display: var(--font-cormorant), Georgia, serif;
+  --theme-radius: 30px;
+  background:
+    radial-gradient(circle at 15% 5%, rgba(77, 112, 72, 0.24), transparent 22rem),
+    linear-gradient(125deg, transparent 70%, rgba(54, 86, 61, 0.08)),
+    var(--theme-bg);
+}
+
+.wedding-theme-editorial {
+  --theme-bg: #f2efe8;
+  --theme-surface: #ded9cf;
+  --theme-text: #171817;
+  --theme-muted: #6e716c;
+  --theme-accent: #171817;
+  --theme-radius: 0;
+}
+
+.wedding-font-great_vibes { --selected-font: var(--font-great-vibes), cursive; }
+.wedding-font-pinyon { --selected-font: var(--font-pinyon), cursive; }
+.wedding-font-alex_brush { --selected-font: var(--font-alex-brush), cursive; }
+.wedding-font-playfair { --selected-font: var(--font-playfair), Georgia, serif; }
+.wedding-font-cormorant { --selected-font: var(--font-cormorant), Georgia, serif; }
+.wedding-font-montserrat { --selected-font: var(--font-montserrat), "Segoe UI", sans-serif; }
+
+.wedding-site-preview {
+  font-family: var(--theme-body, var(--font-montserrat)), sans-serif;
+}
+
+.wedding-site-preview .wedding-hero h1,
+.wedding-site-preview .wedding-welcome h2,
+.wedding-site-preview .wedding-module h2 {
+  font-family: var(--selected-font, var(--font-playfair)), serif;
+}
+
+.wedding-theme-romantic .wedding-hero h1,
+.wedding-font-great_vibes .wedding-hero h1,
+.wedding-font-pinyon .wedding-hero h1,
+.wedding-font-alex_brush .wedding-hero h1 {
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 0.9;
+}
+
+.wedding-theme-minimal .wedding-module,
+.wedding-theme-minimal .wedding-welcome {
+  border-radius: 0;
+}
+
+.wedding-theme-botanical .wedding-module,
+.wedding-theme-botanical .wedding-welcome,
+.wedding-theme-romantic .wedding-module,
+.wedding-theme-romantic .wedding-welcome {
+  margin: 12px;
+  background: color-mix(in srgb, var(--theme-surface) 68%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-text) 9%, transparent);
+  border-radius: var(--theme-radius);
+}
+
+.wedding-theme-modern .wedding-module,
+.wedding-theme-modern .wedding-welcome {
+  border-color: rgba(203, 169, 93, 0.26);
+}
+
+.wedding-sortable-blocks {
+  display: flex;
+  flex-direction: column;
+}
+
+.countdown-grid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.countdown-grid > div {
+  min-width: 0;
+  padding: 13px 5px;
+  display: grid;
+  gap: 4px;
+  color: var(--theme-text);
+  background: var(--theme-surface);
+  border-radius: max(10px, calc(var(--theme-radius) / 2));
+}
+
+.countdown-grid strong {
+  font-family: var(--selected-font, var(--font-playfair)), serif;
+  font-size: 1.35rem;
+  font-weight: 550;
+}
+
+.countdown-grid span {
+  color: var(--theme-muted);
+  font-size: 0.44rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .wedding-hero {
@@ -2896,7 +3593,7 @@ a {
   border-top: 1px solid color-mix(in srgb, var(--theme-text) 13%, transparent);
 }
 
-.wedding-gallery > div {
+.love-story-track {
   margin: 25px -35px 0;
   padding: 0 24px 8px;
   display: grid;
@@ -2908,16 +3605,156 @@ a {
   scrollbar-width: none;
 }
 
-.wedding-gallery > div::-webkit-scrollbar {
+.love-story-track::-webkit-scrollbar {
   display: none;
 }
 
-.wedding-gallery img {
+.love-story-track figure {
+  margin: 0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.love-story-track img {
   width: 100%;
   height: 310px;
   object-fit: cover;
   border-radius: max(18px, var(--theme-radius));
-  scroll-snap-align: center;
+}
+
+.love-story-carousel {
+  margin-top: 25px;
+  position: relative;
+}
+
+.love-story-controls {
+  position: absolute;
+  z-index: 3;
+  right: 10px;
+  bottom: 18px;
+  left: 10px;
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.wedding-module .love-story-controls button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: rgba(21, 24, 20, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: none;
+  backdrop-filter: blur(9px);
+  pointer-events: auto;
+}
+
+.wedding-module .love-story-controls button:disabled {
+  cursor: default;
+  opacity: 0.28;
+}
+
+.love-story-controls span {
+  width: fit-content;
+  min-width: 44px;
+  padding: 5px 9px;
+  justify-self: center;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(21, 24, 20, 0.3);
+  border-radius: 99px;
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(8px);
+}
+
+.transfer-details {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 8px;
+}
+
+.transfer-details > span {
+  padding: 13px;
+  display: grid;
+  gap: 4px;
+  background: color-mix(in srgb, var(--theme-surface) 72%, transparent);
+  border-radius: max(10px, calc(var(--theme-radius) * 0.55));
+}
+
+.transfer-details strong {
+  color: var(--theme-text);
+  font-family: var(--theme-display);
+  font-size: 1rem;
+  font-weight: 550;
+}
+
+.transfer-details small {
+  color: var(--theme-muted);
+  font-size: 0.48rem;
+  text-transform: uppercase;
+}
+
+.no-flowers-note {
+  margin: 24px 0 0;
+  padding: 20px;
+  color: var(--theme-text);
+  background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  border-radius: max(14px, var(--theme-radius));
+}
+
+.no-flowers-note > span {
+  color: var(--theme-accent);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.no-flowers-note p {
+  margin: 9px 0 0;
+  color: var(--theme-text);
+}
+
+.wedding-map {
+  margin-top: 24px;
+  overflow: hidden;
+  background: var(--theme-surface);
+  border: 1px solid color-mix(in srgb, var(--theme-text) 12%, transparent);
+  border-radius: max(16px, var(--theme-radius));
+}
+
+.wedding-map iframe {
+  width: 100%;
+  height: 280px;
+  display: block;
+  border: 0;
+}
+
+.wedding-map a {
+  min-height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--theme-text);
+  background: var(--theme-surface);
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 800;
 }
 
 .wedding-wishlist > div {
@@ -3355,6 +4192,56 @@ a {
   font-size: 0.65rem;
 }
 
+.rsvp-form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--theme-text);
+  background: color-mix(in srgb, var(--theme-bg) 70%, white);
+  border: 1px solid color-mix(in srgb, var(--theme-text) 16%, transparent);
+  border-radius: 11px;
+  outline: none;
+  font: inherit;
+  font-size: 0.65rem;
+}
+
+.post-wedding-link-field {
+  margin: -7px 0 18px;
+  padding: 13px;
+  background: #f7f7f3;
+  border: 1px solid #e2e4dd;
+  border-radius: 14px;
+}
+
+.post-wedding-link-field small {
+  color: #92978f;
+  font-size: 0.52rem;
+}
+
+.post-wedding-thanks {
+  display: grid;
+  justify-items: center;
+}
+
+.post-wedding-thanks a {
+  min-height: 48px;
+  margin-top: 18px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--theme-bg);
+  background: var(--theme-accent);
+  border-radius: max(12px, var(--theme-radius));
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.post-wedding-thanks > small {
+  color: var(--theme-muted);
+}
+
 .rsvp-status {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3381,6 +4268,46 @@ a {
   margin-top: 5px;
   color: var(--theme-bg);
   background: var(--theme-accent);
+}
+
+.personal-rsvp-copy {
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.personal-rsvp-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.personal-rsvp-actions button {
+  min-height: 42px;
+  padding: 7px 10px;
+  color: var(--theme-bg);
+  background: var(--theme-accent);
+  border: 1px solid var(--theme-accent);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.personal-rsvp-actions button:last-child {
+  color: var(--theme-text);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--theme-text) 20%, transparent);
+}
+
+.personal-rsvp-actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.rsvp-error {
+  margin: 0 !important;
+  color: #a45149 !important;
+  text-align: center;
 }
 
 .rsvp-checkbox {
@@ -3415,13 +4342,97 @@ a {
   margin: 0;
 }
 
+@media (min-width: 768px) {
+  .public-invitation .wedding-hero {
+    min-height: 100svh;
+    padding: 110px clamp(50px, 8vw, 130px);
+  }
+
+  .public-invitation .wedding-hero h1 {
+    font-size: clamp(5.8rem, 10vw, 10rem);
+  }
+
+  .public-invitation .wedding-welcome {
+    max-width: 1120px;
+    margin: 24px auto;
+    padding: clamp(80px, 10vw, 140px);
+  }
+
+  .public-invitation .wedding-welcome h2,
+  .public-invitation .wedding-module h2 {
+    font-size: clamp(2.8rem, 5vw, 5.4rem);
+  }
+
+  .public-invitation .wedding-gallery {
+    padding: clamp(80px, 9vw, 130px) clamp(42px, 7vw, 110px);
+  }
+
+  .public-invitation .love-story-track {
+    margin-right: calc(clamp(42px, 7vw, 110px) * -1);
+    margin-left: calc(clamp(42px, 7vw, 110px) * -1);
+    padding-right: clamp(42px, 7vw, 110px);
+    padding-left: clamp(42px, 7vw, 110px);
+    grid-auto-columns: minmax(340px, 46%);
+    gap: 18px;
+  }
+
+  .public-invitation .love-story-track img {
+    height: clamp(480px, 62vw, 720px);
+  }
+
+  .public-invitation .wedding-sortable-blocks {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 24px clamp(24px, 4vw, 56px) 80px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .public-invitation .wedding-sortable-blocks > .wedding-module {
+    min-height: 460px;
+    margin: 0;
+    padding: clamp(56px, 6vw, 90px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--theme-text) 12%, transparent);
+    border-radius: var(--theme-radius);
+  }
+
+  .public-invitation .wedding-location,
+  .public-invitation .wedding-rsvp,
+  .public-invitation .post-wedding-thanks {
+    grid-column: 1 / -1;
+  }
+
+  .public-invitation .wedding-map iframe {
+    height: 420px;
+  }
+}
+
+@media (min-width: 1180px) {
+  .public-invitation .wedding-welcome {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.7fr) minmax(420px, 1.3fr);
+    column-gap: 80px;
+    text-align: left;
+  }
+
+  .public-invitation .wedding-welcome > span {
+    grid-row: 1 / 3;
+    padding-top: 12px;
+  }
+
+  .public-invitation .wedding-welcome h2 {
+    margin-top: 0;
+  }
+}
+
 @media (max-width: 1120px) {
   .constructor-layout {
     grid-template-columns: 500px 1fr;
-  }
-
-  .constructor-phone {
-    transform: scale(0.88);
   }
 }
 
