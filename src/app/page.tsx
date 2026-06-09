@@ -1,56 +1,73 @@
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function HomePage() {
   return (
     <main className="landing">
-      <nav className="landing-nav">
-        <Link className="brand" href="/">
+      <header className="landing-nav">
+        <Link className="brand" href="/" aria-label="Vowly">
           vowly
         </Link>
-        <Link className="nav-action" href="/quiz">
-          Создать сайт
+        <Link className="nav-action" href="/login">
+          <LayoutDashboard size={16} />
+          <span>Вход / Личный кабинет</span>
         </Link>
-      </nav>
+      </header>
 
       <section className="hero-shell">
         <div className="hero-copy">
-          <span className="pill">
-            <Sparkles size={15} />
-            Бесплатный старт за 3 минуты
-          </span>
-          <h1>
-            Ваш свадебный сайт.
-            <br />
-            Уже почти готов.
-          </h1>
+          <span className="hero-eyebrow">Свадебный сайт нового поколения</span>
+          <h1>Создайте идеальный свадебный сайт за 15 минут</h1>
           <p>
-            Ответьте на несколько теплых вопросов, а мы соберем персональное
-            приглашение с программой дня, пожеланиями по стилю и умным опросом гостей.
+            Элегантные пригласительные, умный сбор гостей и вся информация в
+            одном месте. Без дизайнеров и программистов.
           </p>
           <Link className="primary-button" href="/quiz">
-            Начать бесплатно
+            Создать свой сайт
             <ArrowRight size={18} />
           </Link>
-          <div className="trust-row">
-            <span><Check size={15} /> Без карты</span>
-            <span><Check size={15} /> Можно изменить все</span>
-          </div>
+          <small className="hero-caption">
+            Бесплатный старт. Дизайн и данные можно изменить в любой момент.
+          </small>
         </div>
 
-        <div className="phone-stage" aria-label="Пример свадебного приглашения">
+        <div
+          className="phone-stage"
+          aria-label="Пример свадебного сайта Александра и Валентины"
+        >
+          <div className="landing-orbit landing-orbit-one" />
+          <div className="landing-orbit landing-orbit-two" />
           <div className="phone">
             <div className="phone-speaker" />
             <div className="invitation-preview">
-              <span>Приглашение на свадьбу</span>
-              <h2>Анна<br />&amp; Антон</h2>
-              <p>12 сентября 2026</p>
-              <div className="preview-line" />
-              <small>Будем счастливы разделить этот день с вами</small>
+              <Image
+                className="landing-couple-photo"
+                src="/images/landing-wedding-couple.webp"
+                alt="Счастливая пара на свадьбе"
+                fill
+                priority
+                sizes="(max-width: 800px) 220px, 336px"
+              />
+              <div className="landing-photo-shade" />
+              <div className="landing-invitation-copy">
+                <span>Приглашение на свадьбу</span>
+                <h2>
+                  Александр
+                  <i>&amp;</i>
+                  Валентина
+                </h2>
+                <p>12 сентября 2026</p>
+                <small>Будем счастливы разделить этот день с вами</small>
+              </div>
             </div>
           </div>
-          <div className="floating-note floating-note-top">Сайт создается сам</div>
-          <div className="floating-note floating-note-bottom">Любую деталь можно изменить</div>
+          <div className="floating-note floating-note-top">
+            Умный RSVP для гостей
+          </div>
+          <div className="floating-note floating-note-bottom">
+            Ваш дизайн готов за 15 минут
+          </div>
         </div>
       </section>
     </main>

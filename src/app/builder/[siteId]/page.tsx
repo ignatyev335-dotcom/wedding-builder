@@ -1,12 +1,20 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import type {
   BuilderModule,
+  LanguageCode,
+  PhotoMaskCode,
   WeddingBuilderData,
 } from "@/entities/wedding/model";
 import { ConstructorClient } from "@/features/constructor/ui/constructor-client";
-import { parseSiteExtras } from "@/features/constructor/lib/site-extras";
+import {
+  parseFaqItems,
+  parseCustomQuestions,
+  parseImageList,
+  parseSiteExtras,
+} from "@/features/constructor/lib/site-extras";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/session";
 
 type BuilderPageProps = {
   params: Promise<{ siteId: string }>;
@@ -23,13 +31,24 @@ const builderModules: BuilderModule[] = [
 
 export default async function BuilderPage({ params }: BuilderPageProps) {
   const { siteId } = await params;
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const site = await prisma.weddingSite.findUnique({
     where: { id: siteId },
-    include: { data: true, modules: true, user: true, guests: true },
+    include: {
+      data: true,
+      modules: true,
+      user: true,
+      guests: true,
+      crewTimings: { orderBy: { sortOrder: "asc" } },
+    },
   });
 
   if (!site?.data) {
     notFound();
+  }
+  if (user.role !== "ADMIN" && site.userId !== user.id) {
+    redirect("/");
   }
 
   const enabledModules = new Set(
@@ -45,6 +64,8 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
   const initialData: WeddingBuilderData = {
     siteId: site.id,
     slug: site.slug,
+    isPremium: site.isPremium,
+    removeBranding: site.removeBranding,
     partnerOneName: site.data.partnerOneName,
     partnerTwoName: site.data.partnerTwoName,
     weddingDate: site.data.weddingDate.toISOString().slice(0, 10),
@@ -95,12 +116,52 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
         : null,
       dietaryRestrictions: guest.dietaryRestrictions ?? "",
       foodPreference: guest.foodPreference ?? "",
+      partnerFoodPreference: guest.partnerFoodPreference ?? "",
       allergies: guest.allergies ?? "",
+      partnerAllergies: guest.partnerAllergies ?? "",
       drinks: (JSON.parse(guest.alcoholPreferences) as string[]).join(", "),
+      alcoholPreferences: JSON.parse(
+        guest.alcoholPreferences,
+      ) as WeddingBuilderData["guests"][number]["alcoholPreferences"],
       needsTransport: guest.needsTransport,
+      transportPreference: guest.transportPreference,
+      hasPlusOne: guest.hasPlusOne,
+      plusOneName: guest.plusOneName ?? "",
+      musicRequest: guest.musicRequest ?? "",
+      isCouple: guest.isCouple,
+      partnerName: guest.partnerName ?? "",
+      attendanceChoice: guest.attendanceChoice as WeddingBuilderData["guests"][number]["attendanceChoice"],
+      tags: JSON.parse(guest.tags) as WeddingBuilderData["guests"][number]["tags"],
+      customAnswers: JSON.parse(
+        guest.customAnswers,
+      ) as WeddingBuilderData["guests"][number]["customAnswers"],
       respondedAt: (guest.respondedAt ?? guest.createdAt).toISOString(),
     })),
     ...extras,
+    heroImageDesktop: site.heroImageDesktop ?? extras.coverPhoto,
+    heroImageMobile: site.heroImageMobile ?? extras.coverPhoto,
+    dressMoodboard: parseImageList(site.data.dressMoodboard, 4),
+    faqItems: parseFaqItems(site.data.faqItems),
+    customQuestions: parseCustomQuestions(site.data.customQuestions),
+    giftPaymentLink: site.giftPaymentLink ?? "",
+    giftQrCode: site.giftQrCode,
+    coordinatorName: site.data.coordinatorName ?? "",
+    coordinatorRole: site.data.coordinatorRole ?? "Координатор свадьбы",
+    coordinatorPhoto: site.data.coordinatorPhoto,
+    coordinatorTelegram: site.data.coordinatorTelegram ?? "",
+    coordinatorWhatsapp: site.data.coordinatorWhatsapp ?? "",
+    coordinatorPhone: site.data.coordinatorPhone ?? "",
+    coordinatorMapLink: site.data.coordinatorMapLink ?? "",
+    photoMask: (site.data.photoMask as PhotoMaskCode | null) ?? "RECTANGLE",
+    pinCode: site.pinCode ?? "",
+    isPrivate: Boolean(site.pinCode),
+    language: (site.defaultLanguage as LanguageCode) ?? "RU",
+    crewTimings: site.crewTimings.map((item) => ({
+      id: item.id,
+      time: item.time,
+      description: item.description,
+      contactPerson: item.contactPerson,
+    })),
   };
 
   return <ConstructorClient initialData={initialData} />;

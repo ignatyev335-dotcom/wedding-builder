@@ -19,9 +19,11 @@ const GALLERY_LIMIT = 30;
 
 export function MediaPanel() {
   const {
-    coverPhoto,
+    heroImageDesktop,
+    heroImageMobile,
     galleryPhotos,
-    setCoverPhoto,
+    setHeroImageDesktop,
+    setHeroImageMobile,
     addGalleryPhotos,
     removeGalleryPhoto,
     reorderGalleryPhotos,
@@ -48,10 +50,17 @@ export function MediaPanel() {
     }
   };
 
-  const uploadCover = async (file?: File) => {
+  const uploadCover = async (
+    file: File | undefined,
+    target: "desktop" | "mobile",
+  ) => {
     if (!file) return;
-    const photo = await imageToDataUrl(file);
-    await save(() => setCoverPhoto(photo));
+    const photo = await imageToDataUrl(file, target === "desktop" ? 1800 : 1100);
+    await save(() =>
+      target === "desktop"
+        ? setHeroImageDesktop(photo)
+        : setHeroImageMobile(photo),
+    );
   };
 
   const uploadGallery = async (files: FileList | null) => {
@@ -81,36 +90,34 @@ export function MediaPanel() {
       <header className="media-heading">
         <span>Медиа</span>
         <h2>Ваши фотографии</h2>
-        <p>Добавьте живую обложку и соберите Love Story, которую гости смогут листать одним движением.</p>
+        <p>Подготовьте отдельные обложки для большого экрана и телефона, затем соберите Love Story.</p>
       </header>
 
       <section className="media-section">
         <div className="media-section-title">
           <ImagePlus size={18} />
           <div>
-            <strong>Главная обложка</strong>
-            <small>Вертикальная фотография выглядит лучше всего</small>
+            <strong>Главные обложки</strong>
+            <small>Два кадра помогут сохранить композицию на любом экране</small>
           </div>
         </div>
-        {coverPhoto ? (
-          <div className="cover-upload-preview">
-            <Image src={coverPhoto} alt="Обложка приглашения" fill unoptimized />
-            <button type="button" onClick={() => void save(() => setCoverPhoto(null))}>
-              <Trash2 size={15} /> Удалить
-            </button>
-          </div>
-        ) : (
-          <label className="media-dropzone">
-            <Upload size={21} />
-            <strong>Загрузить обложку</strong>
-            <small>JPG, PNG или WebP. Изображение будет оптимизировано.</small>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => void uploadCover(event.target.files?.[0])}
-            />
-          </label>
-        )}
+        <div className="hero-upload-grid">
+          <HeroUpload
+            image={heroImageDesktop}
+            title="Для компьютера"
+            hint="Горизонтальный кадр, рекомендуем 16:9"
+            onRemove={() => void save(() => setHeroImageDesktop(null))}
+            onUpload={(file) => void uploadCover(file, "desktop")}
+          />
+          <HeroUpload
+            image={heroImageMobile}
+            title="Для телефона"
+            hint="Вертикальный кадр, рекомендуем 4:5"
+            mobile
+            onRemove={() => void save(() => setHeroImageMobile(null))}
+            onUpload={(file) => void uploadCover(file, "mobile")}
+          />
+        </div>
       </section>
 
       <section className="media-section">
@@ -195,5 +202,49 @@ export function MediaPanel() {
       )}
       {error && <p className="telegram-error">{error}</p>}
     </>
+  );
+}
+
+function HeroUpload({
+  image,
+  title,
+  hint,
+  mobile = false,
+  onUpload,
+  onRemove,
+}: {
+  image: string | null;
+  title: string;
+  hint: string;
+  mobile?: boolean;
+  onUpload: (file?: File) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="hero-upload-card">
+      <div>
+        <strong>{title}</strong>
+        <small>{hint}</small>
+      </div>
+      {image ? (
+        <div className={`cover-upload-preview ${mobile ? "is-mobile" : ""}`}>
+          <Image src={image} alt={title} fill unoptimized />
+          <button type="button" onClick={onRemove}>
+            <Trash2 size={15} /> Удалить
+          </button>
+        </div>
+      ) : (
+        <label className={`media-dropzone ${mobile ? "is-mobile" : ""}`}>
+          <Upload size={21} />
+          <strong>Загрузить фото</strong>
+          <small>JPG, PNG или WebP</small>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => onUpload(event.target.files?.[0])}
+          />
+        </label>
+      )}
+    </div>
   );
 }

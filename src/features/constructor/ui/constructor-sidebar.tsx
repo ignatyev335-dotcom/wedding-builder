@@ -2,6 +2,7 @@
 
 import {
   Check,
+  Clock3,
   ChevronDown,
   FileText,
   Gift,
@@ -9,32 +10,50 @@ import {
   Images,
   Music2,
   Palette,
-  Pause,
-  Play,
   Plus,
   Sparkles,
   Trash2,
   Upload,
+  UserRound,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import type {
   BuilderModule,
+  CardStyleCode,
   ContentBlockCode,
   FontCode,
-  MusicTrack,
+  CountdownStyleCode,
+  PhotoMaskCode,
   ThemeCode,
 } from "@/entities/wedding/model";
-import { tracks } from "@/features/constructor/model/tracks";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 import { GuestsPanel } from "@/features/constructor/ui/guests-panel";
 import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
+import { imageToDataUrl } from "@/features/constructor/lib/image-to-data-url";
 import { MediaPanel } from "@/features/constructor/ui/media-panel";
 import { PackagesPanel } from "@/features/constructor/ui/packages-panel";
+import {
+  DEFAULT_TRACKS,
+  getDefaultTrack,
+} from "@/features/constructor/model/default-tracks";
 
-type Tab = "content" | "styles" | "music" | "media" | "guests" | "publish";
-type ContentSection = "HERO" | "WISHLIST" | BuilderModule;
+type Tab =
+  | "content"
+  | "styles"
+  | "music"
+  | "media"
+  | "guests"
+  | "crew"
+  | "publish";
+type ContentSection =
+  | "HERO"
+  | "WISHLIST"
+  | "COORDINATOR"
+  | "FAQ"
+  | BuilderModule;
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof FileText }> = [
   { id: "content", label: "Контент", icon: FileText },
@@ -42,6 +61,7 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof FileText }> = [
   { id: "music", label: "Музыка", icon: Music2 },
   { id: "media", label: "Медиа", icon: Images },
   { id: "guests", label: "Любимые гости", icon: UsersRound },
+  { id: "crew", label: "Команда", icon: Clock3 },
   { id: "publish", label: "Оживить сайт", icon: Upload },
 ];
 
@@ -63,6 +83,14 @@ const invitationTemplates = {
     "Кажется, всё серьезно: мы женимся! Приходите обнимать нас, смеяться, танцевать и стать частью дня, который мы точно никогда не забудем.",
   concise:
     "Будем счастливы видеть вас рядом в день нашей свадьбы. До встречи на празднике!",
+  poetic:
+    "В нашей истории начинается новая глава, и нам хочется открыть ее рядом с вами. Приглашаем разделить день, наполненный любовью, светом и счастливыми мгновениями.",
+  family:
+    "{names} приглашают вас на теплый семейный праздник. Ваши улыбки, объятия и добрые слова сделают день нашей свадьбы по-настоящему родным.",
+  modern:
+    "Мы выбрали друг друга и скоро скажем главное «да». Будем рады, если вы проведете этот красивый день вместе с нами.",
+  tender:
+    "Есть моменты, которые хочется бережно сохранить в сердце. Наша свадьба — один из них, и мы мечтаем разделить его с вами.",
 } as const;
 
 const themeOptions: Array<{
@@ -90,13 +118,31 @@ const themeOptions: Array<{
     title: "Романтика",
     description: "Пудровая палитра и воздушная каллиграфия",
   },
+  {
+    code: "BOHO",
+    title: "Бохо",
+    description: "Теплый песок, природная пластика и свободная композиция",
+  },
+  {
+    code: "CLASSIC",
+    title: "Классика",
+    description: "Благородные винные оттенки и торжественная симметрия",
+  },
+  {
+    code: "EDITORIAL",
+    title: "Editorial",
+    description: "Контрастная журнальная верстка и строгая геометрия",
+  },
 ];
 
 const themeDefaultFonts: Partial<Record<ThemeCode, FontCode>> = {
   MINIMAL: "PLAYFAIR",
   BOTANICAL: "CORMORANT",
   MODERN: "MONTSERRAT",
-  ROMANTIC: "GREAT_VIBES",
+  ROMANTIC: "MARCK",
+  BOHO: "CAVEAT",
+  CLASSIC: "ORANIENBAUM",
+  EDITORIAL: "CORMORANT",
 };
 
 const fontOptions: Array<{
@@ -104,12 +150,63 @@ const fontOptions: Array<{
   title: string;
   description: string;
 }> = [
-  { code: "GREAT_VIBES", title: "Great Vibes", description: "Мягкая свадебная каллиграфия" },
-  { code: "PINYON", title: "Pinyon Script", description: "Тонкая церемониальная вязь" },
-  { code: "ALEX_BRUSH", title: "Alex Brush", description: "Живой каллиграфический росчерк" },
-  { code: "PLAYFAIR", title: "Playfair Display", description: "Элегантная классика" },
-  { code: "CORMORANT", title: "Cormorant Garamond", description: "Воздушная антиква" },
-  { code: "MONTSERRAT", title: "Montserrat", description: "Чистый современный гротеск" },
+  { code: "CORMORANT", title: "Cormorant", description: "Воздушная аристократичная антиква" },
+  { code: "ORANIENBAUM", title: "Oranienbaum", description: "Русская классика и строгая пластика" },
+  { code: "MARCK", title: "Marck Script", description: "Кириллическая каллиграфия" },
+  { code: "CAVEAT", title: "Caveat", description: "Живой и теплый почерк" },
+  { code: "BAD_SCRIPT", title: "Bad Script", description: "Тонкий почерк пером с поддержкой кириллицы" },
+  { code: "PLAYFAIR", title: "Playfair Display", description: "Редакционная элегантность" },
+  { code: "MONTSERRAT", title: "Montserrat", description: "Гротеск для мелкого текста" },
+];
+
+const palettePresets = [
+  {
+    title: "Шалфей и айвори",
+    colors: ["#F5F0E6", "#D8D4C4", "#AEB7A1", "#74806B", "#3E4A3D"],
+  },
+  {
+    title: "Пыльная роза",
+    colors: ["#F8EDEA", "#E8CBC8", "#C99898", "#986C72", "#684B52"],
+  },
+  {
+    title: "Шампань",
+    colors: ["#FFF9ED", "#EEDFC3", "#D2B98B", "#A48659", "#66523A"],
+  },
+  {
+    title: "Терракота",
+    colors: ["#F5E5D5", "#DDB89A", "#C17C5D", "#8E513F", "#5C3931"],
+  },
+  {
+    title: "Дымчато-синий",
+    colors: ["#EEF2F3", "#CCD8DD", "#91A8B3", "#5F7783", "#344955"],
+  },
+  {
+    title: "Черный и золото",
+    colors: ["#F5F1E8", "#D7C6A3", "#A8894F", "#4A443B", "#171817"],
+  },
+] as const;
+
+const countdownStyles: Array<{ code: CountdownStyleCode; title: string }> = [
+  { code: "MINIMAL", title: "Минимализм" },
+  { code: "TILES", title: "Карточки" },
+  { code: "FLIP", title: "Табло" },
+];
+
+const photoMaskOptions: Array<{ code: PhotoMaskCode; title: string }> = [
+  { code: "RECTANGLE", title: "Прямоугольник" },
+  { code: "ARCH", title: "Арка" },
+  { code: "OVAL", title: "Овал" },
+];
+
+const cardStyleOptions: Array<{
+  code: CardStyleCode;
+  title: string;
+  description: string;
+}> = [
+  { code: "PLAIN", title: "Классика", description: "Чистые спокойные карточки" },
+  { code: "ARCH", title: "Арка", description: "Мягкий архитектурный силуэт" },
+  { code: "GLASS", title: "Матовое стекло", description: "Полупрозрачность и blur" },
+  { code: "MONOGRAM", title: "Вензель", description: "Тонкая рамка с акцентом" },
 ];
 
 export function ConstructorSidebar({
@@ -123,13 +220,16 @@ export function ConstructorSidebar({
     "TIMELINE",
     "DRESS_CODE",
   ]);
-  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  const [activeInvitationTemplate, setActiveInvitationTemplate] = useState<
+    keyof typeof invitationTemplates | null
+  >(null);
+  const [musicError, setMusicError] = useState("");
   const [draggedBlock, setDraggedBlock] = useState<ContentBlockCode | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const saveExtrasQuietly = () => {
     void persistSiteExtras().catch(() => undefined);
   };
   const {
+    siteId,
     partnerOneName,
     partnerTwoName,
     weddingDate,
@@ -140,11 +240,29 @@ export function ConstructorSidebar({
     mapLongitude,
     currentTheme,
     fontCode,
+    photoMask,
+    cardStyle,
     blockOrder,
     moduleVisibility,
     musicTrack,
+    customMusicDataUrl,
+    customMusicName,
+    countdownTitle,
+    countdownStyle,
     timelineEvents,
     colorPalette,
+    dressMoodboard,
+    faqItems,
+    giftPaymentLink,
+    giftQrCode,
+    coordinatorName,
+    coordinatorRole,
+    coordinatorPhoto,
+    coordinatorTelegram,
+    coordinatorWhatsapp,
+    coordinatorPhone,
+    coordinatorMapLink,
+    crewTimings,
     wishlistText,
     wishlistItems,
     noFlowersEnabled,
@@ -155,6 +273,9 @@ export function ConstructorSidebar({
     invitationText,
     postWeddingMode,
     postWeddingPhotoUrl,
+    postWeddingThankYouText,
+    heroImageDesktop,
+    heroImageMobile,
     coverPhoto,
     setNames,
     setWeddingDate,
@@ -164,13 +285,32 @@ export function ConstructorSidebar({
     setMapCoordinates,
     setCurrentTheme,
     setFontCode,
+    setPhotoMask,
+    setCardStyle,
     reorderBlocks,
     toggleModule,
     setMusicTrack,
+    setCustomMusic,
+    setCountdownTitle,
+    setCountdownStyle,
     addTimelineEvent,
     updateTimelineEvent,
     removeTimelineEvent,
     setPaletteColor,
+    setColorPalette,
+    addPaletteColor,
+    removePaletteColor,
+    addDressMoodboardPhotos,
+    removeDressMoodboardPhoto,
+    addFaqItem,
+    updateFaqItem,
+    removeFaqItem,
+    setGiftPaymentLink,
+    setGiftQrCode,
+    setCoordinatorField,
+    addCrewTiming,
+    updateCrewTiming,
+    removeCrewTiming,
     setWishlistText,
     setNoFlowersEnabled,
     setNoFlowersText,
@@ -183,19 +323,21 @@ export function ConstructorSidebar({
     setInvitationText,
     setPostWeddingMode,
     setPostWeddingPhotoUrl,
+    setPostWeddingThankYouText,
   } = useWeddingStore();
   const completion =
     (partnerOneName.trim() && partnerTwoName.trim() && weddingDate ? 20 : 0) +
-    (coverPhoto ? 20 : 0) +
+    (heroImageDesktop || heroImageMobile || coverPhoto ? 20 : 0) +
     (timelineEvents.length > 0 && timelineEvents.every((event) => event.time && event.title.trim())
       ? 20
       : 0) +
     (moduleVisibility.RSVP ? 20 : 0) +
-    (musicTrack ? 20 : 0);
+    (customMusicDataUrl || musicTrack ? 20 : 0);
 
   const applyInvitationTemplate = (template: keyof typeof invitationTemplates) => {
     const names = `${partnerOneName || "Александр"} и ${partnerTwoName || "Валентина"}`;
     setInvitationText(invitationTemplates[template].replace("{names}", names));
+    setActiveInvitationTemplate(template);
     saveExtrasQuietly();
   };
 
@@ -204,7 +346,6 @@ export function ConstructorSidebar({
     window.addEventListener("vowly-open-publish", openPublish);
 
     return () => {
-      previewAudioRef.current?.pause();
       window.removeEventListener("vowly-open-publish", openPublish);
     };
   }, []);
@@ -217,28 +358,46 @@ export function ConstructorSidebar({
     );
   };
 
-  const toggleTrackPreview = async (track: MusicTrack) => {
-    if (!previewAudioRef.current) {
-      previewAudioRef.current = new Audio();
+  const uploadCustomMusic = (file?: File) => {
+    if (!file) return;
+    if (file.type !== "audio/mpeg" && !file.name.toLowerCase().endsWith(".mp3")) {
+      setMusicError("Выберите файл в формате MP3.");
+      return;
     }
-
-    const audio = previewAudioRef.current;
-    if (previewTrackId === track.id && !audio.paused) {
-      audio.pause();
-      setPreviewTrackId(null);
+    if (file.size > 5 * 1024 * 1024) {
+      setMusicError("Размер MP3 не должен превышать 5 МБ.");
       return;
     }
 
-    audio.pause();
-    audio.src = track.url;
-    audio.currentTime = 0;
+    const reader = new FileReader();
+    reader.onerror = () => setMusicError("Не удалось прочитать аудиофайл.");
+    reader.onload = () => {
+      setCustomMusic(String(reader.result), file.name);
+      setMusicError("");
+      window.setTimeout(saveExtrasQuietly, 0);
+    };
+    reader.readAsDataURL(file);
+  };
 
-    try {
-      await audio.play();
-      setPreviewTrackId(track.id);
-    } catch {
-      setPreviewTrackId(null);
-    }
+  const uploadDressMoodboard = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const available = Math.max(0, 4 - dressMoodboard.length);
+    const photos = await Promise.all(
+      Array.from(files)
+        .slice(0, available)
+        .map((file) => imageToDataUrl(file, 900)),
+    );
+    addDressMoodboardPhotos(photos);
+    window.setTimeout(saveExtrasQuietly, 0);
+  };
+
+  const uploadSingleImage = async (
+    file: File | undefined,
+    setter: (value: string | null) => void,
+  ) => {
+    if (!file) return;
+    setter(await imageToDataUrl(file, 900));
+    window.setTimeout(saveExtrasQuietly, 0);
   };
 
   return (
@@ -304,21 +463,33 @@ export function ConstructorSidebar({
               </button>
             </section>
             {postWeddingMode && (
-              <label className="constructor-field post-wedding-link-field">
-                <span>Ссылка на облако для фотографий</span>
-                <input
-                  type="url"
-                  value={postWeddingPhotoUrl}
-                  placeholder="https://disk.yandex.ru/..."
-                  onChange={(event) =>
-                    setPostWeddingPhotoUrl(event.target.value)
-                  }
-                  onBlur={saveExtrasQuietly}
-                />
-                <small>
-                  Гости перейдут по этой ссылке, чтобы поделиться снимками.
-                </small>
-              </label>
+              <div className="post-wedding-settings">
+                <label className="constructor-field">
+                  <span>Текст благодарности</span>
+                  <textarea
+                    value={postWeddingThankYouText}
+                    onChange={(event) =>
+                      setPostWeddingThankYouText(event.target.value)
+                    }
+                    onBlur={saveExtrasQuietly}
+                  />
+                </label>
+                <label className="constructor-field post-wedding-link-field">
+                  <span>Ссылка на готовые фотографии</span>
+                  <input
+                    type="url"
+                    value={postWeddingPhotoUrl}
+                    placeholder="https://disk.yandex.ru/..."
+                    onChange={(event) =>
+                      setPostWeddingPhotoUrl(event.target.value)
+                    }
+                    onBlur={saveExtrasQuietly}
+                  />
+                  <small>
+                    По этой ссылке гости смогут скачать фотографии после свадьбы.
+                  </small>
+                </label>
+              </div>
             )}
 
             <div className="content-accordion">
@@ -331,18 +502,20 @@ export function ConstructorSidebar({
                 <div className="accordion-body">
                   <div className="constructor-field-grid">
                     <label className="constructor-field">
-                      <span>Первое имя</span>
+                      <span>Жених</span>
                       <input
                         value={partnerOneName}
+                        placeholder="Жених"
                         onChange={(event) =>
                           setNames(event.target.value, partnerTwoName)
                         }
                       />
                     </label>
                     <label className="constructor-field">
-                      <span>Второе имя</span>
+                      <span>Невеста</span>
                       <input
                         value={partnerTwoName}
+                        placeholder="Невеста"
                         onChange={(event) =>
                           setNames(partnerOneName, event.target.value)
                         }
@@ -361,6 +534,7 @@ export function ConstructorSidebar({
                     <span>Время начала</span>
                     <input
                       type="time"
+                      step={15 * 60}
                       value={ceremonyTime}
                       onChange={(event) => setCeremonyTime(event.target.value)}
                       onBlur={saveExtrasQuietly}
@@ -369,22 +543,69 @@ export function ConstructorSidebar({
                   <label className="constructor-field invitation-copy-field">
                     <span>Текст приглашения</span>
                     <div className="tone-chips" aria-label="Стиль текста">
-                      <button type="button" onClick={() => applyInvitationTemplate("official")}>
+                      <button
+                        className={activeInvitationTemplate === "official" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("official")}
+                      >
                         Официально
                       </button>
-                      <button type="button" onClick={() => applyInvitationTemplate("heartfelt")}>
+                      <button
+                        className={activeInvitationTemplate === "heartfelt" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("heartfelt")}
+                      >
                         Душевно
                       </button>
-                      <button type="button" onClick={() => applyInvitationTemplate("playful")}>
+                      <button
+                        className={activeInvitationTemplate === "playful" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("playful")}
+                      >
                         С юмором
                       </button>
-                      <button type="button" onClick={() => applyInvitationTemplate("concise")}>
+                      <button
+                        className={activeInvitationTemplate === "concise" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("concise")}
+                      >
                         Лаконично
+                      </button>
+                      <button
+                        className={activeInvitationTemplate === "poetic" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("poetic")}
+                      >
+                        Поэтично
+                      </button>
+                      <button
+                        className={activeInvitationTemplate === "family" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("family")}
+                      >
+                        По-семейному
+                      </button>
+                      <button
+                        className={activeInvitationTemplate === "modern" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("modern")}
+                      >
+                        Современно
+                      </button>
+                      <button
+                        className={activeInvitationTemplate === "tender" ? "is-selected" : ""}
+                        type="button"
+                        onClick={() => applyInvitationTemplate("tender")}
+                      >
+                        Нежно
                       </button>
                     </div>
                     <textarea
                       value={invitationText}
-                      onChange={(event) => setInvitationText(event.target.value)}
+                      onChange={(event) => {
+                        setInvitationText(event.target.value);
+                        setActiveInvitationTemplate(null);
+                      }}
                       onBlur={saveExtrasQuietly}
                     />
                   </label>
@@ -425,6 +646,58 @@ export function ConstructorSidebar({
                         {openSections.includes("WISHLIST") && (
                           <div className="accordion-body wishlist-editor">
                             <label className="constructor-field">
+                              <span>Ссылка для дистанционного подарка</span>
+                              <input
+                                type="url"
+                                value={giftPaymentLink}
+                                placeholder="https://pay.example.ru/..."
+                                onChange={(event) =>
+                                  setGiftPaymentLink(event.target.value)
+                                }
+                                onBlur={saveExtrasQuietly}
+                              />
+                            </label>
+                            <div className="gift-qr-editor">
+                              <div>
+                                <strong>QR-код для подарка</strong>
+                                <small>Покажем гостю, если он не сможет прийти</small>
+                              </div>
+                              {giftQrCode ? (
+                                <figure>
+                                  <Image
+                                    src={giftQrCode}
+                                    alt="QR-код подарка"
+                                    fill
+                                    unoptimized
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setGiftQrCode(null);
+                                      window.setTimeout(saveExtrasQuietly, 0);
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </figure>
+                              ) : (
+                                <label>
+                                  <Upload size={16} />
+                                  Загрузить QR
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(event) =>
+                                      void uploadSingleImage(
+                                        event.target.files?.[0],
+                                        setGiftQrCode,
+                                      )
+                                    }
+                                  />
+                                </label>
+                              )}
+                            </div>
+                            <label className="constructor-field">
                               <span>Пожелание гостям</span>
                               <textarea
                                 value={wishlistText}
@@ -433,10 +706,7 @@ export function ConstructorSidebar({
                               />
                             </label>
                             <div className="no-flowers-setting">
-                              <div>
-                                <strong>Тренды: без цветов</strong>
-                                <small>Предложите гостям красивую альтернативу букетам</small>
-                              </div>
+                              <strong>Без цветов</strong>
                               <button
                                 className={`switch ${noFlowersEnabled ? "is-on" : ""}`}
                                 type="button"
@@ -463,6 +733,21 @@ export function ConstructorSidebar({
                             {wishlistItems.map((item) => (
                               <div className="wishlist-editor-row" key={item.id}>
                                 <Gift size={15} />
+                                <select
+                                  value={item.type}
+                                  aria-label="Тип подарка"
+                                  onChange={(event) => {
+                                    updateWishlistItem(
+                                      item.id,
+                                      "type",
+                                      event.target.value,
+                                    );
+                                    window.setTimeout(saveExtrasQuietly, 0);
+                                  }}
+                                >
+                                  <option value="ITEM">Вещь</option>
+                                  <option value="EXPERIENCE">Впечатление</option>
+                                </select>
                                 <input
                                   value={item.title}
                                   aria-label="Название подарка"
@@ -475,7 +760,12 @@ export function ConstructorSidebar({
                                 <input
                                   value={item.url}
                                   aria-label="Ссылка на подарок"
-                                  placeholder="https://..."
+                                  placeholder={
+                                    item.type === "EXPERIENCE"
+                                      ? "Используется общая ссылка"
+                                      : "https://..."
+                                  }
+                                  disabled={item.type === "EXPERIENCE"}
                                   onChange={(event) =>
                                     updateWishlistItem(item.id, "url", event.target.value)
                                   }
@@ -500,6 +790,217 @@ export function ConstructorSidebar({
                               onClick={addWishlistItem}
                             >
                               <Plus size={16} /> Добавить ссылку
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </DraggableContentBlock>
+                  );
+                }
+
+                if (block === "COORDINATOR") {
+                  return (
+                    <DraggableContentBlock
+                      block={block}
+                      draggedBlock={draggedBlock}
+                      key={block}
+                      onDragEnd={() => {
+                        setDraggedBlock(null);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                      onDragOver={(over) => {
+                        if (draggedBlock && draggedBlock !== over) {
+                          reorderBlocks(draggedBlock, over);
+                        }
+                      }}
+                      onDragStart={setDraggedBlock}
+                    >
+                      <div className="content-accordion">
+                        <ContentAccordionHeader
+                          title="Организатор / координатор"
+                          isOpen={openSections.includes("COORDINATOR")}
+                          onOpen={() => toggleSection("COORDINATOR")}
+                        />
+                        {openSections.includes("COORDINATOR") && (
+                          <div className="accordion-body coordinator-editor">
+                            <div className="coordinator-photo-editor">
+                              {coordinatorPhoto ? (
+                                <figure>
+                                  <Image
+                                    src={coordinatorPhoto}
+                                    alt="Фото координатора"
+                                    fill
+                                    unoptimized
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCoordinatorField(
+                                        "coordinatorPhoto",
+                                        null,
+                                      );
+                                      window.setTimeout(saveExtrasQuietly, 0);
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </figure>
+                              ) : (
+                                <label>
+                                  <UserRound size={19} />
+                                  <span>Добавить фото</span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(event) =>
+                                      void uploadSingleImage(
+                                        event.target.files?.[0],
+                                        (value) =>
+                                          setCoordinatorField(
+                                            "coordinatorPhoto",
+                                            value,
+                                          ),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              )}
+                            </div>
+                            {[
+                              ["coordinatorName", "Имя", coordinatorName],
+                              ["coordinatorRole", "Должность", coordinatorRole],
+                              [
+                                "coordinatorTelegram",
+                                "Ссылка на Telegram",
+                                coordinatorTelegram,
+                              ],
+                              [
+                                "coordinatorWhatsapp",
+                                "Ссылка на WhatsApp",
+                                coordinatorWhatsapp,
+                              ],
+                              [
+                                "coordinatorPhone",
+                                "Номер телефона",
+                                coordinatorPhone,
+                              ],
+                              [
+                                "coordinatorMapLink",
+                                "Ссылка на карту / маршрут",
+                                coordinatorMapLink,
+                              ],
+                            ].map(([field, label, value]) => (
+                              <label className="constructor-field" key={field}>
+                                <span>{label}</span>
+                                <input
+                                  value={value}
+                                  placeholder={
+                                    field === "coordinatorName"
+                                      ? "Анна"
+                                      : field === "coordinatorRole"
+                                        ? "Координатор свадьбы"
+                                        : field === "coordinatorPhone"
+                                          ? "+7 999 123-45-67"
+                                          : "https://..."
+                                  }
+                                  onChange={(event) =>
+                                    setCoordinatorField(
+                                      field as
+                                        | "coordinatorName"
+                                        | "coordinatorRole"
+                                        | "coordinatorTelegram"
+                                        | "coordinatorWhatsapp"
+                                        | "coordinatorPhone"
+                                        | "coordinatorMapLink",
+                                      event.target.value,
+                                    )
+                                  }
+                                  onBlur={saveExtrasQuietly}
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </DraggableContentBlock>
+                  );
+                }
+
+                if (block === "FAQ") {
+                  return (
+                    <DraggableContentBlock
+                      block={block}
+                      draggedBlock={draggedBlock}
+                      key={block}
+                      onDragEnd={() => {
+                        setDraggedBlock(null);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                      onDragOver={(over) => {
+                        if (draggedBlock && draggedBlock !== over) {
+                          reorderBlocks(draggedBlock, over);
+                        }
+                      }}
+                      onDragStart={setDraggedBlock}
+                    >
+                      <div className="content-accordion">
+                        <ContentAccordionHeader
+                          title="Частые вопросы"
+                          isOpen={openSections.includes("FAQ")}
+                          onOpen={() => toggleSection("FAQ")}
+                        />
+                        {openSections.includes("FAQ") && (
+                          <div className="accordion-body faq-editor">
+                            <p>Добавьте ответы на вопросы, которые гости задают чаще всего.</p>
+                            {faqItems.map((item, index) => (
+                              <div className="faq-editor-item" key={item.id}>
+                                <span>Вопрос {index + 1}</span>
+                                <input
+                                  value={item.question}
+                                  placeholder="Можно ли приехать с детьми?"
+                                  onChange={(event) =>
+                                    updateFaqItem(
+                                      item.id,
+                                      "question",
+                                      event.target.value,
+                                    )
+                                  }
+                                  onBlur={saveExtrasQuietly}
+                                />
+                                <textarea
+                                  rows={3}
+                                  value={item.answer}
+                                  placeholder="Напишите короткий и заботливый ответ"
+                                  onChange={(event) =>
+                                    updateFaqItem(
+                                      item.id,
+                                      "answer",
+                                      event.target.value,
+                                    )
+                                  }
+                                  onBlur={saveExtrasQuietly}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    removeFaqItem(item.id);
+                                    window.setTimeout(saveExtrasQuietly, 0);
+                                  }}
+                                >
+                                  <Trash2 size={14} /> Удалить
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              className="add-event-button"
+                              type="button"
+                              disabled={faqItems.length >= 12}
+                              onClick={() => {
+                                addFaqItem();
+                                window.setTimeout(saveExtrasQuietly, 0);
+                              }}
+                            >
+                              <Plus size={15} /> Добавить вопрос
                             </button>
                           </div>
                         )}
@@ -585,7 +1086,29 @@ export function ConstructorSidebar({
 
                       {contentModule === "DRESS_CODE" && (
                         <div className="palette-editor">
-                          <p>Подберите пять оттенков, которые поддержат настроение праздника</p>
+                          <p>Подберите от трех до пяти оттенков для образов гостей</p>
+                          <div className="palette-presets">
+                            {palettePresets.map((preset) => (
+                              <button
+                                type="button"
+                                key={preset.title}
+                                onClick={() => {
+                                  setColorPalette([...preset.colors]);
+                                  window.setTimeout(saveExtrasQuietly, 0);
+                                }}
+                              >
+                                <span>{preset.title}</span>
+                                <i aria-hidden="true">
+                                  {preset.colors.map((color) => (
+                                    <b
+                                      key={color}
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </i>
+                              </button>
+                            ))}
+                          </div>
                           <div>
                             {colorPalette.map((color, index) => (
                               <label key={`${index}-${color}`}>
@@ -596,10 +1119,76 @@ export function ConstructorSidebar({
                                   onInput={(event) =>
                                     setPaletteColor(index, event.currentTarget.value)
                                   }
+                                  onBlur={saveExtrasQuietly}
                                 />
                                 <span>{color.toUpperCase()}</span>
+                                <button
+                                  type="button"
+                                  disabled={colorPalette.length <= 3}
+                                  aria-label={`Удалить цвет ${index + 1}`}
+                                  onClick={() => {
+                                    removePaletteColor(index);
+                                    window.setTimeout(saveExtrasQuietly, 0);
+                                  }}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
                               </label>
                             ))}
+                          </div>
+                          {colorPalette.length < 5 && (
+                            <button
+                              className="palette-add"
+                              type="button"
+                              onClick={() => {
+                                addPaletteColor();
+                                window.setTimeout(saveExtrasQuietly, 0);
+                              }}
+                            >
+                              <Plus size={14} /> Добавить оттенок
+                            </button>
+                          )}
+                          <div className="dress-moodboard-editor">
+                            <div>
+                              <strong>Мудборд образов</strong>
+                              <small>{dressMoodboard.length} из 4 фотографий</small>
+                            </div>
+                            <div className="dress-moodboard-grid">
+                              {dressMoodboard.map((photo, index) => (
+                                <figure key={`${photo.slice(-16)}-${index}`}>
+                                  <Image
+                                    src={photo}
+                                    alt={`Референс образа ${index + 1}`}
+                                    fill
+                                    unoptimized
+                                  />
+                                  <button
+                                    type="button"
+                                    aria-label={`Удалить референс ${index + 1}`}
+                                    onClick={() => {
+                                      removeDressMoodboardPhoto(index);
+                                      window.setTimeout(saveExtrasQuietly, 0);
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </figure>
+                              ))}
+                              {dressMoodboard.length < 4 && (
+                                <label>
+                                  <Images size={18} />
+                                  <span>Добавить</span>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={(event) =>
+                                      void uploadDressMoodboard(event.target.files)
+                                    }
+                                  />
+                                </label>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -713,14 +1302,51 @@ export function ConstructorSidebar({
                         </div>
                       )}
 
+                      {contentModule === "COUNTDOWN" && (
+                        <div className="countdown-editor">
+                          <label>
+                            <span>Заголовок таймера</span>
+                            <input
+                              value={countdownTitle}
+                              placeholder="До свадьбы осталось"
+                              onChange={(event) =>
+                                setCountdownTitle(event.target.value)
+                              }
+                              onBlur={saveExtrasQuietly}
+                            />
+                          </label>
+                          <div className="countdown-style-picker">
+                            {countdownStyles.map((style) => (
+                              <button
+                                className={
+                                  countdownStyle === style.code
+                                    ? "is-selected"
+                                    : ""
+                                }
+                                key={style.code}
+                                type="button"
+                                onClick={() => {
+                                  setCountdownStyle(style.code);
+                                  window.setTimeout(saveExtrasQuietly, 0);
+                                }}
+                              >
+                                <i className={`timer-swatch timer-${style.code.toLowerCase()}`}>
+                                  08
+                                </i>
+                                {style.title}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {contentModule !== "TIMELINE" &&
                         contentModule !== "DRESS_CODE" &&
                         contentModule !== "MAP" &&
-                        contentModule !== "TRANSFER" && (
+                        contentModule !== "TRANSFER" &&
+                        contentModule !== "COUNTDOWN" && (
                         <p className="module-helper">
-                          {contentModule === "COUNTDOWN"
-                            ? `Отсчет идет до ${weddingDate || "даты свадьбы"} в ${ceremonyTime || "указанное время"}.`
-                            : "Блок включен в структуру приглашения."}
+                          Блок включен в структуру приглашения.
                         </p>
                       )}
                     </div>
@@ -786,6 +1412,51 @@ export function ConstructorSidebar({
                 </button>
               ))}
             </div>
+            <div className="editor-section-heading">
+              <span>Форма фотографий</span>
+              <small>Для галереи, мудборда и команды</small>
+            </div>
+            <div className="photo-mask-picker">
+              {photoMaskOptions.map((option) => (
+                <button
+                  className={photoMask === option.code ? "is-selected" : ""}
+                  key={option.code}
+                  type="button"
+                  onClick={() => {
+                    setPhotoMask(option.code);
+                    window.setTimeout(saveExtrasQuietly, 0);
+                  }}
+                >
+                  <i
+                    className={`mask-swatch mask-${option.code.toLowerCase()}`}
+                  />
+                  <span>{option.title}</span>
+                </button>
+              ))}
+            </div>
+            <div className="editor-section-heading">
+              <span>Стиль карточек</span>
+              <small>Форма и материал смысловых блоков</small>
+            </div>
+            <div className="card-style-picker">
+              {cardStyleOptions.map((option) => (
+                <button
+                  className={cardStyle === option.code ? "is-selected" : ""}
+                  key={option.code}
+                  type="button"
+                  onClick={() => {
+                    setCardStyle(option.code);
+                    window.setTimeout(saveExtrasQuietly, 0);
+                  }}
+                >
+                  <i className={`card-style-swatch style-${option.code.toLowerCase()}`}>
+                    <span>V</span>
+                  </i>
+                  <strong>{option.title}</strong>
+                  <small>{option.description}</small>
+                </button>
+              ))}
+            </div>
             <div className="style-note">
               <Sparkles size={18} />
               <span>
@@ -798,50 +1469,81 @@ export function ConstructorSidebar({
         {activeTab === "music" && (
           <>
             <EditorHeading
-              eyebrow="Коллекция Suno"
+              eyebrow="Музыкальное настроение"
               title="Музыка приглашения"
-              description="Прослушайте композицию и выберите настроение сайта."
+              description="Выберите спокойную композицию из библиотеки или загрузите свой MP3."
             />
-            <div className="music-track-list">
-              {tracks.map((track) => (
-                <article
-                  className={musicTrack === track.id ? "is-selected" : ""}
-                  key={track.id}
-                >
-                  <button
-                    className="track-preview-button"
-                    type="button"
-                    aria-label={
-                      previewTrackId === track.id
-                        ? `Пауза ${track.title}`
-                        : `Слушать ${track.title}`
-                    }
-                    onClick={() => toggleTrackPreview(track)}
+            <div className="default-track-list">
+              {DEFAULT_TRACKS.map((track) => {
+                const selected = musicTrack === track.src;
+
+                return (
+                  <article
+                    className={selected ? "is-selected" : ""}
+                    key={track.id}
                   >
-                    {previewTrackId === track.id ? (
-                      <Pause size={17} />
-                    ) : (
-                      <Play size={17} />
-                    )}
-                  </button>
-                  <span>
-                    <strong>{track.title}</strong>
-                    <small>{track.category}</small>
-                  </span>
-                  <button
-                    className="select-track-button"
-                    type="button"
-                    onClick={() =>
-                      setMusicTrack(musicTrack === track.id ? null : track.id)
-                    }
-                  >
-                    {musicTrack === track.id ? "Выбрано" : "Выбрать"}
-                  </button>
-                </article>
-              ))}
+                    <div>
+                      <Music2 size={17} />
+                      <span>
+                        <strong>{track.title}</strong>
+                        <small>{track.category}</small>
+                      </span>
+                    </div>
+                    <audio controls preload="none" src={track.src} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMusicTrack(selected ? null : track.src);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      {selected ? <Check size={14} /> : null}
+                      {selected ? "Выбрано" : "Выбрать"}
+                    </button>
+                  </article>
+                );
+              })}
             </div>
+            <div className="music-choice-divider">
+              <span>или загрузите свою композицию</span>
+            </div>
+            <label className="custom-music-upload">
+              <Music2 size={23} />
+              <span>
+                <strong>
+                  {customMusicName ||
+                    getDefaultTrack(musicTrack)?.title ||
+                    "Выбрать MP3 с вашего устройства"}
+                </strong>
+                <small>Только MP3, не более 5 МБ</small>
+              </span>
+              <input
+                type="file"
+                accept=".mp3,audio/mpeg"
+                onChange={(event) =>
+                  uploadCustomMusic(event.target.files?.[0])
+                }
+              />
+            </label>
+            {customMusicDataUrl && (
+              <div className="custom-music-preview">
+                <audio controls src={customMusicDataUrl} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomMusic(null, null);
+                    window.setTimeout(saveExtrasQuietly, 0);
+                  }}
+                >
+                  <Trash2 size={14} /> Удалить
+                </button>
+              </div>
+            )}
+            {musicError && <p className="telegram-error">{musicError}</p>}
             <p className="music-policy-note">
               В приглашении музыка запускается после первого клика по экрану.
+              Загружая файл, вы подтверждаете право на его использование согласно
+              Пользовательскому соглашению.
             </p>
           </>
         )}
@@ -849,6 +1551,90 @@ export function ConstructorSidebar({
         {activeTab === "media" && <MediaPanel />}
 
         {activeTab === "guests" && <GuestsPanel />}
+
+        {activeTab === "crew" && (
+          <>
+            <EditorHeading
+              eyebrow="Crew mode"
+              title="Тайминг для команды"
+              description="Строгий технический план для ведущего, декораторов, фотографа и площадки."
+            />
+            <div className="crew-link-note">
+              <Clock3 size={18} />
+              <div>
+                <strong>Секретная ссылка</strong>
+                <small>
+                  {siteId
+                    ? `/wedding/${siteId}/crew`
+                    : "Появится после сохранения проекта"}
+                </small>
+              </div>
+            </div>
+            <div className="crew-editor">
+              {crewTimings.map((item, index) => (
+                <div className="crew-editor-row" key={item.id}>
+                  <span>{index + 1}</span>
+                  <input
+                    type="time"
+                    value={item.time}
+                    aria-label="Время"
+                    onChange={(event) =>
+                      updateCrewTiming(item.id, "time", event.target.value)
+                    }
+                    onBlur={saveExtrasQuietly}
+                  />
+                  <input
+                    value={item.description}
+                    aria-label="Описание задачи"
+                    placeholder="Монтаж декора"
+                    onChange={(event) =>
+                      updateCrewTiming(
+                        item.id,
+                        "description",
+                        event.target.value,
+                      )
+                    }
+                    onBlur={saveExtrasQuietly}
+                  />
+                  <input
+                    value={item.contactPerson}
+                    aria-label="Контактное лицо"
+                    placeholder="Анна, координатор"
+                    onChange={(event) =>
+                      updateCrewTiming(
+                        item.id,
+                        "contactPerson",
+                        event.target.value,
+                      )
+                    }
+                    onBlur={saveExtrasQuietly}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Удалить пункт ${index + 1}`}
+                    onClick={() => {
+                      removeCrewTiming(item.id);
+                      window.setTimeout(saveExtrasQuietly, 0);
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                className="add-event-button"
+                type="button"
+                disabled={crewTimings.length >= 60}
+                onClick={() => {
+                  addCrewTiming();
+                  window.setTimeout(saveExtrasQuietly, 0);
+                }}
+              >
+                <Plus size={15} /> Добавить пункт тайминга
+              </button>
+            </div>
+          </>
+        )}
 
         {activeTab === "publish" && (
           <PackagesPanel />

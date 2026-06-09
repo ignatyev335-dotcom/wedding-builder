@@ -1,8 +1,14 @@
 import {
   contentBlockCodes,
+  countdownStyleCodes,
+  cardStyleCodes,
   fontCodes,
+  type CardStyleCode,
   type ContentBlockCode,
+  type CountdownStyleCode,
+  type CustomQuestion,
   type FontCode,
+  type FaqItem,
   type WishlistItem,
 } from "@/entities/wedding/model";
 
@@ -19,8 +25,14 @@ export type SiteExtras = {
   transferMeetingPoint: string;
   postWeddingMode: boolean;
   postWeddingPhotoUrl: string;
+  postWeddingThankYouText: string;
   fontCode: FontCode;
   blockOrder: ContentBlockCode[];
+  customMusicDataUrl: string | null;
+  customMusicName: string | null;
+  countdownTitle: string;
+  countdownStyle: CountdownStyleCode;
+  cardStyle: CardStyleCode;
 };
 
 export const defaultSiteExtras: SiteExtras = {
@@ -39,9 +51,48 @@ export const defaultSiteExtras: SiteExtras = {
   transferMeetingPoint: "Центр города",
   postWeddingMode: false,
   postWeddingPhotoUrl: "",
+  postWeddingThankYouText:
+    "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
   fontCode: "PLAYFAIR",
   blockOrder: [...contentBlockCodes],
+  customMusicDataUrl: null,
+  customMusicName: null,
+  countdownTitle: "До свадьбы осталось",
+  countdownStyle: "MINIMAL",
+  cardStyle: "PLAIN",
 };
+
+export function parseFaqItems(value: string | null | undefined): FaqItem[] {
+  if (!value) return [];
+
+  try {
+    return (JSON.parse(value) as FaqItem[])
+      .filter(
+        (item) =>
+          typeof item?.id === "string" &&
+          typeof item?.question === "string" &&
+          typeof item?.answer === "string",
+      )
+      .slice(0, 12);
+  } catch {
+    return [];
+  }
+}
+
+export function parseImageList(
+  value: string | null | undefined,
+  limit: number,
+) {
+  if (!value) return [];
+
+  try {
+    return (JSON.parse(value) as unknown[])
+      .filter((item): item is string => typeof item === "string")
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}
 
 export function parseSiteExtras(value: string | null | undefined): SiteExtras {
   if (!value) {
@@ -75,6 +126,10 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
                 typeof item?.title === "string" &&
                 typeof item?.url === "string",
             )
+            .map((item) => ({
+              ...item,
+              type: item.type === "EXPERIENCE" ? "EXPERIENCE" as const : "ITEM" as const,
+            }))
             .slice(0, 8)
         : [],
       noFlowersEnabled:
@@ -105,6 +160,10 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
         typeof parsed.postWeddingPhotoUrl === "string"
           ? parsed.postWeddingPhotoUrl
           : "",
+      postWeddingThankYouText:
+        typeof parsed.postWeddingThankYouText === "string"
+          ? parsed.postWeddingThankYouText
+          : defaultSiteExtras.postWeddingThankYouText,
       fontCode: fontCodes.includes(parsed.fontCode as FontCode)
         ? (parsed.fontCode as FontCode)
         : "PLAYFAIR",
@@ -119,8 +178,54 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
             ),
           ]
         : [...contentBlockCodes],
+      customMusicDataUrl:
+        typeof parsed.customMusicDataUrl === "string"
+          ? parsed.customMusicDataUrl
+          : null,
+      customMusicName:
+        typeof parsed.customMusicName === "string"
+          ? parsed.customMusicName
+          : null,
+      countdownTitle:
+        typeof parsed.countdownTitle === "string"
+          ? parsed.countdownTitle
+          : defaultSiteExtras.countdownTitle,
+      countdownStyle: countdownStyleCodes.includes(
+        parsed.countdownStyle as CountdownStyleCode,
+      )
+        ? (parsed.countdownStyle as CountdownStyleCode)
+        : "MINIMAL",
+      cardStyle: cardStyleCodes.includes(parsed.cardStyle as CardStyleCode)
+        ? (parsed.cardStyle as CardStyleCode)
+        : "PLAIN",
     };
   } catch {
     return defaultSiteExtras;
+  }
+}
+
+export function parseCustomQuestions(
+  value: string | null | undefined,
+): CustomQuestion[] {
+  if (!value) return [];
+
+  try {
+    return (JSON.parse(value) as CustomQuestion[])
+      .filter(
+        (item) =>
+          typeof item?.id === "string" &&
+          typeof item?.title === "string" &&
+          (item.type === "TEXT" || item.type === "OPTIONS") &&
+          Array.isArray(item.options),
+      )
+      .map((item) => ({
+        ...item,
+        options: item.options
+          .filter((option): option is string => typeof option === "string")
+          .slice(0, 6),
+      }))
+      .slice(0, 2);
+  } catch {
+    return [];
   }
 }

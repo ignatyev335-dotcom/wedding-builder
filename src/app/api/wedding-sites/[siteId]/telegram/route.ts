@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser, isSiteOwnerOrAdmin } from "@/lib/auth/session";
 
 const telegramProfileSchema = z.object({
   telegramId: z.string().min(3).max(64),
@@ -15,6 +16,10 @@ type TelegramRouteProps = {
 
 export async function POST(request: Request, { params }: TelegramRouteProps) {
   const { siteId } = await params;
+  const sessionUser = await getCurrentUser();
+  if (!sessionUser || !(await isSiteOwnerOrAdmin(sessionUser, siteId))) {
+    return NextResponse.json({ error: "Недостаточно прав." }, { status: 403 });
+  }
   const parsed = telegramProfileSchema.safeParse(await request.json());
 
   if (!parsed.success) {
@@ -30,7 +35,7 @@ export async function POST(request: Request, { params }: TelegramRouteProps) {
     return NextResponse.json({ error: "Свадебный сайт не найден." }, { status: 404 });
   }
 
-  const user = await prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { id: site.userId },
     data: {
       provider: "TELEGRAM",
@@ -46,8 +51,8 @@ export async function POST(request: Request, { params }: TelegramRouteProps) {
   });
 
   return NextResponse.json({
-    telegramId: user.telegramId,
-    chatId: user.telegramChatId,
-    name: user.name,
+    telegramId: updatedUser.telegramId,
+    chatId: updatedUser.telegramChatId,
+    name: updatedUser.name,
   });
 }

@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { OptionalModule, ThemeCode } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
@@ -31,7 +31,6 @@ const themes: Array<{
   { code: "MODERN", title: "Модерн", description: "Смело и графично", className: "theme-modern" },
   { code: "ROMANTIC", title: "Романтика", description: "Пудровые тона и нежность", className: "theme-romantic" },
   { code: "BOTANICAL", title: "Ботаника", description: "Зелень и природная свежесть", className: "theme-botanical" },
-  { code: "EDITORIAL", title: "Editorial", description: "Как обложка модного журнала", className: "theme-editorial" },
 ];
 
 const modules: Array<{
@@ -51,8 +50,15 @@ const modules: Array<{
 export function QuizWizard() {
   const router = useRouter();
   const store = useQuizStore();
+  const { ceremonyTime, setCeremonyTime } = store;
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!ceremonyTime) {
+      setCeremonyTime("17:00");
+    }
+  }, [ceremonyTime, setCeremonyTime]);
 
   const validateCurrentStep = () => {
     if (store.step === 1) {
@@ -162,7 +168,7 @@ export function QuizWizard() {
                   onChange={(event) =>
                     store.setNames(event.target.value, store.partnerTwoName)
                   }
-                  placeholder="Александр"
+                  placeholder="Жених"
                 />
               </label>
               <label className="field">
@@ -172,7 +178,7 @@ export function QuizWizard() {
                   onChange={(event) =>
                     store.setNames(store.partnerOneName, event.target.value)
                   }
-                  placeholder="Валентина"
+                  placeholder="Невеста"
                 />
               </label>
             </div>
@@ -193,6 +199,7 @@ export function QuizWizard() {
                 <CalendarDays size={18} />
                 <input
                   type="time"
+                  step={15 * 60}
                   value={store.ceremonyTime}
                   onChange={(event) => store.setCeremonyTime(event.target.value)}
                 />

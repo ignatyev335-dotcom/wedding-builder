@@ -23,7 +23,7 @@ const initialState: QuizDraft & { step: number } = {
   partnerOneName: "",
   partnerTwoName: "",
   weddingDate: "",
-  ceremonyTime: "",
+  ceremonyTime: "17:00",
   theme: "MINIMAL",
   modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP", "COUNTDOWN"],
   acceptedTerms: false,

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  cleanFallbackAddress,
+  formatYandexAddress,
+} from "@/features/constructor/lib/format-geocoder-address";
+
 const querySchema = z.string().trim().min(3).max(200);
 
 export async function GET(request: Request) {
@@ -45,7 +50,10 @@ async function getYandexSuggestions(query: string) {
             metaDataProperty?: {
               GeocoderMetaData?: {
                 text?: string;
-                Address?: { formatted?: string };
+                Address?: {
+                  formatted?: string;
+                  Components?: Array<{ kind?: string; name?: string }>;
+                };
               };
             };
             Point?: { pos?: string };
@@ -60,9 +68,12 @@ async function getYandexSuggestions(query: string) {
       const [longitude, latitude] = GeoObject?.Point?.pos
         ?.split(" ")
         .map(Number) ?? [Number.NaN, Number.NaN];
-      const address =
-        GeoObject?.metaDataProperty?.GeocoderMetaData?.Address?.formatted ??
-        GeoObject?.metaDataProperty?.GeocoderMetaData?.text;
+      const metadata = GeoObject?.metaDataProperty?.GeocoderMetaData;
+      const rawAddress = metadata?.Address?.formatted ?? metadata?.text ?? "";
+      const address = formatYandexAddress(
+        metadata?.Address?.Components,
+        rawAddress,
+      );
 
       return address && Number.isFinite(latitude) && Number.isFinite(longitude)
         ? { address, latitude, longitude, provider: "yandex" }
@@ -77,6 +88,7 @@ async function getOpenStreetMapSuggestions(query: string) {
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "6");
   url.searchParams.set("accept-language", "ru");
+  url.searchParams.set("addressdetails", "1");
 
   const response = await fetch(url, {
     headers: { "User-Agent": "Vowly wedding builder/1.0" },
@@ -91,10 +103,33 @@ async function getOpenStreetMapSuggestions(query: string) {
     display_name: string;
     lat: string;
     lon: string;
+    address?: {
+      city?: string;
+      town?: string;
+      village?: string;
+      municipality?: string;
+      city_district?: string;
+      suburb?: string;
+      road?: string;
+      pedestrian?: string;
+      house_number?: string;
+    };
   }>;
 
   return data.map((item) => ({
-    address: item.display_name,
+    address:
+      [
+        item.address?.city ??
+          item.address?.town ??
+          item.address?.village ??
+          item.address?.municipality,
+        item.address?.city_district ?? item.address?.suburb,
+        item.address?.road ?? item.address?.pedestrian,
+        item.address?.house_number,
+      ]
+        .filter((part): part is string => Boolean(part?.trim()))
+        .filter((part, index, parts) => parts.indexOf(part) === index)
+        .join(", ") || cleanFallbackAddress(item.display_name),
     latitude: Number(item.lat),
     longitude: Number(item.lon),
     provider: "openstreetmap",

@@ -3,6 +3,9 @@
 import {
   Check,
   Crown,
+  Download,
+  EyeOff,
+  LockKeyhole,
   LoaderCircle,
   Send,
   Sparkles,
@@ -11,6 +14,7 @@ import { useState } from "react";
 
 import type { PackageCode } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
+import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
 import { QrCodeCard } from "@/features/constructor/ui/qr-code-card";
 
 const packages: Array<{
@@ -64,44 +68,153 @@ const currency = new Intl.NumberFormat("ru-RU");
 export function PackagesPanel() {
   const {
     siteId,
+    isPremium,
+    removeBranding,
     selectedPackage,
     telegramProfile,
+    partnerOneName,
+    partnerTwoName,
+    weddingDate,
+    heroImageDesktop,
+    heroImageMobile,
+    coverPhoto,
+    isPrivate,
+    pinCode,
+    language,
     setSelectedPackage,
-    setTelegramProfile,
+    setRemoveBranding,
+    setPrivateSite,
+    setPinCode,
+    setLanguage,
   } = useWeddingStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [telegramError, setTelegramError] = useState("");
+  const [cardError, setCardError] = useState("");
+  const [brandingError, setBrandingError] = useState("");
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const selected = packages.find((item) => item.code === selectedPackage) ?? packages[0];
 
   const connectTelegram = async () => {
     setIsConnecting(true);
     setTelegramError("");
-    const profile = {
-      telegramId: `tg_${Date.now()}`,
-      chatId: `chat_${Date.now()}`,
-      name: "Александр и Мария",
-    };
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+
+    if (!siteId || siteId === "quiz-draft") {
+      setTelegramError("Сначала сохраните свадебный сайт.");
+      setIsConnecting(false);
+      return;
+    }
+    if (!botUsername) {
+      setTelegramError("Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME в настройках проекта.");
+      setIsConnecting(false);
+      return;
+    }
+
+    window.open(
+      `https://t.me/${botUsername.replace(/^@/, "")}?start=site_${siteId}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    setIsConnecting(false);
+  };
+
+  const saveSettings = () => {
+    window.setTimeout(() => {
+      void persistSiteExtras().catch(() => undefined);
+    }, 0);
+  };
+
+  const toggleBranding = async () => {
+    if (!siteId || siteId === "quiz-draft" || !isPremium || isSavingBranding) return;
+
+    const nextValue = !removeBranding;
+    setIsSavingBranding(true);
+    setBrandingError("");
+
+    const response = await fetch(`/api/wedding-sites/${siteId}/branding`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ removeBranding: nextValue }),
+    });
+    const data = (await response.json()) as { error?: string };
+
+    if (response.ok) setRemoveBranding(nextValue);
+    else setBrandingError(data.error || "Не удалось сохранить настройку.");
+    setIsSavingBranding(false);
+  };
+
+  const downloadSaveTheDate = async () => {
+    const source = heroImageMobile ?? heroImageDesktop ?? coverPhoto;
+    if (!source) {
+      setCardError("Сначала загрузите фотографию обложки.");
+      return;
+    }
+
+    setIsGeneratingCard(true);
+    setCardError("");
 
     try {
-      if (siteId && siteId !== "quiz-draft") {
-        const response = await fetch(`/api/wedding-sites/${siteId}/telegram`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(profile),
-        });
+      const image = await loadCanvasImage(source);
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080;
+      canvas.height = 1350;
+      const context = canvas.getContext("2d");
 
-        if (!response.ok) {
-          throw new Error("Не удалось сохранить Telegram-профиль.");
-        }
-      }
+      if (!context) throw new Error("Canvas недоступен.");
 
-      setTelegramProfile(profile);
+      const scale = Math.max(canvas.width / image.width, canvas.height / image.height);
+      const width = image.width * scale;
+      const height = image.height * scale;
+      context.drawImage(
+        image,
+        (canvas.width - width) / 2,
+        (canvas.height - height) / 2,
+        width,
+        height,
+      );
+
+      const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, "rgba(16,18,15,.18)");
+      gradient.addColorStop(0.55, "rgba(16,18,15,.08)");
+      gradient.addColorStop(1, "rgba(16,18,15,.72)");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      context.textAlign = "center";
+      context.fillStyle = "#ffffff";
+      context.font = "500 42px Georgia";
+      context.fillText("СОХРАНИТЕ ЭТУ ДАТУ", 540, 1030);
+      context.font = "italic 92px Georgia";
+      context.fillText(`${partnerOneName} & ${partnerTwoName}`, 540, 1145);
+      context.font = "500 43px Arial";
+      context.fillText(
+        new Intl.DateTimeFormat("ru-RU", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }).format(new Date(`${weddingDate}T12:00:00`)),
+        540,
+        1235,
+      );
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.94),
+      );
+      if (!blob) throw new Error("Не удалось создать изображение.");
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "save-the-date.jpg";
+      anchor.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
-      setTelegramError(
-        error instanceof Error ? error.message : "Ошибка подключения Telegram.",
+      setCardError(
+        error instanceof Error ? error.message : "Не удалось создать открытку.",
       );
     } finally {
-      setIsConnecting(false);
+      setIsGeneratingCard(false);
     }
   };
 
@@ -181,6 +294,101 @@ export function PackagesPanel() {
 
       <QrCodeCard />
 
+      <section className="premium-tools">
+        <div className={`private-site-setting branding-setting ${!isPremium ? "is-locked" : ""}`}>
+          <span>{isPremium ? <EyeOff size={18} /> : <LockKeyhole size={18} />}</span>
+          <div>
+            <strong>Скрыть подпись платформы</strong>
+            <small>
+              {isPremium
+                ? "На сайте не будет строки «Создано на Vowly»"
+                : "Доступно только после активации премиального тарифа"}
+            </small>
+          </div>
+          <button
+            className={`switch ${removeBranding ? "is-on" : ""}`}
+            type="button"
+            role="switch"
+            aria-checked={removeBranding}
+            disabled={!isPremium || isSavingBranding}
+            onClick={() => void toggleBranding()}
+          >
+            <i />
+          </button>
+        </div>
+        {brandingError && <p className="telegram-error">{brandingError}</p>}
+
+        <div className="private-site-setting">
+          <span><LockKeyhole size={18} /></span>
+          <div>
+            <strong>Закрытая свадьба</strong>
+            <small>Гости увидят сайт только после ввода PIN-кода</small>
+          </div>
+          <button
+            className={`switch ${isPrivate ? "is-on" : ""}`}
+            type="button"
+            role="switch"
+            aria-checked={isPrivate}
+            onClick={() => {
+              setPrivateSite(!isPrivate);
+              if (isPrivate) saveSettings();
+            }}
+          >
+            <i />
+          </button>
+        </div>
+        {isPrivate && (
+          <label className="private-pin-field">
+            <span>PIN-код из четырех цифр</span>
+            <input
+              inputMode="numeric"
+              maxLength={4}
+              value={pinCode}
+              placeholder="2026"
+              onChange={(event) =>
+                setPinCode(event.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+              onBlur={() => {
+                if (pinCode.length === 4) saveSettings();
+              }}
+            />
+          </label>
+        )}
+
+        <div className="language-setting">
+          <div>
+            <strong>Язык приглашения</strong>
+            <small>Системные кнопки, формы и таймер</small>
+          </div>
+          <div>
+            {(["RU", "EN"] as const).map((code) => (
+              <button
+                className={language === code ? "is-selected" : ""}
+                type="button"
+                key={code}
+                onClick={() => {
+                  setLanguage(code);
+                  saveSettings();
+                }}
+              >
+                {code}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          className="save-date-download"
+          type="button"
+          disabled={isGeneratingCard}
+          onClick={() => void downloadSaveTheDate()}
+        >
+          <Download size={17} />
+          {isGeneratingCard ? "Создаем открытку..." : "Скачать Save the Date"}
+        </button>
+        {cardError && <p className="telegram-error">{cardError}</p>}
+      </section>
+
       <section className="package-checkout">
         <div>
           <span>Выбран тариф</span>
@@ -202,4 +410,13 @@ export function PackagesPanel() {
       </section>
     </>
   );
+}
+
+function loadCanvasImage(source: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Не удалось загрузить обложку."));
+    image.src = source;
+  });
 }

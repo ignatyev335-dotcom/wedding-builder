@@ -2,6 +2,10 @@ import { ModuleType, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
+import {
+  getRequestSession,
+  setSessionCookie,
+} from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const baseModules: ModuleType[] = [ModuleType.HERO];
@@ -45,18 +49,31 @@ export async function POST(request: Request) {
     const baseSlug = nameSlug || "wedding";
     const slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
     const selectedModules = [...baseModules, ...data.modules] as ModuleType[];
+    const session = getRequestSession(request);
+    const sessionUser = session
+      ? await prisma.user.findUnique({
+          where: { id: session.userId },
+          select: { id: true },
+        })
+      : null;
+    let createdAnonymousUserId: string | null = null;
 
     const site = await prisma.$transaction(async (transaction) => {
-      const user = await transaction.user.create({
-        data: {
-          name: `${data.partnerOneName} и ${data.partnerTwoName}`,
-          provider: "ANONYMOUS",
-        },
-      });
+      const userId =
+        sessionUser?.id ??
+        (
+          await transaction.user.create({
+            data: {
+              name: `${data.partnerOneName} и ${data.partnerTwoName}`,
+              provider: "ANONYMOUS",
+            },
+          })
+        ).id;
+      if (!sessionUser) createdAnonymousUserId = userId;
 
       return transaction.weddingSite.create({
         data: {
-          userId: user.id,
+          userId,
           slug,
           theme: data.theme,
           data: {
@@ -92,13 +109,17 @@ export async function POST(request: Request) {
       });
     });
 
-    return NextResponse.json(site, { status: 201 });
+    const response = NextResponse.json(site, { status: 201 });
+    if (createdAnonymousUserId) {
+      setSessionCookie(response, createdAnonymousUserId);
+    }
+    return response;
   } catch (error) {
     console.error("Failed to create wedding site", error);
 
     const message = (() => {
       if (error instanceof Prisma.PrismaClientInitializationError) {
-        return "Локальная база SQLite не готова. Выполните npm run db:push.";
+        return "База PostgreSQL временно недоступна. Проверьте переменные подключения.";
       }
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

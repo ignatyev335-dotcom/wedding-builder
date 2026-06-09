@@ -5,10 +5,16 @@ import { persist } from "zustand/middleware";
 
 import type {
   BuilderModule,
+  CardStyleCode,
   ContentBlockCode,
+  CountdownStyleCode,
+  CrewTimingItem,
   FontCode,
+  FaqItem,
   GuestResponse,
   PackageCode,
+  PhotoMaskCode,
+  LanguageCode,
   PremiumFeatureCode,
   TelegramProfile,
   ThemeCode,
@@ -33,6 +39,9 @@ type WeddingStore = WeddingBuilderData & {
   reorderBlocks: (active: ContentBlockCode, over: ContentBlockCode) => void;
   toggleModule: (module: BuilderModule) => void;
   setMusicTrack: (track: string | null) => void;
+  setCustomMusic: (dataUrl: string | null, name: string | null) => void;
+  setCountdownTitle: (countdownTitle: string) => void;
+  setCountdownStyle: (countdownStyle: CountdownStyleCode) => void;
   addTimelineEvent: () => void;
   updateTimelineEvent: (
     id: string,
@@ -41,8 +50,12 @@ type WeddingStore = WeddingBuilderData & {
   ) => void;
   removeTimelineEvent: (id: string) => void;
   setPaletteColor: (index: number, color: string) => void;
+  setColorPalette: (colors: string[]) => void;
+  addPaletteColor: () => void;
+  removePaletteColor: (index: number) => void;
   togglePremiumFeature: (feature: PremiumFeatureCode) => void;
   setSelectedPackage: (selectedPackage: PackageCode) => void;
+  setRemoveBranding: (removeBranding: boolean) => void;
   setTelegramProfile: (profile: TelegramProfile) => void;
   addGuest: (
     guest: Omit<
@@ -58,9 +71,48 @@ type WeddingStore = WeddingBuilderData & {
   prependGuest: (guest: GuestResponse) => void;
   updateGuest: (guest: GuestResponse) => void;
   setCoverPhoto: (coverPhoto: string | null) => void;
+  setHeroImageDesktop: (image: string | null) => void;
+  setHeroImageMobile: (image: string | null) => void;
   addGalleryPhotos: (photos: string[]) => void;
   removeGalleryPhoto: (index: number) => void;
   reorderGalleryPhotos: (activeIndex: number, overIndex: number) => void;
+  addDressMoodboardPhotos: (photos: string[]) => void;
+  removeDressMoodboardPhoto: (index: number) => void;
+  addFaqItem: () => void;
+  updateFaqItem: (
+    id: string,
+    field: keyof Pick<FaqItem, "question" | "answer">,
+    value: string,
+  ) => void;
+  removeFaqItem: (id: string) => void;
+  setGiftPaymentLink: (value: string) => void;
+  setGiftQrCode: (value: string | null) => void;
+  setCoordinatorField: (
+    field:
+      | "coordinatorName"
+      | "coordinatorRole"
+      | "coordinatorPhoto"
+      | "coordinatorTelegram"
+      | "coordinatorWhatsapp"
+      | "coordinatorPhone"
+      | "coordinatorMapLink",
+    value: string | null,
+  ) => void;
+  setPhotoMask: (value: PhotoMaskCode) => void;
+  setCardStyle: (value: CardStyleCode) => void;
+  setPrivateSite: (value: boolean) => void;
+  setPinCode: (value: string) => void;
+  setLanguage: (value: LanguageCode) => void;
+  addCrewTiming: () => void;
+  updateCrewTiming: (
+    id: string,
+    field: keyof Pick<
+      CrewTimingItem,
+      "time" | "description" | "contactPerson"
+    >,
+    value: string,
+  ) => void;
+  removeCrewTiming: (id: string) => void;
   setInvitationText: (invitationText: string) => void;
   setWishlistText: (wishlistText: string) => void;
   setNoFlowersEnabled: (noFlowersEnabled: boolean) => void;
@@ -71,12 +123,14 @@ type WeddingStore = WeddingBuilderData & {
   addWishlistItem: () => void;
   updateWishlistItem: (
     id: string,
-    field: keyof Pick<WishlistItem, "title" | "url">,
+    field: keyof Pick<WishlistItem, "title" | "url" | "type">,
     value: string,
   ) => void;
   removeWishlistItem: (id: string) => void;
   setPostWeddingMode: (postWeddingMode: boolean) => void;
   setPostWeddingPhotoUrl: (postWeddingPhotoUrl: string) => void;
+  setPostWeddingThankYouText: (value: string) => void;
+  setCustomQuestions: (questions: WeddingBuilderData["customQuestions"]) => void;
 };
 
 const defaultVisibility: Record<BuilderModule, boolean> = {
@@ -89,10 +143,12 @@ const defaultVisibility: Record<BuilderModule, boolean> = {
 };
 
 const initialState: WeddingBuilderData = {
+  isPremium: false,
+  removeBranding: false,
   partnerOneName: "Анна",
   partnerTwoName: "Антон",
   weddingDate: "2026-09-12",
-  ceremonyTime: "16:00",
+  ceremonyTime: "17:00",
   venueName: "Усадьба «Лесная»",
   venueAddress: "Московская область",
   mapLatitude: null,
@@ -106,13 +162,19 @@ const initialState: WeddingBuilderData = {
     "MAP",
     "TRANSFER",
     "WISHLIST",
+    "COORDINATOR",
+    "FAQ",
     "RSVP",
   ],
   moduleVisibility: defaultVisibility,
   musicTrack: null,
+  customMusicDataUrl: null,
+  customMusicName: null,
+  countdownTitle: "До свадьбы осталось",
+  countdownStyle: "MINIMAL",
   timelineEvents: [
-    { id: "arrival", time: "16:00", title: "Сбор гостей" },
-    { id: "ceremony", time: "16:30", title: "Церемония" },
+    { id: "arrival", time: "17:00", title: "Сбор гостей" },
+    { id: "ceremony", time: "17:30", title: "Церемония" },
     { id: "dinner", time: "18:00", title: "Ужин и танцы" },
   ],
   colorPalette: ["#E9E1D4", "#CDBBA7", "#9D8F7D", "#62675C", "#F7F3EA"],
@@ -125,8 +187,27 @@ const initialState: WeddingBuilderData = {
   selectedPackage: "BASIC",
   telegramProfile: null,
   guests: [],
+  heroImageDesktop: null,
+  heroImageMobile: null,
   coverPhoto: null,
   galleryPhotos: [],
+  dressMoodboard: [],
+  faqItems: [],
+  giftPaymentLink: "",
+  giftQrCode: null,
+  coordinatorName: "",
+  coordinatorRole: "Координатор свадьбы",
+  coordinatorPhoto: null,
+  coordinatorTelegram: "",
+  coordinatorWhatsapp: "",
+  coordinatorPhone: "",
+  coordinatorMapLink: "",
+  photoMask: "RECTANGLE",
+  cardStyle: "PLAIN",
+  pinCode: "",
+  isPrivate: false,
+  language: "RU",
+  crewTimings: [],
   invitationText:
     "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
   wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
@@ -140,6 +221,9 @@ const initialState: WeddingBuilderData = {
   transferMeetingPoint: "Центр города",
   postWeddingMode: false,
   postWeddingPhotoUrl: "",
+  postWeddingThankYouText:
+    "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
+  customQuestions: [],
 };
 
 export const useWeddingStore = create<WeddingStore>()(
@@ -186,7 +270,20 @@ export const useWeddingStore = create<WeddingStore>()(
             [module]: !state.moduleVisibility[module],
           },
         })),
-      setMusicTrack: (musicTrack) => set({ musicTrack }),
+      setMusicTrack: (musicTrack) =>
+        set({
+          musicTrack,
+          customMusicDataUrl: null,
+          customMusicName: null,
+        }),
+      setCustomMusic: (customMusicDataUrl, customMusicName) =>
+        set({
+          customMusicDataUrl,
+          customMusicName,
+          musicTrack: null,
+        }),
+      setCountdownTitle: (countdownTitle) => set({ countdownTitle }),
+      setCountdownStyle: (countdownStyle) => set({ countdownStyle }),
       addTimelineEvent: () =>
         set((state) => ({
           timelineEvents: [
@@ -214,6 +311,24 @@ export const useWeddingStore = create<WeddingStore>()(
             currentIndex === index ? color : currentColor,
           ),
         })),
+      setColorPalette: (colorPalette) =>
+        set({ colorPalette: colorPalette.slice(0, 5) }),
+      addPaletteColor: () =>
+        set((state) => ({
+          colorPalette:
+            state.colorPalette.length >= 5
+              ? state.colorPalette
+              : [...state.colorPalette, "#D8C9B8"],
+        })),
+      removePaletteColor: (index) =>
+        set((state) => ({
+          colorPalette:
+            state.colorPalette.length <= 3
+              ? state.colorPalette
+              : state.colorPalette.filter(
+                  (_, currentIndex) => currentIndex !== index,
+                ),
+        })),
       togglePremiumFeature: (feature) =>
         set((state) => ({
           premiumFeatures: {
@@ -222,6 +337,7 @@ export const useWeddingStore = create<WeddingStore>()(
           },
         })),
       setSelectedPackage: (selectedPackage) => set({ selectedPackage }),
+      setRemoveBranding: (removeBranding) => set({ removeBranding }),
       setTelegramProfile: (telegramProfile) => set({ telegramProfile }),
       addGuest: (guest) =>
         set((state) => ({
@@ -247,6 +363,8 @@ export const useWeddingStore = create<WeddingStore>()(
           guests: state.guests.map((item) => (item.id === guest.id ? guest : item)),
         })),
       setCoverPhoto: (coverPhoto) => set({ coverPhoto }),
+      setHeroImageDesktop: (heroImageDesktop) => set({ heroImageDesktop }),
+      setHeroImageMobile: (heroImageMobile) => set({ heroImageMobile }),
       addGalleryPhotos: (photos) =>
         set((state) => ({
           galleryPhotos: [...state.galleryPhotos, ...photos].slice(0, 30),
@@ -274,6 +392,75 @@ export const useWeddingStore = create<WeddingStore>()(
           galleryPhotos.splice(overIndex, 0, movedPhoto);
           return { galleryPhotos };
         }),
+      addDressMoodboardPhotos: (photos) =>
+        set((state) => ({
+          dressMoodboard: [...state.dressMoodboard, ...photos].slice(0, 4),
+        })),
+      removeDressMoodboardPhoto: (index) =>
+        set((state) => ({
+          dressMoodboard: state.dressMoodboard.filter(
+            (_, currentIndex) => currentIndex !== index,
+          ),
+        })),
+      addFaqItem: () =>
+        set((state) => ({
+          faqItems:
+            state.faqItems.length >= 12
+              ? state.faqItems
+              : [
+                  ...state.faqItems,
+                  {
+                    id: crypto.randomUUID(),
+                    question: "Можно ли приехать с детьми?",
+                    answer: "Да, конечно. Будем рады видеть всю вашу семью.",
+                  },
+                ],
+        })),
+      updateFaqItem: (id, field, value) =>
+        set((state) => ({
+          faqItems: state.faqItems.map((item) =>
+            item.id === id ? { ...item, [field]: value } : item,
+          ),
+        })),
+      removeFaqItem: (id) =>
+        set((state) => ({
+          faqItems: state.faqItems.filter((item) => item.id !== id),
+        })),
+      setGiftPaymentLink: (giftPaymentLink) => set({ giftPaymentLink }),
+      setGiftQrCode: (giftQrCode) => set({ giftQrCode }),
+      setCoordinatorField: (field, value) =>
+        set({ [field]: value } as Partial<WeddingBuilderData>),
+      setPhotoMask: (photoMask) => set({ photoMask }),
+      setCardStyle: (cardStyle) => set({ cardStyle }),
+      setPrivateSite: (isPrivate) =>
+        set((state) => ({
+          isPrivate,
+          pinCode: isPrivate ? state.pinCode : "",
+        })),
+      setPinCode: (pinCode) => set({ pinCode }),
+      setLanguage: (language) => set({ language }),
+      addCrewTiming: () =>
+        set((state) => ({
+          crewTimings: [
+            ...state.crewTimings,
+            {
+              id: crypto.randomUUID(),
+              time: "12:00",
+              description: "Новая задача",
+              contactPerson: "Координатор",
+            },
+          ],
+        })),
+      updateCrewTiming: (id, field, value) =>
+        set((state) => ({
+          crewTimings: state.crewTimings.map((item) =>
+            item.id === id ? { ...item, [field]: value } : item,
+          ),
+        })),
+      removeCrewTiming: (id) =>
+        set((state) => ({
+          crewTimings: state.crewTimings.filter((item) => item.id !== id),
+        })),
       setInvitationText: (invitationText) => set({ invitationText }),
       setWishlistText: (wishlistText) => set({ wishlistText }),
       setNoFlowersEnabled: (noFlowersEnabled) => set({ noFlowersEnabled }),
@@ -290,7 +477,12 @@ export const useWeddingStore = create<WeddingStore>()(
               ? state.wishlistItems
               : [
                   ...state.wishlistItems,
-                  { id: crypto.randomUUID(), title: "Подарок", url: "" },
+                  {
+                    id: crypto.randomUUID(),
+                    title: "Подарок",
+                    url: "",
+                    type: "ITEM",
+                  },
                 ],
         })),
       updateWishlistItem: (id, field, value) =>
@@ -306,12 +498,17 @@ export const useWeddingStore = create<WeddingStore>()(
       setPostWeddingMode: (postWeddingMode) => set({ postWeddingMode }),
       setPostWeddingPhotoUrl: (postWeddingPhotoUrl) =>
         set({ postWeddingPhotoUrl }),
+      setPostWeddingThankYouText: (postWeddingThankYouText) =>
+        set({ postWeddingThankYouText }),
+      setCustomQuestions: (customQuestions) => set({ customQuestions }),
     }),
     {
       name: "wedding-builder-constructor",
       partialize: (state) => ({
         siteId: state.siteId,
         slug: state.slug,
+        isPremium: state.isPremium,
+        removeBranding: state.removeBranding,
         partnerOneName: state.partnerOneName,
         partnerTwoName: state.partnerTwoName,
         weddingDate: state.weddingDate,
@@ -325,12 +522,34 @@ export const useWeddingStore = create<WeddingStore>()(
         blockOrder: state.blockOrder,
         moduleVisibility: state.moduleVisibility,
         musicTrack: state.musicTrack,
+        customMusicName: state.customMusicName,
+        countdownTitle: state.countdownTitle,
+        countdownStyle: state.countdownStyle,
         timelineEvents: state.timelineEvents,
         colorPalette: state.colorPalette,
         premiumFeatures: state.premiumFeatures,
         selectedPackage: state.selectedPackage,
         telegramProfile: state.telegramProfile,
         guests: state.guests,
+        heroImageDesktop: state.heroImageDesktop,
+        heroImageMobile: state.heroImageMobile,
+        dressMoodboard: state.dressMoodboard,
+        faqItems: state.faqItems,
+        giftPaymentLink: state.giftPaymentLink,
+        giftQrCode: state.giftQrCode,
+        coordinatorName: state.coordinatorName,
+        coordinatorRole: state.coordinatorRole,
+        coordinatorPhoto: state.coordinatorPhoto,
+        coordinatorTelegram: state.coordinatorTelegram,
+        coordinatorWhatsapp: state.coordinatorWhatsapp,
+        coordinatorPhone: state.coordinatorPhone,
+        coordinatorMapLink: state.coordinatorMapLink,
+        photoMask: state.photoMask,
+        cardStyle: state.cardStyle,
+        pinCode: state.pinCode,
+        isPrivate: state.isPrivate,
+        language: state.language,
+        crewTimings: state.crewTimings,
         wishlistText: state.wishlistText,
         wishlistItems: state.wishlistItems,
         noFlowersEnabled: state.noFlowersEnabled,
@@ -341,6 +560,8 @@ export const useWeddingStore = create<WeddingStore>()(
         invitationText: state.invitationText,
         postWeddingMode: state.postWeddingMode,
         postWeddingPhotoUrl: state.postWeddingPhotoUrl,
+        postWeddingThankYouText: state.postWeddingThankYouText,
+        customQuestions: state.customQuestions,
         initializedSiteId: state.initializedSiteId,
       }),
     },

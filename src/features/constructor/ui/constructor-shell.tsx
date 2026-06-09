@@ -109,7 +109,7 @@ export function ConstructorShell({
               className="constructor-device-screen"
               ref={previewScreenRef}
             >
-              <InvitationPreview />
+              <InvitationPreview previewMode={previewMode} />
             </div>
           </div>
         </section>

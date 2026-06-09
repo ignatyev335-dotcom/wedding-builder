@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -10,20 +11,27 @@ import {
   MapPin,
   Music2,
   Pause,
+  Phone,
+  Send,
   Shirt,
   Users,
   Volume2,
+  X,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type {
-  GuestResponse,
-  GuestStatus,
   PersonalizedGuest,
+  CountdownStyleCode,
 } from "@/entities/wedding/model";
-import { tracks } from "@/features/constructor/model/tracks";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
+import { RsvpQuestionnaire } from "@/features/constructor/ui/rsvp-questionnaire";
+import { RsvpSuccessActions } from "@/features/constructor/ui/rsvp-success-actions";
+import { weddingCopy } from "@/features/wedding/lib/wedding-copy";
+import { getDefaultTrack } from "@/features/constructor/model/default-tracks";
 
 const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
@@ -34,8 +42,10 @@ const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
 
 export function InvitationPreview({
   personalizedGuest = null,
+  previewMode,
 }: {
   personalizedGuest?: PersonalizedGuest | null;
+  previewMode?: "mobile" | "desktop";
 }) {
   const {
     partnerOneName,
@@ -51,12 +61,30 @@ export function InvitationPreview({
     blockOrder,
     moduleVisibility,
     musicTrack,
+    customMusicDataUrl,
+    customMusicName,
+    countdownTitle,
+    countdownStyle,
     timelineEvents,
     colorPalette,
+    dressMoodboard,
+    faqItems,
+    heroImageDesktop,
+    heroImageMobile,
     coverPhoto,
     galleryPhotos,
     wishlistText,
     wishlistItems,
+    giftPaymentLink,
+    coordinatorName,
+    coordinatorRole,
+    coordinatorPhoto,
+    coordinatorTelegram,
+    coordinatorWhatsapp,
+    coordinatorPhone,
+    coordinatorMapLink,
+    photoMask,
+    cardStyle,
     noFlowersEnabled,
     noFlowersText,
     transferDescription,
@@ -65,26 +93,18 @@ export function InvitationPreview({
     invitationText,
     postWeddingMode,
     postWeddingPhotoUrl,
-    addGuest,
-    updateGuest,
+    postWeddingThankYouText,
+    language,
+    removeBranding,
   } = useWeddingStore();
+  const t = weddingCopy[language];
+  const selectedAudioSource = customMusicDataUrl ?? musicTrack;
+  const selectedAudioName =
+    customMusicName ?? getDefaultTrack(musicTrack)?.title ?? "Наша музыка";
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState(Boolean(personalizedGuest));
   const [isRsvpSent, setIsRsvpSent] = useState(false);
-  const [guestName, setGuestName] = useState(personalizedGuest?.name ?? "");
-  const [guestStatus, setGuestStatus] = useState<GuestStatus>("ACCEPTED");
-  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
-  const [foodPreference, setFoodPreference] = useState("Мясо");
-  const [allergies, setAllergies] = useState("");
-  const [drinks, setDrinks] = useState("");
-  const [needsTransport, setNeedsTransport] = useState(false);
-  const [isRsvpSaving, setIsRsvpSaving] = useState(false);
-  const [rsvpError, setRsvpError] = useState("");
-  const selectedTrack = useMemo(
-    () => tracks.find((track) => track.id === musicTrack) ?? null,
-    [musicTrack],
-  );
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -95,11 +115,11 @@ export function InvitationPreview({
     audio.pause();
     audio.currentTime = 0;
     setIsPlaying(false);
-  }, [musicTrack]);
+  }, [selectedAudioSource]);
 
   const playSelectedTrack = async () => {
     const audio = audioRef.current;
-    if (!audio || !selectedTrack || isPlaying) {
+    if (!audio || !selectedAudioSource || isPlaying) {
       return;
     }
 
@@ -114,7 +134,7 @@ export function InvitationPreview({
   const togglePlayer = async (event: React.MouseEvent) => {
     event.stopPropagation();
     const audio = audioRef.current;
-    if (!audio || !selectedTrack) {
+    if (!audio || !selectedAudioSource) {
       return;
     }
 
@@ -136,119 +156,77 @@ export function InvitationPreview({
     ? monthFormatter.format(new Date(`${weddingDate}T12:00:00.000Z`))
     : "Дата вашей свадьбы";
 
-  const submitRsvp = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!guestName.trim()) {
-      return;
-    }
-
-    addGuest({
-      name: guestName.trim(),
-      status: guestStatus,
-      dietaryRestrictions: dietaryRestrictions.trim(),
-      foodPreference,
-      allergies: allergies.trim(),
-      drinks: drinks.trim(),
-      needsTransport,
-    });
-    setIsRsvpSent(true);
-    setGuestName("");
-    setDietaryRestrictions("");
-    setFoodPreference("Мясо");
-    setAllergies("");
-    setDrinks("");
-    setNeedsTransport(false);
-  };
-
-  const submitPersonalizedRsvp = async (status: "ACCEPTED" | "DECLINED") => {
-    if (!personalizedGuest) {
-      return;
-    }
-
-    setIsRsvpSaving(true);
-    setRsvpError("");
-
-    try {
-      const response = await fetch(
-        `/api/guests/${encodeURIComponent(personalizedGuest.magicToken)}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status,
-            dietaryRestrictions,
-            foodPreference,
-            allergies,
-            drinks,
-            needsTransport,
-          }),
-        },
-      );
-      const data = (await response.json()) as {
-        guest?: GuestResponse;
-        error?: string;
-      };
-
-      if (!response.ok || !data.guest) {
-        throw new Error(data.error || "Не удалось сохранить ответ.");
-      }
-
-      updateGuest(data.guest);
-      setGuestStatus(status);
-      setIsRsvpSent(true);
-    } catch (requestError) {
-      setRsvpError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Не удалось сохранить ответ.",
-      );
-    } finally {
-      setIsRsvpSaving(false);
-    }
-  };
-
   return (
     <article
-      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()}`}
+      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()} photo-mask-${photoMask.toLowerCase()} card-style-${cardStyle.toLowerCase()}`}
       onClick={playSelectedTrack}
     >
-      {selectedTrack && (
+      {selectedAudioSource && (
         <>
-          <audio ref={audioRef} src={selectedTrack.url} loop preload="none" />
+          <audio ref={audioRef} src={selectedAudioSource} loop preload="none" />
           <button
             className={`floating-music-button ${isPlaying ? "is-playing" : ""}`}
             type="button"
             aria-label={isPlaying ? "Поставить музыку на паузу" : "Включить музыку"}
-            title={selectedTrack.title}
+            title={selectedAudioName}
             onClick={togglePlayer}
           >
             {isPlaying ? <Pause size={16} /> : <Music2 size={16} />}
-            <span>{isPlaying ? <Volume2 size={11} /> : selectedTrack.title}</span>
+            <span>
+              {isPlaying ? <Volume2 size={11} /> : selectedAudioName}
+            </span>
           </button>
         </>
       )}
 
-      <section className={`wedding-hero ${coverPhoto ? "has-cover" : ""}`}>
-        {coverPhoto && (
+      <section
+        className={`wedding-hero break-words hyphens-auto overflow-hidden ${
+          heroImageDesktop || heroImageMobile || coverPhoto ? "has-cover" : ""
+        }`}
+      >
+        {(heroImageDesktop || heroImageMobile || coverPhoto) && (
           <>
-            <Image
-              className="wedding-cover"
-              src={coverPhoto}
-              alt=""
-              fill
-              priority
-              unoptimized
-            />
+            {previewMode ? (
+              <Image
+                className="wedding-cover"
+                src={
+                  previewMode === "mobile"
+                    ? heroImageMobile ?? heroImageDesktop ?? coverPhoto!
+                    : heroImageDesktop ?? heroImageMobile ?? coverPhoto!
+                }
+                alt=""
+                fill
+                priority
+                unoptimized
+              />
+            ) : (
+              <>
+                <Image
+                  className="wedding-cover hidden md:block"
+                  src={heroImageDesktop ?? heroImageMobile ?? coverPhoto!}
+                  alt=""
+                  fill
+                  priority
+                  unoptimized
+                />
+                <Image
+                  className="wedding-cover block md:hidden"
+                  src={heroImageMobile ?? heroImageDesktop ?? coverPhoto!}
+                  alt=""
+                  fill
+                  priority
+                  unoptimized
+                />
+              </>
+            )}
             <div className="wedding-cover-overlay" />
           </>
         )}
         <span className="wedding-kicker">
-          {postWeddingMode ? "Этот день останется с нами" : "Приглашение на свадьбу"}
+          {postWeddingMode ? "Этот день останется с нами" : t.invitation}
         </span>
         <div className="boho-sun" aria-hidden="true" />
-        <h1>
+        <h1 className="wedding-couple-names">
           {partnerOneName}
           <i>&amp;</i>
           {partnerTwoName}
@@ -257,17 +235,17 @@ export function InvitationPreview({
         <span className="wedding-scroll-line" />
       </section>
 
-      <section className="wedding-welcome">
-        <span>{postWeddingMode ? "С любовью к вам" : "Дорогие гости"}</span>
+      {!postWeddingMode && <section className="wedding-welcome">
+        <span>{postWeddingMode ? "С любовью к вам" : t.dearGuests}</span>
         <h2>
           {postWeddingMode
             ? "Спасибо, что сделали этот день незабываемым"
-            : "Будем счастливы разделить этот день с вами"}
+            : t.welcome}
         </h2>
-        <p>{postWeddingMode ? "Сохраним самые теплые моменты вместе." : invitationText}</p>
-      </section>
+        <p>{invitationText}</p>
+      </section>}
 
-      {galleryPhotos.length > 0 && (
+      {!postWeddingMode && galleryPhotos.length > 0 && (
         <section className="wedding-module wedding-gallery">
           <span>Love Story</span>
           <h2>Моменты нашей истории</h2>
@@ -281,10 +259,7 @@ export function InvitationPreview({
           <ImagePlus size={19} />
           <span>Спасибо, что были рядом</span>
           <h2>Этот день стал особенным благодаря вам</h2>
-          <p>
-            Поделитесь фотографиями и видео, которые сохранили самые теплые
-            моменты нашего праздника.
-          </p>
+          <p>{postWeddingThankYouText}</p>
           {postWeddingPhotoUrl ? (
             <a
               href={postWeddingPhotoUrl}
@@ -292,12 +267,12 @@ export function InvitationPreview({
               rel="noreferrer"
               onClick={(event) => event.stopPropagation()}
             >
-              <ImagePlus size={16} />
-              Поделиться своими фото
+              <ImagePlus size={19} />
+              Скачать фотографии со свадьбы
               <ExternalLink size={13} />
             </a>
           ) : (
-            <small>Молодожены скоро добавят ссылку для фотографий</small>
+            <small>Ссылка на готовые фотографии скоро появится</small>
           )}
         </section>
       )}
@@ -309,8 +284,13 @@ export function InvitationPreview({
         >
           <CalendarDays size={19} />
           <span>До нашей встречи</span>
-          <h2>Считаем мгновения вместе</h2>
-          <Countdown weddingDate={weddingDate} ceremonyTime={ceremonyTime} />
+          <h2>{countdownTitle}</h2>
+          <Countdown
+            weddingDate={weddingDate}
+            ceremonyTime={ceremonyTime}
+            style={countdownStyle}
+            language={language}
+          />
         </section>
       )}
 
@@ -346,10 +326,24 @@ export function InvitationPreview({
               <i key={`${color}-${index}`} style={{ backgroundColor: color }} />
             ))}
           </div>
+          {dressMoodboard.length > 0 && (
+            <div className="dress-moodboard">
+              {dressMoodboard.map((photo, index) => (
+                <figure key={`${photo.slice(-16)}-${index}`}>
+                  <Image
+                    src={photo}
+                    alt={`Референс дресс-кода ${index + 1}`}
+                    fill
+                    unoptimized
+                  />
+                </figure>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      {moduleVisibility.MAP && (
+      {!postWeddingMode && moduleVisibility.MAP && (
         <section
           className="wedding-module wedding-location"
           style={{ order: blockOrder.indexOf("MAP") }}
@@ -368,7 +362,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {moduleVisibility.TRANSFER && (
+      {!postWeddingMode && moduleVisibility.TRANSFER && (
         <section
           className="wedding-module"
           style={{ order: blockOrder.indexOf("TRANSFER") }}
@@ -390,7 +384,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {(wishlistText || wishlistItems.length > 0) && (
+      {!postWeddingMode && (wishlistText || wishlistItems.length > 0) && (
         <section
           className="wedding-module wedding-wishlist"
           style={{ order: blockOrder.indexOf("WISHLIST") }}
@@ -410,18 +404,121 @@ export function InvitationPreview({
               {wishlistItems.map((item) => (
                 <a
                   key={item.id}
-                  href={item.url || "#"}
-                  target={item.url ? "_blank" : undefined}
-                  rel={item.url ? "noreferrer" : undefined}
+                  href={
+                    item.type === "EXPERIENCE"
+                      ? giftPaymentLink || "#"
+                      : item.url || "#"
+                  }
+                  target={
+                    (item.type === "EXPERIENCE" && giftPaymentLink) || item.url
+                      ? "_blank"
+                      : undefined
+                  }
+                  rel={
+                    (item.type === "EXPERIENCE" && giftPaymentLink) || item.url
+                      ? "noreferrer"
+                      : undefined
+                  }
                   onClick={(event) => event.stopPropagation()}
                 >
                   <Gift size={15} />
-                  <span>{item.title || "Подарок"}</span>
+                  <span>
+                    {item.title || "Подарок"}
+                    <small>
+                      {item.type === "EXPERIENCE"
+                        ? "Подарить впечатление"
+                        : "Открыть подарок"}
+                    </small>
+                  </span>
                   <ExternalLink size={12} />
                 </a>
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {!postWeddingMode && coordinatorName && (
+        <section
+          className="wedding-module wedding-coordinator"
+          style={{ order: blockOrder.indexOf("COORDINATOR") }}
+        >
+          {coordinatorPhoto ? (
+            <Image
+              className="coordinator-avatar"
+              src={coordinatorPhoto}
+              alt={coordinatorName}
+              width={112}
+              height={112}
+              unoptimized
+            />
+          ) : (
+            <Users size={28} />
+          )}
+          <span>По всем вопросам</span>
+          <h2>{coordinatorName}</h2>
+          <p>{coordinatorRole || "Координатор свадьбы"}</p>
+          <div className="coordinator-actions">
+            {coordinatorTelegram && (
+              <a
+                href={coordinatorTelegram}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Send size={14} /> Telegram
+              </a>
+            )}
+            {coordinatorWhatsapp && (
+              <a
+                href={coordinatorWhatsapp}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Phone size={14} /> WhatsApp
+              </a>
+            )}
+            {coordinatorPhone && (
+              <a
+                href={`tel:${coordinatorPhone.replace(/[^\d+]/g, "")}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Phone size={14} /> Позвонить
+              </a>
+            )}
+            {coordinatorMapLink && (
+              <a
+                href={coordinatorMapLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <MapPin size={14} /> Маршрут
+              </a>
+            )}
+          </div>
+        </section>
+      )}
+
+      {!postWeddingMode && faqItems.length > 0 && (
+        <section
+          className="wedding-module wedding-faq"
+          style={{ order: blockOrder.indexOf("FAQ") }}
+        >
+          <span>Полезно знать</span>
+          <h2>Частые вопросы</h2>
+          <div className="faq-accordion">
+            {faqItems.map((item) => (
+              <details key={item.id}>
+                <summary>
+                  <span>{item.question || "Вопрос"}</span>
+                  <ChevronDown size={16} />
+                </summary>
+                <p>{item.answer || "Ответ скоро появится."}</p>
+              </details>
+            ))}
+          </div>
         </section>
       )}
 
@@ -431,68 +528,9 @@ export function InvitationPreview({
           style={{ order: blockOrder.indexOf("RSVP") }}
         >
           <Users size={19} />
-          <span>Умный опрос гостей</span>
-          <h2>Вы будете с нами?</h2>
-          {personalizedGuest && !isRsvpSent ? (
-            <div className="rsvp-form" onClick={(event) => event.stopPropagation()}>
-              <p className="personal-rsvp-copy">
-                Дорогой(ая) {personalizedGuest.name}, мы очень ждем тебя!
-                Сможешь разделить этот день с нами?
-              </p>
-              <label>
-                <span>Предпочтение в еде</span>
-                <select
-                  value={foodPreference}
-                  onChange={(event) => setFoodPreference(event.target.value)}
-                >
-                  <option value="Мясо">Мясо</option>
-                  <option value="Рыба">Рыба</option>
-                  <option value="Веган">Веган</option>
-                </select>
-              </label>
-              <label>
-                <span>Аллергии</span>
-                <input
-                  value={allergies}
-                  placeholder="Например, орехи или лактоза"
-                  onChange={(event) => setAllergies(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Предпочтения по напиткам</span>
-                <input
-                  value={drinks}
-                  placeholder="Вино, безалкогольные напитки"
-                  onChange={(event) => setDrinks(event.target.value)}
-                />
-              </label>
-              <label className="rsvp-checkbox">
-                <input
-                  type="checkbox"
-                  checked={needsTransport}
-                  onChange={(event) => setNeedsTransport(event.target.checked)}
-                />
-                <span>Нужен трансфер</span>
-              </label>
-              <div className="personal-rsvp-actions">
-                <button
-                  type="button"
-                  disabled={isRsvpSaving}
-                  onClick={() => void submitPersonalizedRsvp("ACCEPTED")}
-                >
-                  Да, буду
-                </button>
-                <button
-                  type="button"
-                  disabled={isRsvpSaving}
-                  onClick={() => void submitPersonalizedRsvp("DECLINED")}
-                >
-                  К сожалению, не смогу
-                </button>
-              </div>
-              {rsvpError && <p className="rsvp-error">{rsvpError}</p>}
-            </div>
-          ) : !isRsvpOpen ? (
+          <span>{t.survey}</span>
+          <h2>{t.attendingQuestion}</h2>
+          {!isRsvpOpen ? (
             <button
               type="button"
               onClick={(event) => {
@@ -501,12 +539,15 @@ export function InvitationPreview({
                 setIsRsvpSent(false);
               }}
             >
-              Подтвердить участие
+              {t.confirm}
             </button>
           ) : isRsvpSent ? (
             <div className="rsvp-success">
               <strong>Ответ сохранен</strong>
-              <p>Он уже появился во вкладке «Гости».</p>
+              <p>Спасибо! Молодожены уже получили ваш ответ.</p>
+              {personalizedGuest && (
+                <RsvpSuccessActions magicToken={personalizedGuest.magicToken} />
+              )}
               <button
                 type="button"
                 onClick={(event) => {
@@ -518,80 +559,59 @@ export function InvitationPreview({
               </button>
             </div>
           ) : (
-            <form className="rsvp-form" onSubmit={submitRsvp} onClick={(event) => event.stopPropagation()}>
-              <label>
-                <span>Имя гостя</span>
-                <input
-                  required
-                  value={guestName}
-                  placeholder="Иван Петров"
-                  onChange={(event) => setGuestName(event.target.value)}
-                />
-              </label>
-              <div className="rsvp-status">
-                <button
-                  className={guestStatus === "ACCEPTED" ? "is-selected" : ""}
-                  type="button"
-                  onClick={() => setGuestStatus("ACCEPTED")}
-                >
-                  Я приду
-                </button>
-                <button
-                  className={guestStatus === "DECLINED" ? "is-selected" : ""}
-                  type="button"
-                  onClick={() => setGuestStatus("DECLINED")}
-                >
-                  Не смогу
-                </button>
-              </div>
-              <label>
-                <span>Предпочтение в еде</span>
-                <select
-                  value={foodPreference}
-                  onChange={(event) => setFoodPreference(event.target.value)}
-                >
-                  <option value="Мясо">Мясо</option>
-                  <option value="Рыба">Рыба</option>
-                  <option value="Веган">Веган</option>
-                </select>
-              </label>
-              <label>
-                <span>Аллергии</span>
-                <input
-                  value={allergies}
-                  placeholder="Например, орехи или лактоза"
-                  onChange={(event) => setAllergies(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Предпочтения по напиткам</span>
-                <input
-                  value={drinks}
-                  placeholder="Вино, безалкогольные"
-                  onChange={(event) => setDrinks(event.target.value)}
-                />
-              </label>
-              <label className="rsvp-checkbox">
-                <input
-                  type="checkbox"
-                  checked={needsTransport}
-                  onChange={(event) => setNeedsTransport(event.target.checked)}
-                />
-                <span>Нужен трансфер</span>
-              </label>
-              <button type="submit">Отправить ответ</button>
-            </form>
+            <RsvpQuestionnaire
+              personalizedGuest={personalizedGuest}
+              onComplete={() => setIsRsvpSent(true)}
+            />
           )}
         </section>
       )}
       </div>
+      {!removeBranding && (
+        <footer className="vowly-signature">
+          Создано на{" "}
+          <Link href="/" onClick={(event) => event.stopPropagation()}>
+            Vowly
+          </Link>
+        </footer>
+      )}
     </article>
   );
 }
 
 function LoveStoryGallery({ photos }: { photos: string[] }) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const showPrevious = useCallback(() =>
+    setLightboxIndex((index) =>
+      index === null ? null : (index - 1 + photos.length) % photos.length,
+    ), [photos.length]);
+  const showNext = useCallback(() =>
+    setLightboxIndex((index) =>
+      index === null ? null : (index + 1) % photos.length,
+    ), [photos.length]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightboxIndex(null);
+      if (event.key === "ArrowLeft") showPrevious();
+      if (event.key === "ArrowRight") showNext();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lightboxIndex, showNext, showPrevious]);
 
   const scrollToPhoto = (index: number) => {
     const carousel = carouselRef.current;
@@ -638,13 +658,23 @@ function LoveStoryGallery({ photos }: { photos: string[] }) {
       >
         {photos.map((photo, index) => (
           <figure key={`${photo.slice(-20)}-${index}`}>
-            <Image
-              src={photo}
-              alt={`Love Story ${index + 1}`}
-              width={560}
-              height={700}
-              unoptimized
-            />
+            <button
+              className="love-story-open"
+              type="button"
+              aria-label={`Открыть фотографию ${index + 1} на весь экран`}
+              onClick={(event) => {
+                event.stopPropagation();
+                setLightboxIndex(index);
+              }}
+            >
+              <Image
+                src={photo}
+                alt={`Love Story ${index + 1}`}
+                width={560}
+                height={700}
+                unoptimized
+              />
+            </button>
           </figure>
         ))}
       </div>
@@ -675,6 +705,74 @@ function LoveStoryGallery({ photos }: { photos: string[] }) {
           <ChevronRight size={16} />
         </button>
       </div>
+      {lightboxIndex !== null &&
+        createPortal(
+          <div
+            className="love-story-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Полноэкранная галерея Love Story"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <button
+              className="lightbox-close"
+              type="button"
+              aria-label="Закрыть галерею"
+              onClick={() => setLightboxIndex(null)}
+            >
+              <X size={22} />
+            </button>
+            <button
+              className="lightbox-previous"
+              type="button"
+              aria-label="Предыдущая фотография"
+              onClick={(event) => {
+                event.stopPropagation();
+                showPrevious();
+              }}
+            >
+              <ChevronLeft size={26} />
+            </button>
+            <div
+              className="lightbox-stage"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={(event) => {
+                touchStartX.current = event.touches[0]?.clientX ?? null;
+              }}
+              onTouchEnd={(event) => {
+                if (touchStartX.current === null) return;
+                const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+                const delta = endX - touchStartX.current;
+                touchStartX.current = null;
+                if (Math.abs(delta) < 45) return;
+                if (delta > 0) showPrevious();
+                else showNext();
+              }}
+            >
+              <Image
+                key={`${lightboxIndex}-${photos[lightboxIndex]}`}
+                src={photos[lightboxIndex]}
+                alt={`Love Story ${lightboxIndex + 1}`}
+                width={1600}
+                height={1200}
+                unoptimized
+              />
+              <span>{lightboxIndex + 1} / {photos.length}</span>
+            </div>
+            <button
+              className="lightbox-next"
+              type="button"
+              aria-label="Следующая фотография"
+              onClick={(event) => {
+                event.stopPropagation();
+                showNext();
+              }}
+            >
+              <ChevronRight size={26} />
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -721,9 +819,13 @@ function InteractiveYandexMap({
 function Countdown({
   weddingDate,
   ceremonyTime,
+  style,
+  language,
 }: {
   weddingDate: string;
   ceremonyTime: string;
+  style: CountdownStyleCode;
+  language: "RU" | "EN";
 }) {
   const target = useMemo(
     () => new Date(`${weddingDate}T${ceremonyTime || "00:00"}:00`).getTime(),
@@ -746,15 +848,20 @@ function Countdown({
   const seconds = Math.floor((remaining / 1000) % 60);
 
   return (
-    <div className="countdown-grid">
+    <div className={`countdown-grid countdown-${style.toLowerCase()}`}>
       {[
-        ["Дней", days],
-        ["Часов", hours],
-        ["Минут", minutes],
-        ["Секунд", seconds],
+        [weddingCopy[language].days, days],
+        [weddingCopy[language].hours, hours],
+        [weddingCopy[language].minutes, minutes],
+        [weddingCopy[language].seconds, seconds],
       ].map(([label, value]) => (
         <div key={label}>
-          <strong>{String(value).padStart(2, "0")}</strong>
+          <strong
+            className={style === "FLIP" ? "countdown-flip-value" : undefined}
+            key={`${label}-${value}`}
+          >
+            {String(value).padStart(2, "0")}
+          </strong>
           <span>{label}</span>
         </div>
       ))}

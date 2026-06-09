@@ -1,8 +1,74 @@
 import type { Metadata } from "next";
+import {
+  Bad_Script,
+  Caveat,
+  Cormorant_Garamond,
+  Marck_Script,
+  Montserrat,
+  Oranienbaum,
+  Playfair_Display,
+} from "next/font/google";
 
 import { CookieBanner } from "@/features/legal/ui/cookie-banner";
 
 import "./globals.css";
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["cyrillic", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const marck = Marck_Script({
+  variable: "--font-marck",
+  subsets: ["cyrillic", "latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["cyrillic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const badScript = Bad_Script({
+  variable: "--font-bad-script",
+  subsets: ["cyrillic", "latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["cyrillic", "latin"],
+  display: "swap",
+});
+
+const oranienbaum = Oranienbaum({
+  variable: "--font-oranienbaum",
+  subsets: ["cyrillic", "latin"],
+  weight: "400",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["cyrillic", "latin"],
+  display: "swap",
+});
+
+const fontVariables = [
+  cormorant.variable,
+  marck.variable,
+  caveat.variable,
+  badScript.variable,
+  montserrat.variable,
+  oranienbaum.variable,
+  playfair.variable,
+].join(" ");
 
 export const metadata: Metadata = {
   title: "Vowly — свадебный сайт за несколько минут",
@@ -15,17 +81,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Global App Router font stylesheet; runtime loading keeps local builds offline-safe. */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cormorant+Garamond:wght@300..700&family=Great+Vibes&family=Montserrat:wght@100..900&family=Pinyon+Script&family=Playfair+Display:wght@400..900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="ru" className={fontVariables}>
       <body>
         {children}
         <CookieBanner />

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url = env("PRISMA_DATABASE_URL")
+  
 }
 
 enum AuthProvider {
@@ -13,6 +14,11 @@ enum AuthProvider {
   YANDEX
   EMAIL
   ANONYMOUS
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 enum SiteStatus {
@@ -42,12 +48,19 @@ enum ModuleType {
   MUSIC
   GALLERY
   COUNTDOWN
+  FAQ
 }
 
 enum GuestStatus {
   PENDING
   ACCEPTED
   DECLINED
+}
+
+enum TransportPreference {
+  TRANSFER
+  OWN_CAR
+  SELF
 }
 
 enum OrderStatus {
@@ -74,12 +87,24 @@ model User {
   email       String?      @unique
   name        String?
   provider    AuthProvider @default(ANONYMOUS)
+  role        UserRole     @default(USER)
+  passwordHash String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   weddingSites WeddingSite[]
   orders      Order[]
 
   @@index([createdAt])
+}
+
+model LoginCode {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
 }
 
 model WeddingSite {
@@ -89,6 +114,12 @@ model WeddingSite {
   theme          ThemeCode    @default(MINIMAL)
   status         SiteStatus   @default(DRAFT)
   musicTrackId   String?
+  heroImageDesktop String?
+  heroImageMobile  String?
+  giftPaymentLink  String?
+  giftQrCode       String?
+  pinCode          String?
+  defaultLanguage  String       @default("RU")
   isPremium      Boolean      @default(false)
   removeBranding Boolean      @default(false)
   rsvpEnabled    Boolean      @default(false)
@@ -104,6 +135,7 @@ model WeddingSite {
   modules        SiteModule[]
   guests         Guest[]
   orders         Order[]
+  crewTimings    CrewTiming[]
 
   @@index([userId])
   @@index([status, createdAt])
@@ -123,12 +155,37 @@ model WeddingData {
   welcomeText    String?
   dressCodeText  String?
   colorPalette   String?
+  dressMoodboard String?
+  faqItems       String?
+  coordinatorName String?
+  coordinatorRole String?
+  coordinatorPhoto String?
+  coordinatorTelegram String?
+  coordinatorWhatsapp String?
+  coordinatorPhone String?
+  coordinatorMapLink String?
+  photoMask       String?     @default("RECTANGLE")
+  customQuestions String?
   timeline       String?
   transfer       String?
   customContent  String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   weddingSite    WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+}
+
+model CrewTiming {
+  id             String      @id @default(cuid())
+  weddingSiteId  String
+  time           String
+  description    String
+  contactPerson  String
+  sortOrder      Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  weddingSite    WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+
+  @@index([weddingSiteId, sortOrder])
 }
 
 model SiteModule {
@@ -150,15 +207,25 @@ model Guest {
   siteId              String           @map("weddingSiteId")
   customSlug          String?
   name                String           @map("guestName")
+  isCouple            Boolean          @default(false)
+  partnerName         String?
+  attendanceChoice    String?
   phone               String
   status              GuestStatus      @default(PENDING) @map("attendance")
   magicToken          String           @unique
   alcoholPreferences  String           @default("[]")
   needsTransport      Boolean          @default(false)
+  transportPreference TransportPreference?
   dietaryRestrictions String?
   foodPreference      String?
+  partnerFoodPreference String?
   allergies           String?
+  partnerAllergies    String?
+  tags                String           @default("[]")
+  customAnswers       String           @default("{}")
+  hasPlusOne          Boolean          @default(false)
   plusOneName         String?
+  musicRequest        String?
   message             String?
   respondedAt         DateTime?
   createdAt           DateTime         @default(now())
