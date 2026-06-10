@@ -132,6 +132,157 @@
   font-size: 0.8rem;
 }
 
+.quiz-track-list {
+  display: grid;
+  gap: 10px;
+}
+
+.quiz-track {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+
+.quiz-track.is-selected {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px var(--sage);
+}
+
+.quiz-track > span {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.quiz-track > span small {
+  color: var(--muted);
+}
+
+.quiz-track-play,
+.quiz-track-select {
+  border: 0;
+  cursor: pointer;
+}
+
+.quiz-track-play {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--sage-dark);
+}
+
+.quiz-track-select {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--cream);
+}
+
+.create-success-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 28, 23, 0.56);
+  backdrop-filter: blur(12px);
+}
+
+.create-success-modal {
+  width: min(100%, 560px);
+  padding: clamp(26px, 5vw, 44px);
+  text-align: center;
+  border: 1px solid #e2ddd3;
+  border-radius: 28px;
+  background: #fffdf9;
+  box-shadow: 0 28px 90px rgba(24, 28, 23, 0.24);
+}
+
+.create-success-modal h2 {
+  margin: 10px 0 12px;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.create-success-modal > p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.create-success-link {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin: 24px 0;
+  padding: 8px 8px 8px 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--cream);
+}
+
+.create-success-link > span {
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.create-success-link button,
+.create-success-actions a,
+.create-success-actions button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.create-success-link button {
+  color: #fff;
+  background: var(--sage-dark);
+}
+
+.create-success-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.create-success-actions a {
+  border: 1px solid var(--line);
+}
+
+.create-success-actions button {
+  color: #fff;
+  background: var(--ink);
+}
+
+@media (max-width: 520px) {
+  .create-success-link,
+  .create-success-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -943,6 +1094,60 @@ a {
   overflow-y: scroll;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+}
+
+@media (max-width: 767px) {
+  .constructor-shell {
+    height: auto;
+    min-width: 0;
+    min-height: 100svh;
+    overflow: visible;
+  }
+
+  .constructor-header {
+    height: 60px;
+    padding: 0 12px;
+  }
+
+  .constructor-header .save-status,
+  .constructor-header .device-button {
+    display: none;
+  }
+
+  .constructor-header .publish-button {
+    min-height: 38px;
+    margin-left: 0;
+    padding: 0 12px;
+    font-size: 0.78rem;
+  }
+
+  .constructor-layout {
+    height: auto;
+    min-height: calc(100svh - 60px);
+    display: block;
+    overflow: visible;
+  }
+
+  .constructor-sidebar.is-mobile-editor {
+    height: auto;
+    min-height: calc(100svh - 60px);
+    display: block;
+    overflow: visible;
+    border-right: 0;
+  }
+
+  .constructor-sidebar.is-mobile-editor .constructor-editor {
+    height: auto;
+    min-height: calc(100svh - 60px);
+    padding: 24px 16px 96px;
+    overflow: visible;
+  }
+
+  .guest-quick-form,
+  .guest-question-builder article,
+  .guests-toolbar {
+    grid-template-columns: 1fr;
+  }
 }
 
 .constructor-progress {

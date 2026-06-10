@@ -5,19 +5,26 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
+  Copy,
+  ExternalLink,
   MapPin,
+  Music2,
   Palette,
+  Pause,
+  Play,
   Route,
   Shirt,
   Sparkles,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { OptionalModule, ThemeCode } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
+import { DEFAULT_TRACKS } from "@/features/constructor/model/default-tracks";
+import { launchSuccessConfetti } from "@/features/onboarding/lib/success-confetti";
 
 const themes: Array<{
   code: ThemeCode;
@@ -53,6 +60,13 @@ export function QuizWizard() {
   const { ceremonyTime, setCeremonyTime } = store;
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [createdSite, setCreatedSite] = useState<{
+    id: string;
+    slug: string;
+  } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (!ceremonyTime) {
@@ -93,6 +107,8 @@ export function QuizWizard() {
       weddingDate: store.weddingDate,
       ceremonyTime: store.ceremonyTime,
       theme: store.theme,
+      templateStyle: store.templateStyle,
+      audioUrl: store.audioUrl,
       modules: store.modules,
       acceptedTerms: store.acceptedTerms,
     };
@@ -112,14 +128,19 @@ export function QuizWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
-      const result = (await response.json()) as { id?: string; error?: string };
+      const result = (await response.json()) as {
+        id?: string;
+        slug?: string;
+        error?: string;
+      };
 
-      if (!response.ok || !result.id) {
+      if (!response.ok || !result.id || !result.slug) {
         throw new Error(result.error ?? "Не удалось создать сайт.");
       }
 
       localStorage.removeItem("wedding-builder-quiz");
-      window.location.href = `/constructor?siteId=${encodeURIComponent(result.id)}`;
+      setCreatedSite({ id: result.id, slug: result.slug });
+      window.setTimeout(launchSuccessConfetti, 80);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -143,11 +164,11 @@ export function QuizWizard() {
           <ArrowLeft size={20} />
         </button>
         <span className="brand">vowly</span>
-        <span className="step-label">{store.step} из 3</span>
+        <span className="step-label">{store.step} из 4</span>
       </header>
 
       <div className="progress-track">
-        <div style={{ width: `${(store.step / 3) * 100}%` }} />
+        <div style={{ width: `${(store.step / 4) * 100}%` }} />
       </div>
 
       <section className="quiz-card">
@@ -238,6 +259,70 @@ export function QuizWizard() {
 
         {store.step === 3 && (
           <div className="step-content">
+            <span className="step-icon"><Music2 size={22} /></span>
+            <p className="eyebrow">Атмосфера</p>
+            <h1>Какая музыка будет звучать?</h1>
+            <p className="step-description">
+              Выберите сопровождение. Позже его можно заменить своим треком.
+            </p>
+            <audio
+              ref={audioRef}
+              onEnded={() => setPlayingTrack(null)}
+              onPause={() => setPlayingTrack(null)}
+            />
+            <div className="quiz-track-list">
+              {DEFAULT_TRACKS.map((track) => {
+                const selected = store.audioUrl === track.src;
+                const playing = playingTrack === track.src;
+
+                return (
+                  <article
+                    className={`quiz-track ${selected ? "is-selected" : ""}`}
+                    key={track.id}
+                  >
+                    <button
+                      className="quiz-track-play"
+                      type="button"
+                      aria-label={playing ? `Пауза: ${track.title}` : `Слушать: ${track.title}`}
+                      onClick={() => {
+                        const audio = audioRef.current;
+                        if (!audio) return;
+
+                        if (playing) {
+                          audio.pause();
+                          return;
+                        }
+
+                        audio.src = track.src;
+                        void audio.play().then(
+                          () => setPlayingTrack(track.src),
+                          () => setPlayingTrack(null),
+                        );
+                      }}
+                    >
+                      {playing ? <Pause size={16} /> : <Play size={16} />}
+                    </button>
+                    <span>
+                      <strong>{track.title}</strong>
+                      <small>{track.category}</small>
+                    </span>
+                    <button
+                      className="quiz-track-select"
+                      type="button"
+                      onClick={() => store.setAudioUrl(track.src)}
+                    >
+                      {selected && <Check size={14} />}
+                      {selected ? "Выбрано" : "Выбрать"}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {store.step === 4 && (
+          <div className="step-content">
             <span className="step-icon"><Sparkles size={22} /></span>
             <p className="eyebrow">Последний штрих</p>
             <h1>Что добавить на сайт?</h1>
@@ -290,7 +375,7 @@ export function QuizWizard() {
               Назад
             </button>
           )}
-          {store.step < 3 ? (
+          {store.step < 4 ? (
             <button className="primary-button" type="button" onClick={handleNext}>
               Продолжить <ArrowRight size={18} />
             </button>
@@ -308,6 +393,58 @@ export function QuizWizard() {
         </footer>
       </section>
       <p className="autosave-note">Ваши ответы сохраняются автоматически</p>
+
+      {createdSite && (
+        <div className="create-success-backdrop" role="presentation">
+          <section
+            className="create-success-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-success-title"
+          >
+            <span className="step-icon"><Sparkles size={24} /></span>
+            <p className="eyebrow">Сайт ожил</p>
+            <h2 id="create-success-title">Ваше приглашение готово</h2>
+            <p>
+              Ссылка уже работает. Скопируйте её для гостей или продолжите
+              оформление в конструкторе.
+            </p>
+            <div className="create-success-link">
+              <span>{`${window.location.origin}/wedding/${createdSite.slug}`}</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(
+                    `${window.location.origin}/wedding/${createdSite.slug}`,
+                  );
+                  setIsCopied(true);
+                  window.setTimeout(() => setIsCopied(false), 1800);
+                }}
+              >
+                {isCopied ? <Check size={16} /> : <Copy size={16} />}
+                {isCopied ? "Скопировано" : "Копировать"}
+              </button>
+            </div>
+            <div className="create-success-actions">
+              <a
+                href={`/wedding/${createdSite.slug}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Открыть сайт <ExternalLink size={16} />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = `/constructor?siteId=${encodeURIComponent(createdSite.id)}`;
+                }}
+              >
+                Перейти в конструктор <ArrowRight size={16} />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

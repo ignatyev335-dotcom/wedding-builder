@@ -2,6 +2,7 @@ import { ModuleType, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
+import { sendWeddingWelcomeEmail } from "@/features/notifications/server/send-wedding-welcome-email";
 import {
   getRequestSession,
   setSessionCookie,
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
     const sessionUser = session
       ? await prisma.user.findUnique({
           where: { id: session.userId },
-          select: { id: true },
+          select: { id: true, email: true },
         })
       : null;
     let createdAnonymousUserId: string | null = null;
@@ -76,6 +77,9 @@ export async function POST(request: Request) {
           userId,
           slug,
           theme: data.theme,
+          templateStyle: data.templateStyle,
+          musicTrackId: data.audioUrl,
+          audioUrl: data.audioUrl,
           data: {
             create: {
               partnerOneName: data.partnerOneName.trim(),
@@ -110,6 +114,18 @@ export async function POST(request: Request) {
     });
 
     const response = NextResponse.json(site, { status: 201 });
+    if (sessionUser?.email) {
+      const origin = new URL(request.url).origin;
+      await sendWeddingWelcomeEmail({
+        email: sessionUser.email,
+        partnerOneName: data.partnerOneName.trim(),
+        partnerTwoName: data.partnerTwoName.trim(),
+        siteUrl: `${origin}/wedding/${site.slug}`,
+        accountUrl: `${origin}/account`,
+      }).catch((emailError) => {
+        console.error("Failed to send welcome email", emailError);
+      });
+    }
     if (createdAnonymousUserId) {
       setSessionCookie(response, createdAnonymousUserId);
     }

@@ -1,12 +1,24 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Monitor, Smartphone } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  FileText,
+  Monitor,
+  Music2,
+  Smartphone,
+  Upload,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { WeddingBuilderData } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
-import { ConstructorSidebar } from "@/features/constructor/ui/constructor-sidebar";
+import {
+  ConstructorSidebar,
+  type ConstructorTab,
+} from "@/features/constructor/ui/constructor-sidebar";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 
 export function ConstructorShell({
@@ -18,6 +30,7 @@ export function ConstructorShell({
 }) {
   const initialize = useWeddingStore((state) => state.initialize);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
+  const [mobileTab, setMobileTab] = useState<ConstructorTab>(initialTab);
   const previewScreenRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +53,7 @@ export function ConstructorShell({
   };
 
   return (
-    <main className="constructor-shell">
+    <main className="constructor-shell min-w-0 pb-20 md:pb-0">
       <header className="constructor-header">
         <div className="constructor-header-start">
           <Link href="/" className="icon-button" aria-label="На главную">
@@ -81,9 +94,18 @@ export function ConstructorShell({
       </header>
 
       <div className="constructor-layout">
-        <ConstructorSidebar initialTab={initialTab} />
+        <div className="hidden min-h-0 md:block md:w-full">
+          <ConstructorSidebar initialTab={initialTab} />
+        </div>
+        <div className="block min-h-0 w-full pb-20 md:hidden">
+          <ConstructorSidebar
+            activeTab={mobileTab}
+            onTabChange={setMobileTab}
+            hideTabs
+          />
+        </div>
         <section
-          className={`constructor-preview-area preview-${previewMode}`}
+          className={`constructor-preview-area hidden md:flex preview-${previewMode}`}
           onWheel={scrollPreview}
         >
           <div className="constructor-preview-label">
@@ -114,6 +136,38 @@ export function ConstructorShell({
           </div>
         </section>
       </div>
+
+      {initialData.slug && (
+        <a
+          className="fixed top-4 right-4 z-50 rounded-full border bg-white/80 px-3 py-1.5 text-sm opacity-80 shadow-sm backdrop-blur transition-opacity hover:opacity-100 md:hidden"
+          href={`/wedding/${initialData.slug}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Предпросмотр
+        </a>
+      )}
+
+      <nav className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-stone-200 bg-white p-2 md:hidden">
+        {([
+          ["content", "Настройки", FileText],
+          ["music", "Музыка", Music2],
+          ["guests", "Гости", UsersRound],
+          ["publish", "Тарифы", Upload],
+        ] as const).map(([tab, label, Icon]) => (
+          <button
+            className={`flex min-w-16 flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-xs ${
+              mobileTab === tab ? "bg-stone-100 text-stone-900" : "text-stone-500"
+            }`}
+            type="button"
+            key={tab}
+            onClick={() => setMobileTab(tab)}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
     </main>
   );
 }

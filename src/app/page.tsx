@@ -23,8 +23,8 @@ export default function HomePage() {
             Элегантные пригласительные, умный сбор гостей и вся информация в
             одном месте. Без дизайнеров и программистов.
           </p>
-          <Link className="primary-button" href="/quiz">
-            Создать свой сайт
+          <Link className="primary-button" href="/create">
+            Создать сайт бесплатно
             <ArrowRight size={18} />
           </Link>
           <small className="hero-caption">

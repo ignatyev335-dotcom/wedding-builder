@@ -25,6 +25,8 @@ export type QuizDraft = {
   weddingDate: string;
   ceremonyTime: string;
   theme: ThemeCode;
+  templateStyle: string;
+  audioUrl: string;
   modules: OptionalModule[];
   acceptedTerms: boolean;
 };

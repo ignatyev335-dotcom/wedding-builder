@@ -112,8 +112,10 @@ model WeddingSite {
   userId         String
   slug           String       @unique
   theme          ThemeCode    @default(MINIMAL)
+  templateStyle  String       @default("MINIMAL")
   status         SiteStatus   @default(DRAFT)
   musicTrackId   String?
+  audioUrl       String?
   heroImageDesktop String?
   heroImageMobile  String?
   giftPaymentLink  String?

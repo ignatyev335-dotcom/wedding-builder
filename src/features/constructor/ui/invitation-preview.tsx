@@ -108,13 +108,48 @@ export function InvitationPreview({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
+    if (!audio || !selectedAudioSource) return;
 
     audio.pause();
     audio.currentTime = 0;
-    setIsPlaying(false);
+    audio.muted = true;
+    audio.volume = 1;
+
+    let fadeTimer: number | undefined;
+
+    void audio.play().then(
+      () => setIsPlaying(true),
+      () => setIsPlaying(false),
+    );
+
+    const unlockAudio = () => {
+      audio.muted = false;
+      audio.volume = 0;
+
+      if (audio.paused) {
+        void audio.play().then(() => setIsPlaying(true)).catch(() => {
+          setIsPlaying(false);
+        });
+      }
+
+      fadeTimer = window.setInterval(() => {
+        audio.volume = Math.min(1, audio.volume + 0.1);
+        if (audio.volume >= 1 && fadeTimer) {
+          window.clearInterval(fadeTimer);
+        }
+      }, 60);
+    };
+
+    document.addEventListener("click", unlockAudio, {
+      capture: true,
+      once: true,
+    });
+
+    return () => {
+      document.removeEventListener("click", unlockAudio, true);
+      if (fadeTimer) window.clearInterval(fadeTimer);
+      audio.pause();
+    };
   }, [selectedAudioSource]);
 
   const playSelectedTrack = async () => {

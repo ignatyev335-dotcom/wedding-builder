@@ -461,15 +461,99 @@ export function GuestsPanel() {
       </div>
 
       {guests.length ? (
-        <div className="guest-table guest-crm-table">
-          <div className="guest-table-head">
-            <span>Гость</span>
-            <span>Статус</span>
-            <span>Персональная ссылка</span>
+        <>
+          <div className="hidden md:block">
+            <div className="guest-table guest-crm-table">
+              <div className="guest-table-head">
+                <span>Гость</span>
+                <span>Статус</span>
+                <span>Персональная ссылка</span>
+              </div>
+              {guests.map((guest) => (
+                <GuestDesktopRow
+                  guest={guest}
+                  copied={copiedId === guest.id}
+                  key={guest.id}
+                  onCopy={copyInvitation}
+                  onToggleTag={toggleGuestTag}
+                />
+              ))}
+            </div>
           </div>
-          {guests.map((guest) => (
-            <article key={guest.id}>
-              <div>
+
+          <div className="grid gap-3 md:hidden">
+            {guests.map((guest) => (
+              <article
+                className="w-full rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+                key={guest.id}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="grid gap-1">
+                    <strong>{guest.name}</strong>
+                    {guest.isCouple && <small>и {guest.partnerName}</small>}
+                    <small className="text-stone-500">
+                      {guest.phone || "Телефон не указан"}
+                    </small>
+                  </div>
+                  <span className={`guest-status status-${guest.status.toLowerCase()}`}>
+                    {statusLabels[guest.status]}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-1 text-sm text-stone-600">
+                  <span>{guest.foodPreference || "Еда не выбрана"}</span>
+                  {guest.allergies && <span>Аллергии: {guest.allergies}</span>}
+                  {guest.musicRequest && <span>Трек: {guest.musicRequest}</span>}
+                </div>
+                <div className="guest-row-tags mt-3">
+                  {guestTagCodes.map((tag) => (
+                    <button
+                      className={guest.tags.includes(tag) ? "is-selected" : ""}
+                      type="button"
+                      key={tag}
+                      onClick={() => void toggleGuestTag(guest, tag)}
+                    >
+                      {tagLabels[tag]}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm text-white disabled:opacity-50"
+                  type="button"
+                  disabled={!guest.invitationUrl}
+                  onClick={() => void copyInvitation(guest)}
+                >
+                  {copiedId === guest.id ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedId === guest.id ? "Скопировано" : "Скопировать ссылку"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="guests-empty">
+          <UserRoundX size={25} />
+          <strong>Список пока пуст</strong>
+          <p>Добавьте первого гостя, и мы подготовим для него личную ссылку.</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function GuestDesktopRow({
+  guest,
+  copied,
+  onCopy,
+  onToggleTag,
+}: {
+  guest: GuestResponse;
+  copied: boolean;
+  onCopy: (guest: GuestResponse) => Promise<void>;
+  onToggleTag: (guest: GuestResponse, tag: GuestTagCode) => Promise<void>;
+}) {
+  return (
+    <article>
+      <div>
                 <strong>{guest.name}</strong>
                 {guest.isCouple && (
                   <small className="guest-pair-name">и {guest.partnerName}</small>
@@ -495,7 +579,7 @@ export function GuestsPanel() {
                       className={guest.tags.includes(tag) ? "is-selected" : ""}
                       type="button"
                       key={tag}
-                      onClick={() => void toggleGuestTag(guest, tag)}
+                      onClick={() => void onToggleTag(guest, tag)}
                     >
                       {tagLabels[tag]}
                     </button>
@@ -513,22 +597,12 @@ export function GuestsPanel() {
                 <button
                   type="button"
                   disabled={!guest.invitationUrl}
-                  onClick={() => void copyInvitation(guest)}
+                  onClick={() => void onCopy(guest)}
                 >
-                  {copiedId === guest.id ? <Check size={14} /> : <Copy size={14} />}
-                  {copiedId === guest.id ? "Скопировано" : "Копировать"}
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Скопировано" : "Копировать"}
                 </button>
               </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="guests-empty">
-          <UserRoundX size={25} />
-          <strong>Список пока пуст</strong>
-          <p>Добавьте первого гостя, и мы подготовим для него личную ссылку.</p>
-        </div>
-      )}
-    </>
+    </article>
   );
 }

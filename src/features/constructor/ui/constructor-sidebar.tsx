@@ -40,7 +40,7 @@ import {
   getDefaultTrack,
 } from "@/features/constructor/model/default-tracks";
 
-type Tab =
+export type ConstructorTab =
   | "content"
   | "styles"
   | "music"
@@ -55,7 +55,7 @@ type ContentSection =
   | "FAQ"
   | BuilderModule;
 
-const tabs: Array<{ id: Tab; label: string; icon: typeof FileText }> = [
+const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> = [
   { id: "content", label: "Контент", icon: FileText },
   { id: "styles", label: "Стили", icon: Palette },
   { id: "music", label: "Музыка", icon: Music2 },
@@ -211,10 +211,21 @@ const cardStyleOptions: Array<{
 
 export function ConstructorSidebar({
   initialTab = "content",
+  activeTab: controlledTab,
+  onTabChange,
+  hideTabs = false,
 }: {
-  initialTab?: Tab;
+  initialTab?: ConstructorTab;
+  activeTab?: ConstructorTab;
+  onTabChange?: (tab: ConstructorTab) => void;
+  hideTabs?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [internalTab, setInternalTab] = useState<ConstructorTab>(initialTab);
+  const activeTab = controlledTab ?? internalTab;
+  const setActiveTab = (tab: ConstructorTab) => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
   const [openSections, setOpenSections] = useState<ContentSection[]>([
     "HERO",
     "TIMELINE",
@@ -342,13 +353,16 @@ export function ConstructorSidebar({
   };
 
   useEffect(() => {
-    const openPublish = () => setActiveTab("publish");
+    const openPublish = () => {
+      setInternalTab("publish");
+      onTabChange?.("publish");
+    };
     window.addEventListener("vowly-open-publish", openPublish);
 
     return () => {
       window.removeEventListener("vowly-open-publish", openPublish);
     };
-  }, []);
+  }, [onTabChange]);
 
   const toggleSection = (section: ContentSection) => {
     setOpenSections((sections) =>
@@ -401,8 +415,13 @@ export function ConstructorSidebar({
   };
 
   return (
-    <aside className="constructor-sidebar">
-      <nav className="constructor-tabs" aria-label="Разделы конструктора">
+    <aside
+      className={`constructor-sidebar ${hideTabs ? "is-mobile-editor" : ""}`}
+    >
+      <nav
+        className={`constructor-tabs ${hideTabs ? "hidden" : "hidden md:flex"}`}
+        aria-label="Разделы конструктора"
+      >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

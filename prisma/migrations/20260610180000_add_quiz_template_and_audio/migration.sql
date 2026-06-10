@@ -1,0 +1,3 @@
+ALTER TABLE "WeddingSite"
+ADD COLUMN "templateStyle" TEXT NOT NULL DEFAULT 'MINIMAL',
+ADD COLUMN "audioUrl" TEXT;

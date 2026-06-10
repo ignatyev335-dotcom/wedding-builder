@@ -11,6 +11,7 @@ type QuizStore = QuizDraft & {
   setWeddingDate: (weddingDate: string) => void;
   setCeremonyTime: (ceremonyTime: string) => void;
   setTheme: (theme: ThemeCode) => void;
+  setAudioUrl: (audioUrl: string) => void;
   toggleModule: (module: OptionalModule) => void;
   setAcceptedTerms: (acceptedTerms: boolean) => void;
   next: () => void;
@@ -25,6 +26,8 @@ const initialState: QuizDraft & { step: number } = {
   weddingDate: "",
   ceremonyTime: "17:00",
   theme: "MINIMAL",
+  templateStyle: "MINIMAL",
+  audioUrl: "/music/tender-piano.mp3",
   modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP", "COUNTDOWN"],
   acceptedTerms: false,
 };
@@ -37,7 +40,8 @@ export const useQuizStore = create<QuizStore>()(
         set({ partnerOneName, partnerTwoName }),
       setWeddingDate: (weddingDate) => set({ weddingDate }),
       setCeremonyTime: (ceremonyTime) => set({ ceremonyTime }),
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => set({ theme, templateStyle: theme }),
+      setAudioUrl: (audioUrl) => set({ audioUrl }),
       toggleModule: (module) =>
         set((state) => ({
           modules: state.modules.includes(module)
@@ -45,7 +49,7 @@ export const useQuizStore = create<QuizStore>()(
             : [...state.modules, module],
         })),
       setAcceptedTerms: (acceptedTerms) => set({ acceptedTerms }),
-      next: () => set((state) => ({ step: Math.min(3, state.step + 1) })),
+      next: () => set((state) => ({ step: Math.min(4, state.step + 1) })),
       back: () => set((state) => ({ step: Math.max(1, state.step - 1) })),
       reset: () => set(initialState),
     }),

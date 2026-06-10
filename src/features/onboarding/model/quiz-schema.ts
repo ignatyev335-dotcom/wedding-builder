@@ -13,6 +13,8 @@ export const quizSchema = z.object({
     .string()
     .regex(/^\d{2}:\d{2}$/, "Укажите точное время начала"),
   theme: z.enum(themeCodes),
+  templateStyle: z.string().trim().min(1).max(40),
+  audioUrl: z.string().trim().min(1, "Выберите музыку").max(500),
   modules: z.array(z.enum(optionalModules)).max(optionalModules.length),
   acceptedTerms: z.literal(true, {
     error: "Необходимо принять условия обработки персональных данных",
