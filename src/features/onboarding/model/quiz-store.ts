@@ -27,7 +27,7 @@ const initialState: QuizDraft & { step: number } = {
   ceremonyTime: "17:00",
   theme: "MINIMAL",
   templateStyle: "MINIMAL",
-  audioUrl: "/music/tender-piano.mp3",
+  audioUrl: "",
   modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP", "COUNTDOWN"],
   acceptedTerms: false,
 };

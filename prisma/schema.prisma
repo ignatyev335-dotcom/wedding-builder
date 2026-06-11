@@ -4,11 +4,12 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url = env("PRISMA_DATABASE_URL")
-  
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 enum AuthProvider {
+  GOOGLE
   TELEGRAM
   VK
   YANDEX
@@ -81,111 +82,213 @@ enum PremiumFeature {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  telegramId  String?      @unique
-  telegramChatId String?   @unique
-  email       String?      @unique
-  name        String?
-  provider    AuthProvider @default(ANONYMOUS)
-  role        UserRole     @default(USER)
-  passwordHash String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  weddingSites WeddingSite[]
-  orders      Order[]
+  id             String        @id @default(cuid())
+  telegramId     String?       @unique
+  telegramChatId String?       @unique
+  email          String?       @unique
+  emailVerified  DateTime?
+  phone          String?       @unique
+  image          String?
+  name           String?
+  provider       AuthProvider  @default(ANONYMOUS)
+  role           UserRole      @default(USER)
+  passwordHash   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  weddingSites   WeddingSite[]
+  orders         Order[]
+  accounts       Account[]
+  sessions       Session[]
 
   @@index([createdAt])
 }
 
 model LoginCode {
   id        String   @id @default(cuid())
-  email     String
+  email     String?
+  phone     String?
   codeHash  String
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([email, expiresAt])
+  @@index([phone, expiresAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model WeddingSite {
-  id             String       @id @default(cuid())
-  userId         String
-  slug           String       @unique
-  theme          ThemeCode    @default(MINIMAL)
-  templateStyle  String       @default("MINIMAL")
-  status         SiteStatus   @default(DRAFT)
-  musicTrackId   String?
-  audioUrl       String?
+  id               String       @id @default(cuid())
+  userId           String
+  slug             String       @unique
+  theme            ThemeCode    @default(MINIMAL)
+  templateStyle    String       @default("MINIMAL")
+  status           SiteStatus   @default(DRAFT)
+  musicTrackId     String?
+  designThemeId    String?
+  audioUrl         String?
   heroImageDesktop String?
   heroImageMobile  String?
   giftPaymentLink  String?
   giftQrCode       String?
   pinCode          String?
   defaultLanguage  String       @default("RU")
-  isPremium      Boolean      @default(false)
-  removeBranding Boolean      @default(false)
-  rsvpEnabled    Boolean      @default(false)
-  telegramAlerts Boolean      @default(false)
-  personalLinks  Boolean      @default(false)
-  premiumMusic   Boolean      @default(false)
-  galleryEnabled Boolean      @default(false)
-  publishedAt    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  data           WeddingData?
-  modules        SiteModule[]
-  guests         Guest[]
-  orders         Order[]
-  crewTimings    CrewTiming[]
+  isPremium        Boolean      @default(false)
+  removeBranding   Boolean      @default(false)
+  rsvpEnabled      Boolean      @default(false)
+  telegramAlerts   Boolean      @default(false)
+  personalLinks    Boolean      @default(false)
+  premiumMusic     Boolean      @default(false)
+  galleryEnabled   Boolean      @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data             WeddingData?
+  modules          SiteModule[]
+  guests           Guest[]
+  orders           Order[]
+  crewTimings      CrewTiming[]
+  musicTrack       AudioTrack?  @relation(fields: [musicTrackId], references: [id], onDelete: SetNull)
+  designTheme      DesignTheme? @relation(fields: [designThemeId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status, createdAt])
+  @@index([designThemeId])
+}
+
+model DesignTheme {
+  id              String        @id @default(cuid())
+  name            String        @unique
+  backgroundColor String
+  primaryColor    String
+  textColor       String
+  fontFamily      String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  sites           WeddingSite[]
+
+  @@index([createdAt])
+}
+
+model AudioTrack {
+  id        String        @id @default(cuid())
+  title     String
+  artist    String
+  fileUrl   String        @db.Text
+  isActive  Boolean       @default(true)
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  sites     WeddingSite[]
+
+  @@index([isActive, sortOrder])
+}
+
+model InvitationTemplate {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  category    String   @default("GENERAL")
+  value       String   @db.Text
+  isSecret    Boolean  @default(true)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
 }
 
 model WeddingData {
-  id             String      @id @default(cuid())
-  weddingSiteId  String      @unique
-  partnerOneName String
-  partnerTwoName String
-  weddingDate    DateTime
-  ceremonyTime   String?
-  venueName      String?
-  venueAddress   String?
-  mapLatitude    Float?
-  mapLongitude   Float?
-  welcomeText    String?
-  dressCodeText  String?
-  colorPalette   String?
-  dressMoodboard String?
-  faqItems       String?
-  coordinatorName String?
-  coordinatorRole String?
-  coordinatorPhoto String?
+  id                  String      @id @default(cuid())
+  weddingSiteId       String      @unique
+  partnerOneName      String
+  partnerTwoName      String
+  weddingDate         DateTime
+  ceremonyTime        String?
+  venueName           String?
+  venueAddress        String?
+  mapLatitude         Float?
+  mapLongitude        Float?
+  welcomeText         String?
+  dressCodeText       String?
+  colorPalette        String?
+  dressMoodboard      String?
+  faqItems            String?
+  coordinatorName     String?
+  coordinatorRole     String?
+  coordinatorPhoto    String?
   coordinatorTelegram String?
   coordinatorWhatsapp String?
-  coordinatorPhone String?
-  coordinatorMapLink String?
-  photoMask       String?     @default("RECTANGLE")
-  customQuestions String?
-  timeline       String?
-  transfer       String?
-  customContent  String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  weddingSite    WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+  coordinatorPhone    String?
+  coordinatorMapLink  String?
+  photoMask           String?     @default("RECTANGLE")
+  customQuestions     String?
+  timeline            String?
+  transfer            String?
+  customContent       String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  weddingSite         WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
 }
 
 model CrewTiming {
-  id             String      @id @default(cuid())
-  weddingSiteId  String
-  time           String
-  description    String
-  contactPerson  String
-  sortOrder      Int         @default(0)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  weddingSite    WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  weddingSiteId String
+  time          String
+  description   String
+  contactPerson String
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  weddingSite   WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
 
   @@index([weddingSiteId, sortOrder])
 }
@@ -205,54 +308,54 @@ model SiteModule {
 }
 
 model Guest {
-  id                  String           @id @default(cuid())
-  siteId              String           @map("weddingSiteId")
-  customSlug          String?
-  name                String           @map("guestName")
-  isCouple            Boolean          @default(false)
-  partnerName         String?
-  attendanceChoice    String?
-  phone               String
-  status              GuestStatus      @default(PENDING) @map("attendance")
-  magicToken          String           @unique
-  alcoholPreferences  String           @default("[]")
-  needsTransport      Boolean          @default(false)
-  transportPreference TransportPreference?
-  dietaryRestrictions String?
-  foodPreference      String?
+  id                    String               @id @default(cuid())
+  siteId                String               @map("weddingSiteId")
+  customSlug            String?
+  name                  String               @map("guestName")
+  isCouple              Boolean              @default(false)
+  partnerName           String?
+  attendanceChoice      String?
+  phone                 String
+  status                GuestStatus          @default(PENDING) @map("attendance")
+  magicToken            String               @unique
+  alcoholPreferences    String               @default("[]")
+  needsTransport        Boolean              @default(false)
+  transportPreference   TransportPreference?
+  dietaryRestrictions   String?
+  foodPreference        String?
   partnerFoodPreference String?
-  allergies           String?
-  partnerAllergies    String?
-  tags                String           @default("[]")
-  customAnswers       String           @default("{}")
-  hasPlusOne          Boolean          @default(false)
-  plusOneName         String?
-  musicRequest        String?
-  message             String?
-  respondedAt         DateTime?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  weddingSite         WeddingSite      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  allergies             String?
+  partnerAllergies      String?
+  tags                  String               @default("[]")
+  customAnswers         String               @default("{}")
+  hasPlusOne            Boolean              @default(false)
+  plusOneName           String?
+  musicRequest          String?
+  message               String?
+  respondedAt           DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  weddingSite           WeddingSite          @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@unique([siteId, customSlug])
   @@index([siteId, status])
 }
 
 model Order {
-  id                String        @id @default(cuid())
+  id                String      @id @default(cuid())
   userId            String
   weddingSiteId     String
-  providerPaymentId String?       @unique
-  idempotencyKey    String        @unique
-  status            OrderStatus   @default(PENDING)
+  providerPaymentId String?     @unique
+  idempotencyKey    String      @unique
+  status            OrderStatus @default(PENDING)
   amountKopecks     Int
-  currency          String        @default("RUB")
-  features          String        @default("[]")
+  currency          String      @default("RUB")
+  features          String      @default("[]")
   paidAt            DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  user              User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  weddingSite       WeddingSite   @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  weddingSite       WeddingSite @relation(fields: [weddingSiteId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([weddingSiteId, status])

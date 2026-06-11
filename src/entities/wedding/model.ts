@@ -31,6 +31,28 @@ export type QuizDraft = {
   acceptedTerms: boolean;
 };
 
+export type AudioTrackOption = {
+  id: string;
+  title: string;
+  artist: string;
+  fileUrl: string;
+};
+
+export type InvitationTemplateOption = {
+  id: string;
+  title: string;
+  content: string;
+};
+
+export type DesignThemeOption = {
+  id: string;
+  name: string;
+  backgroundColor: string;
+  primaryColor: string;
+  textColor: string;
+  fontFamily: string;
+};
+
 export type BuilderModule = OptionalModule;
 
 export const fontCodes = [
@@ -197,10 +219,13 @@ export type WeddingBuilderData = {
   mapLatitude: number | null;
   mapLongitude: number | null;
   currentTheme: ThemeCode;
+  designTheme: DesignThemeOption | null;
   fontCode: FontCode;
   blockOrder: ContentBlockCode[];
   moduleVisibility: Record<BuilderModule, boolean>;
   musicTrack: string | null;
+  musicTrackUrl: string | null;
+  musicTrackTitle: string | null;
   customMusicDataUrl: string | null;
   customMusicName: string | null;
   countdownTitle: string;

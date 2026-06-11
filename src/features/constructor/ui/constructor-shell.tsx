@@ -82,7 +82,7 @@ export function ConstructorShell({
             <Monitor size={17} />
           </button>
           <button
-            className="publish-button"
+            className="publish-button flex-shrink-0 whitespace-nowrap"
             type="button"
             onClick={() =>
               window.dispatchEvent(new Event("vowly-open-publish"))
@@ -94,7 +94,7 @@ export function ConstructorShell({
       </header>
 
       <div className="constructor-layout">
-        <div className="hidden min-h-0 md:block md:w-full">
+        <div className="hidden min-h-0 w-full md:block">
           <ConstructorSidebar initialTab={initialTab} />
         </div>
         <div className="block min-h-0 w-full pb-20 md:hidden">
@@ -139,7 +139,7 @@ export function ConstructorShell({
 
       {initialData.slug && (
         <a
-          className="fixed top-4 right-4 z-50 rounded-full border bg-white/80 px-3 py-1.5 text-sm opacity-80 shadow-sm backdrop-blur transition-opacity hover:opacity-100 md:hidden"
+          className="fixed top-4 right-4 z-50 rounded-full border bg-white/80 px-4 py-1.5 text-sm shadow-sm backdrop-blur transition-opacity hover:bg-white md:hidden"
           href={`/wedding/${initialData.slug}`}
           target="_blank"
           rel="noreferrer"

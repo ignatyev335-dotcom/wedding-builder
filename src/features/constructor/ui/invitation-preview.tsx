@@ -28,10 +28,10 @@ import type {
   CountdownStyleCode,
 } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
+import { getDesignThemeStyle } from "@/features/constructor/lib/design-theme-style";
 import { RsvpQuestionnaire } from "@/features/constructor/ui/rsvp-questionnaire";
 import { RsvpSuccessActions } from "@/features/constructor/ui/rsvp-success-actions";
 import { weddingCopy } from "@/features/wedding/lib/wedding-copy";
-import { getDefaultTrack } from "@/features/constructor/model/default-tracks";
 
 const monthFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
@@ -57,10 +57,12 @@ export function InvitationPreview({
     mapLatitude,
     mapLongitude,
     currentTheme,
+    designTheme,
     fontCode,
     blockOrder,
     moduleVisibility,
-    musicTrack,
+    musicTrackUrl,
+    musicTrackTitle,
     customMusicDataUrl,
     customMusicName,
     countdownTitle,
@@ -98,9 +100,9 @@ export function InvitationPreview({
     removeBranding,
   } = useWeddingStore();
   const t = weddingCopy[language];
-  const selectedAudioSource = customMusicDataUrl ?? musicTrack;
+  const selectedAudioSource = customMusicDataUrl ?? musicTrackUrl;
   const selectedAudioName =
-    customMusicName ?? getDefaultTrack(musicTrack)?.title ?? "Наша музыка";
+    customMusicName ?? musicTrackTitle ?? "Музыка приглашения";
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState(Boolean(personalizedGuest));
@@ -193,7 +195,10 @@ export function InvitationPreview({
 
   return (
     <article
-      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()} photo-mask-${photoMask.toLowerCase()} card-style-${cardStyle.toLowerCase()}`}
+      className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()} photo-mask-${photoMask.toLowerCase()} card-style-${cardStyle.toLowerCase()} ${
+        designTheme ? "has-dynamic-theme" : ""
+      }`}
+      style={getDesignThemeStyle(designTheme)}
       onClick={playSelectedTrack}
     >
       {selectedAudioSource && (
@@ -261,10 +266,16 @@ export function InvitationPreview({
           {postWeddingMode ? "Этот день останется с нами" : t.invitation}
         </span>
         <div className="boho-sun" aria-hidden="true" />
-        <h1 className="wedding-couple-names">
-          {partnerOneName}
-          <i>&amp;</i>
-          {partnerTwoName}
+        <h1 className="wedding-couple-names flex max-w-full flex-col items-center overflow-hidden break-words px-2 text-center leading-none tracking-tight">
+          <span className="wedding-couple-name text-3xl sm:text-5xl md:text-6xl lg:text-7xl">
+            {partnerOneName}
+          </span>
+          <i className="text-2xl md:text-3xl" aria-hidden="true">
+            &amp;
+          </i>
+          <span className="wedding-couple-name text-3xl sm:text-5xl md:text-6xl lg:text-7xl">
+            {partnerTwoName}
+          </span>
         </h1>
         <p>{postWeddingMode ? "Спасибо, что были с нами!" : formattedDate}</p>
         <span className="wedding-scroll-line" />
@@ -280,7 +291,7 @@ export function InvitationPreview({
         <p>{invitationText}</p>
       </section>}
 
-      {!postWeddingMode && galleryPhotos.length > 0 && (
+      {galleryPhotos.length > 0 && (
         <section className="wedding-module wedding-gallery">
           <span>Love Story</span>
           <h2>Моменты нашей истории</h2>

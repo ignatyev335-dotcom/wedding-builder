@@ -55,6 +55,13 @@ export function GuestsPanel() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | GuestResponse["status"]
+  >("ALL");
+  const filteredGuests =
+    statusFilter === "ALL"
+      ? guests
+      : guests.filter((guest) => guest.status === statusFilter);
 
   useEffect(() => {
     if (!siteId || siteId === "quiz-draft") {
@@ -459,6 +466,23 @@ export function GuestsPanel() {
           <Download size={15} /> Скачать таблицу (CSV)
         </button>
       </div>
+      <div className="guest-status-filters" aria-label="Фильтр гостей">
+        {([
+          ["ALL", "Все"],
+          ["ACCEPTED", "Придут"],
+          ["DECLINED", "Не придут"],
+          ["PENDING", "Ждём ответа"],
+        ] as const).map(([value, label]) => (
+          <button
+            className={statusFilter === value ? "is-active" : ""}
+            type="button"
+            key={value}
+            onClick={() => setStatusFilter(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       {guests.length ? (
         <>
@@ -469,7 +493,7 @@ export function GuestsPanel() {
                 <span>Статус</span>
                 <span>Персональная ссылка</span>
               </div>
-              {guests.map((guest) => (
+              {filteredGuests.map((guest) => (
                 <GuestDesktopRow
                   guest={guest}
                   copied={copiedId === guest.id}
@@ -481,28 +505,33 @@ export function GuestsPanel() {
             </div>
           </div>
 
-          <div className="grid gap-3 md:hidden">
-            {guests.map((guest) => (
+          <div className="grid w-full gap-3 overflow-hidden md:hidden">
+            {filteredGuests.map((guest) => (
               <article
-                className="w-full rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+                className="w-full min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
                 key={guest.id}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="grid gap-1">
-                    <strong>{guest.name}</strong>
+                  <div className="grid min-w-0 gap-1">
+                    <strong className="break-words">{guest.name}</strong>
                     {guest.isCouple && <small>и {guest.partnerName}</small>}
                     <small className="text-stone-500">
                       {guest.phone || "Телефон не указан"}
                     </small>
                   </div>
                   <span className={`guest-status status-${guest.status.toLowerCase()}`}>
-                    {statusLabels[guest.status]}
+                    {guest.status === "DECLINED"
+                      ? "Не придет"
+                      : statusLabels[guest.status]}
                   </span>
                 </div>
-                <div className="mt-3 grid gap-1 text-sm text-stone-600">
-                  <span>{guest.foodPreference || "Еда не выбрана"}</span>
+                <div className="mt-3 grid min-w-0 gap-1 break-words text-sm text-stone-600">
+                  <span>Алкоголь: {guest.drinks || "не выбран"}</span>
+                  <span>Еда: {guest.foodPreference || "не выбрана"}</span>
                   {guest.allergies && <span>Аллергии: {guest.allergies}</span>}
-                  {guest.musicRequest && <span>Трек: {guest.musicRequest}</span>}
+                  {guest.musicRequest && (
+                    <span>Пожелание: {guest.musicRequest}</span>
+                  )}
                 </div>
                 <div className="guest-row-tags mt-3">
                   {guestTagCodes.map((tag) => (
@@ -528,6 +557,12 @@ export function GuestsPanel() {
               </article>
             ))}
           </div>
+          {!filteredGuests.length && (
+            <div className="guests-empty compact">
+              <UserRoundX size={22} />
+              <strong>В этой категории пока никого нет</strong>
+            </div>
+          )}
         </>
       ) : (
         <div className="guests-empty">

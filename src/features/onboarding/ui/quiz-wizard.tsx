@@ -5,26 +5,21 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  Copy,
-  ExternalLink,
   MapPin,
-  Music2,
   Palette,
-  Pause,
-  Play,
   Route,
   Shirt,
   Sparkles,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { OptionalModule, ThemeCode } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
-import { DEFAULT_TRACKS } from "@/features/constructor/model/default-tracks";
-import { launchSuccessConfetti } from "@/features/onboarding/lib/success-confetti";
+
+const TOTAL_STEPS = 3;
 
 const themes: Array<{
   code: ThemeCode;
@@ -60,19 +55,18 @@ export function QuizWizard() {
   const { ceremonyTime, setCeremonyTime } = store;
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
-  const [createdSite, setCreatedSite] = useState<{
-    id: string;
-    slug: string;
-  } | null>(null);
-  const [isCopied, setIsCopied] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (!ceremonyTime) {
       setCeremonyTime("17:00");
     }
   }, [ceremonyTime, setCeremonyTime]);
+
+  useEffect(() => {
+    if (store.step > TOTAL_STEPS) {
+      store.back();
+    }
+  }, [store]);
 
   const validateCurrentStep = () => {
     if (store.step === 1) {
@@ -139,8 +133,7 @@ export function QuizWizard() {
       }
 
       localStorage.removeItem("wedding-builder-quiz");
-      setCreatedSite({ id: result.id, slug: result.slug });
-      window.setTimeout(launchSuccessConfetti, 80);
+      window.location.href = `/constructor?siteId=${encodeURIComponent(result.id)}`;
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -164,19 +157,19 @@ export function QuizWizard() {
           <ArrowLeft size={20} />
         </button>
         <span className="brand">vowly</span>
-        <span className="step-label">{store.step} из 4</span>
+        <span className="step-label">{store.step} из {TOTAL_STEPS}</span>
       </header>
 
       <div className="progress-track">
-        <div style={{ width: `${(store.step / 4) * 100}%` }} />
+        <div style={{ width: `${(store.step / TOTAL_STEPS) * 100}%` }} />
       </div>
 
       <section className="quiz-card">
         {store.step === 1 && (
-          <div className="step-content">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
             <span className="step-icon"><Sparkles size={22} /></span>
             <p className="eyebrow">Начнем с главного</p>
-            <h1>Как вас зовут?</h1>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">Как вас зовут?</h1>
             <p className="step-description">
               Эти имена станут первой красивой деталью вашего приглашения.
             </p>
@@ -185,6 +178,10 @@ export function QuizWizard() {
                 <span>Имя жениха</span>
                 <input
                   autoFocus
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   value={store.partnerOneName}
                   onChange={(event) =>
                     store.setNames(event.target.value, store.partnerTwoName)
@@ -195,6 +192,10 @@ export function QuizWizard() {
               <label className="field">
                 <span>Имя невесты</span>
                 <input
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   value={store.partnerTwoName}
                   onChange={(event) =>
                     store.setNames(store.partnerOneName, event.target.value)
@@ -230,10 +231,10 @@ export function QuizWizard() {
         )}
 
         {store.step === 2 && (
-          <div className="step-content">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
             <span className="step-icon"><Palette size={22} /></span>
             <p className="eyebrow">Настроение</p>
-            <h1>Какой стиль ближе?</h1>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">Какой стиль ближе?</h1>
             <p className="step-description">
               Это только начало: тему можно будет сменить в любой момент.
             </p>
@@ -241,7 +242,7 @@ export function QuizWizard() {
               {themes.map((theme) => (
                 <button
                   key={theme.code}
-                  className={`theme-card ${theme.className} ${
+                  className={`theme-card transition-all duration-200 ${theme.className} ${
                     store.theme === theme.code ? "is-selected" : ""
                   }`}
                   type="button"
@@ -258,74 +259,10 @@ export function QuizWizard() {
         )}
 
         {store.step === 3 && (
-          <div className="step-content">
-            <span className="step-icon"><Music2 size={22} /></span>
-            <p className="eyebrow">Атмосфера</p>
-            <h1>Какая музыка будет звучать?</h1>
-            <p className="step-description">
-              Выберите сопровождение. Позже его можно заменить своим треком.
-            </p>
-            <audio
-              ref={audioRef}
-              onEnded={() => setPlayingTrack(null)}
-              onPause={() => setPlayingTrack(null)}
-            />
-            <div className="quiz-track-list">
-              {DEFAULT_TRACKS.map((track) => {
-                const selected = store.audioUrl === track.src;
-                const playing = playingTrack === track.src;
-
-                return (
-                  <article
-                    className={`quiz-track ${selected ? "is-selected" : ""}`}
-                    key={track.id}
-                  >
-                    <button
-                      className="quiz-track-play"
-                      type="button"
-                      aria-label={playing ? `Пауза: ${track.title}` : `Слушать: ${track.title}`}
-                      onClick={() => {
-                        const audio = audioRef.current;
-                        if (!audio) return;
-
-                        if (playing) {
-                          audio.pause();
-                          return;
-                        }
-
-                        audio.src = track.src;
-                        void audio.play().then(
-                          () => setPlayingTrack(track.src),
-                          () => setPlayingTrack(null),
-                        );
-                      }}
-                    >
-                      {playing ? <Pause size={16} /> : <Play size={16} />}
-                    </button>
-                    <span>
-                      <strong>{track.title}</strong>
-                      <small>{track.category}</small>
-                    </span>
-                    <button
-                      className="quiz-track-select"
-                      type="button"
-                      onClick={() => store.setAudioUrl(track.src)}
-                    >
-                      {selected && <Check size={14} />}
-                      {selected ? "Выбрано" : "Выбрать"}
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {store.step === 4 && (
-          <div className="step-content">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
             <span className="step-icon"><Sparkles size={22} /></span>
             <p className="eyebrow">Последний штрих</p>
-            <h1>Что добавить на сайт?</h1>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">Что добавить на сайт?</h1>
             <p className="step-description">
               Мы соберем структуру автоматически. Позже блоки можно менять местами.
             </p>
@@ -337,7 +274,7 @@ export function QuizWizard() {
                 return (
                   <button
                     key={module.code}
-                    className={`module-option ${selected ? "is-selected" : ""}`}
+                    className={`module-option transition-all duration-200 ${selected ? "is-selected" : ""}`}
                     type="button"
                     onClick={() => store.toggleModule(module.code)}
                   >
@@ -371,17 +308,17 @@ export function QuizWizard() {
 
         <footer className="quiz-footer">
           {store.step > 1 && (
-            <button className="secondary-button" type="button" onClick={store.back}>
+            <button className="secondary-button flex-shrink-0 whitespace-nowrap" type="button" onClick={store.back}>
               Назад
             </button>
           )}
-          {store.step < 4 ? (
-            <button className="primary-button" type="button" onClick={handleNext}>
+          {store.step < TOTAL_STEPS ? (
+            <button className="primary-button flex-shrink-0 whitespace-nowrap" type="button" onClick={handleNext}>
               Продолжить <ArrowRight size={18} />
             </button>
           ) : (
             <button
-              className="primary-button"
+              className="primary-button flex-shrink-0 whitespace-nowrap"
               type="button"
               disabled={isSubmitting || !store.acceptedTerms}
               onClick={handleSubmit}
@@ -393,58 +330,6 @@ export function QuizWizard() {
         </footer>
       </section>
       <p className="autosave-note">Ваши ответы сохраняются автоматически</p>
-
-      {createdSite && (
-        <div className="create-success-backdrop" role="presentation">
-          <section
-            className="create-success-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-success-title"
-          >
-            <span className="step-icon"><Sparkles size={24} /></span>
-            <p className="eyebrow">Сайт ожил</p>
-            <h2 id="create-success-title">Ваше приглашение готово</h2>
-            <p>
-              Ссылка уже работает. Скопируйте её для гостей или продолжите
-              оформление в конструкторе.
-            </p>
-            <div className="create-success-link">
-              <span>{`${window.location.origin}/wedding/${createdSite.slug}`}</span>
-              <button
-                type="button"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(
-                    `${window.location.origin}/wedding/${createdSite.slug}`,
-                  );
-                  setIsCopied(true);
-                  window.setTimeout(() => setIsCopied(false), 1800);
-                }}
-              >
-                {isCopied ? <Check size={16} /> : <Copy size={16} />}
-                {isCopied ? "Скопировано" : "Копировать"}
-              </button>
-            </div>
-            <div className="create-success-actions">
-              <a
-                href={`/wedding/${createdSite.slug}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Открыть сайт <ExternalLink size={16} />
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  window.location.href = `/constructor?siteId=${encodeURIComponent(createdSite.id)}`;
-                }}
-              >
-                Перейти в конструктор <ArrowRight size={16} />
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </main>
   );
 }

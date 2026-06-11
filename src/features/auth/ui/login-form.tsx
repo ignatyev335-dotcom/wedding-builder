@@ -1,9 +1,12 @@
 "use client";
 
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-type LoginMode = "password" | "code";
+import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
+
+type LoginMode = "password" | "code" | "magic";
 
 export function LoginForm() {
   const [mode, setMode] = useState<LoginMode>("password");
@@ -102,6 +105,25 @@ export function LoginForm() {
     }
   };
 
+  const requestMagicLink = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      const result = await signIn("resend", {
+        email,
+        redirect: false,
+        redirectTo: "/account",
+      });
+      if (result?.error) throw new Error(result.error);
+      setCodeRequested(true);
+    } catch {
+      setError("Не удалось отправить ссылку. Проверьте настройки почты.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="login-card">
       <div className="login-tabs" role="tablist">
@@ -124,6 +146,17 @@ export function LoginForm() {
           }}
         >
           Одноразовый код
+        </button>
+        <button
+          className={mode === "magic" ? "is-active" : ""}
+          type="button"
+          onClick={() => {
+            setMode("magic");
+            setCodeRequested(false);
+            setError("");
+          }}
+        >
+          Magic Link
         </button>
       </div>
 
@@ -163,7 +196,7 @@ export function LoginForm() {
             <ArrowRight size={17} />
           </button>
         </form>
-      ) : (
+      ) : mode === "code" ? (
         <form onSubmit={verifyCode}>
           <label>
             <span>Почта</span>
@@ -222,9 +255,38 @@ export function LoginForm() {
             </button>
           )}
         </form>
+      ) : (
+        <form onSubmit={requestMagicLink}>
+          <label>
+            <span>Почта</span>
+            <div>
+              <Mail size={17} />
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                value={email}
+                placeholder="hello@example.ru"
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setCodeRequested(false);
+                }}
+              />
+            </div>
+          </label>
+          <button className="login-submit" type="submit" disabled={isLoading}>
+            {isLoading
+              ? "Отправляем..."
+              : codeRequested
+                ? "Ссылка отправлена"
+                : "Получить ссылку для входа"}
+            <ArrowRight size={17} />
+          </button>
+        </form>
       )}
 
       {error && <p className="login-error">{error}</p>}
+      <AuthProviderButtons />
       <p className="login-legal">
         Продолжая, вы принимаете Пользовательское соглашение и Политику
         конфиденциальности.

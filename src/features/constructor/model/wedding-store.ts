@@ -9,6 +9,7 @@ import type {
   ContentBlockCode,
   CountdownStyleCode,
   CrewTimingItem,
+  DesignThemeOption,
   FontCode,
   FaqItem,
   GuestResponse,
@@ -35,10 +36,13 @@ type WeddingStore = WeddingBuilderData & {
     mapLongitude: number | null,
   ) => void;
   setCurrentTheme: (theme: ThemeCode) => void;
+  setDesignTheme: (theme: DesignThemeOption | null) => void;
   setFontCode: (fontCode: FontCode) => void;
   reorderBlocks: (active: ContentBlockCode, over: ContentBlockCode) => void;
   toggleModule: (module: BuilderModule) => void;
-  setMusicTrack: (track: string | null) => void;
+  setMusicTrack: (
+    track: { id: string; fileUrl: string; title: string } | null,
+  ) => void;
   setCustomMusic: (dataUrl: string | null, name: string | null) => void;
   setCountdownTitle: (countdownTitle: string) => void;
   setCountdownStyle: (countdownStyle: CountdownStyleCode) => void;
@@ -154,6 +158,7 @@ const initialState: WeddingBuilderData = {
   mapLatitude: null,
   mapLongitude: null,
   currentTheme: "MINIMAL",
+  designTheme: null,
   fontCode: "PLAYFAIR",
   blockOrder: [
     "COUNTDOWN",
@@ -168,6 +173,8 @@ const initialState: WeddingBuilderData = {
   ],
   moduleVisibility: defaultVisibility,
   musicTrack: null,
+  musicTrackUrl: null,
+  musicTrackTitle: null,
   customMusicDataUrl: null,
   customMusicName: null,
   countdownTitle: "До свадьбы осталось",
@@ -208,8 +215,7 @@ const initialState: WeddingBuilderData = {
   isPrivate: false,
   language: "RU",
   crewTimings: [],
-  invitationText:
-    "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
+  invitationText: "",
   wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
   wishlistItems: [],
   noFlowersEnabled: false,
@@ -247,7 +253,9 @@ export const useWeddingStore = create<WeddingStore>()(
       setVenueAddress: (venueAddress) => set({ venueAddress }),
       setMapCoordinates: (mapLatitude, mapLongitude) =>
         set({ mapLatitude, mapLongitude }),
-      setCurrentTheme: (currentTheme) => set({ currentTheme }),
+      setCurrentTheme: (currentTheme) =>
+        set({ currentTheme, designTheme: null }),
+      setDesignTheme: (designTheme) => set({ designTheme }),
       setFontCode: (fontCode) => set({ fontCode }),
       reorderBlocks: (active, over) =>
         set((state) => {
@@ -270,9 +278,11 @@ export const useWeddingStore = create<WeddingStore>()(
             [module]: !state.moduleVisibility[module],
           },
         })),
-      setMusicTrack: (musicTrack) =>
+      setMusicTrack: (track) =>
         set({
-          musicTrack,
+          musicTrack: track?.id ?? null,
+          musicTrackUrl: track?.fileUrl ?? null,
+          musicTrackTitle: track?.title ?? null,
           customMusicDataUrl: null,
           customMusicName: null,
         }),
@@ -281,6 +291,8 @@ export const useWeddingStore = create<WeddingStore>()(
           customMusicDataUrl,
           customMusicName,
           musicTrack: null,
+          musicTrackUrl: null,
+          musicTrackTitle: null,
         }),
       setCountdownTitle: (countdownTitle) => set({ countdownTitle }),
       setCountdownStyle: (countdownStyle) => set({ countdownStyle }),
@@ -518,10 +530,13 @@ export const useWeddingStore = create<WeddingStore>()(
         mapLatitude: state.mapLatitude,
         mapLongitude: state.mapLongitude,
         currentTheme: state.currentTheme,
+        designTheme: state.designTheme,
         fontCode: state.fontCode,
         blockOrder: state.blockOrder,
         moduleVisibility: state.moduleVisibility,
-        musicTrack: state.musicTrack,
+          musicTrack: state.musicTrack,
+          musicTrackUrl: state.musicTrackUrl,
+          musicTrackTitle: state.musicTrackTitle,
         customMusicName: state.customMusicName,
         countdownTitle: state.countdownTitle,
         countdownStyle: state.countdownStyle,

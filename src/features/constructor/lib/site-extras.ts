@@ -38,8 +38,7 @@ export type SiteExtras = {
 export const defaultSiteExtras: SiteExtras = {
   coverPhoto: null,
   galleryPhotos: [],
-  invitationText:
-    "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
+  invitationText: "",
   wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
   wishlistItems: [],
   noFlowersEnabled: false,

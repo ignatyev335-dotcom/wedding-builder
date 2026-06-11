@@ -30,6 +30,7 @@ export function ConstructorFromQuiz() {
     mapLatitude: null,
     mapLongitude: null,
     currentTheme: quiz.theme,
+    designTheme: null,
     fontCode: "PLAYFAIR",
     blockOrder: [
       "COUNTDOWN",
@@ -46,6 +47,8 @@ export function ConstructorFromQuiz() {
       modules.map((module) => [module, selected.has(module)]),
     ) as Record<BuilderModule, boolean>,
     musicTrack: null,
+    musicTrackUrl: null,
+    musicTrackTitle: null,
     customMusicDataUrl: null,
     customMusicName: null,
     countdownTitle: "До свадьбы осталось",
@@ -86,8 +89,7 @@ export function ConstructorFromQuiz() {
     isPrivate: false,
     language: "RU",
     crewTimings: [],
-    invitationText:
-      "Совсем скоро состоится день, который станет началом нашей семейной истории. Будем счастливы разделить его с вами.",
+    invitationText: "",
     wishlistText: "Лучший подарок для нас — вклад в нашу семейную мечту.",
     wishlistItems: [],
     noFlowersEnabled: false,

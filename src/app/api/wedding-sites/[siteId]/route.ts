@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { getWeddingBuilderData } from "@/features/constructor/server/get-wedding-builder-data";
 import { getCurrentUser, isSiteOwnerOrAdmin } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+
+const statusSchema = z.object({
+  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+});
 
 export async function GET(
   _request: Request,
@@ -17,6 +23,38 @@ export async function GET(
   if (!site) {
     return NextResponse.json({ error: "Сайт не найден." }, { status: 404 });
   }
+
+  return NextResponse.json(site);
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ siteId: string }> },
+) {
+  const { siteId } = await params;
+  const user = await getCurrentUser();
+  if (!user || !(await isSiteOwnerOrAdmin(user, siteId))) {
+    return NextResponse.json({ error: "Недостаточно прав." }, { status: 403 });
+  }
+
+  const parsed = statusSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Некорректный статус." }, { status: 400 });
+  }
+
+  const site = await prisma.weddingSite.update({
+    where: { id: siteId },
+    data: {
+      status: parsed.data.status,
+      publishedAt:
+        parsed.data.status === "PUBLISHED"
+          ? new Date()
+          : parsed.data.status === "ARCHIVED"
+            ? null
+            : undefined,
+    },
+    select: { id: true, status: true, publishedAt: true },
+  });
 
   return NextResponse.json(site);
 }

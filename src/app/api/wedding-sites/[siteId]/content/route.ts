@@ -71,6 +71,7 @@ const contentSchema = z.object({
     .nullable(),
   customMusicName: z.string().max(200).nullable(),
   musicTrack: z.string().max(500).nullable(),
+  designThemeId: z.string().max(100).nullable(),
   countdownTitle: z.string().trim().min(1).max(160),
   countdownStyle: z.enum(countdownStyleCodes),
   colorPalette: z
@@ -152,6 +153,7 @@ export async function PATCH(
     pinCode,
     language,
     musicTrack,
+    designThemeId,
     crewTimings,
     ...customContent
   } = parsed.data;
@@ -166,6 +168,7 @@ export async function PATCH(
         pinCode: isPrivate ? pinCode : null,
         defaultLanguage: language,
         musicTrackId: musicTrack,
+        designThemeId,
         crewTimings: {
           deleteMany: {},
           create: crewTimings.map((item, sortOrder) => ({

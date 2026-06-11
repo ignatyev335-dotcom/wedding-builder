@@ -9,21 +9,26 @@ import {
 import { prisma } from "@/lib/prisma";
 
 const verifySchema = z.object({
-  email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
+  email: z.string().trim().optional(),
+  identifier: z.string().trim().optional(),
   code: z.string().regex(/^\d{6}$/),
 });
 
 export async function POST(request: Request) {
   const parsed = verifySchema.safeParse(await request.json());
-  if (!parsed.success) {
+  const identifier = normalizeIdentifier(
+    parsed.success ? parsed.data.identifier ?? parsed.data.email ?? "" : "",
+  );
+  if (!parsed.success || !identifier) {
     return NextResponse.json({ error: "Введите шестизначный код." }, { status: 400 });
   }
 
-  const { email, code } = parsed.data;
+  const { code } = parsed.data;
+  const isEmail = identifier.includes("@");
   const loginCode = await prisma.loginCode.findFirst({
     where: {
-      email,
-      codeHash: hashLoginCode(email, code),
+      ...(isEmail ? { email: identifier } : { phone: identifier }),
+      codeHash: hashLoginCode(identifier, code),
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: "desc" },
@@ -36,18 +41,20 @@ export async function POST(request: Request) {
   }
 
   const user = await prisma.user.upsert({
-    where: { email },
+    where: isEmail ? { email: identifier } : { phone: identifier },
     update: { provider: "EMAIL" },
     create: {
-      email,
+      ...(isEmail ? { email: identifier } : { phone: identifier }),
       provider: "EMAIL",
-      name: email.split("@")[0],
+      name: isEmail ? identifier.split("@")[0] : identifier,
     },
   });
 
   const previousSession = getRequestSession(request);
   await prisma.$transaction(async (transaction) => {
-    await transaction.loginCode.deleteMany({ where: { email } });
+    await transaction.loginCode.deleteMany({
+      where: isEmail ? { email: identifier } : { phone: identifier },
+    });
     if (!previousSession || previousSession.userId === user.id) return;
 
     const previousUser = await transaction.user.findUnique({
@@ -73,4 +80,13 @@ export async function POST(request: Request) {
   });
   setSessionCookie(response, user.id);
   return response;
+}
+
+function normalizeIdentifier(value: string) {
+  if (value.includes("@")) {
+    const email = z.string().email().safeParse(value.toLowerCase());
+    return email.success ? email.data : "";
+  }
+  const phone = value.replace(/[^\d+]/g, "");
+  return /^\+?\d{10,15}$/.test(phone) ? phone : "";
 }

@@ -40,6 +40,8 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
       modules: true,
       user: true,
       guests: true,
+      musicTrack: true,
+      designTheme: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -75,10 +77,13 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
     mapLatitude: site.data.mapLatitude,
     mapLongitude: site.data.mapLongitude,
     currentTheme: site.theme,
+    designTheme: site.designTheme,
     moduleVisibility: Object.fromEntries(
       builderModules.map((module) => [module, enabledModules.has(module)]),
     ) as Record<BuilderModule, boolean>,
     musicTrack: site.musicTrackId,
+    musicTrackUrl: site.musicTrack?.fileUrl ?? null,
+    musicTrackTitle: site.musicTrack?.title ?? null,
     timelineEvents: site.data.timeline
       ? JSON.parse(site.data.timeline)
       : fallbackTimeline,

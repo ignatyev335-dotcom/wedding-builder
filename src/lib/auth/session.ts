@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const authCookieName = "vowly-session";
@@ -87,10 +88,12 @@ export function getRequestSession(request: Request) {
 export async function getCurrentUser() {
   const cookieStore = await cookies();
   const session = readSessionToken(cookieStore.get(authCookieName)?.value);
-  if (!session) return null;
+  const authJsSession = session ? null : await auth();
+  const userId = session?.userId ?? authJsSession?.user?.id;
+  if (!userId) return null;
 
   return prisma.user.findUnique({
-    where: { id: session.userId },
+    where: { id: userId },
     select: {
       id: true,
       email: true,

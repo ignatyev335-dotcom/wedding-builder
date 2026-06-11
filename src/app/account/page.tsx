@@ -1,9 +1,10 @@
-import { CalendarDays, ExternalLink, Heart, Pencil, Users } from "lucide-react";
+import { CalendarDays, Heart } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { BrandingToggle } from "@/features/account/ui/branding-toggle";
 import { LogoutButton } from "@/features/auth/ui/logout-button";
+import { ProjectActions } from "@/features/dashboard/ui/project-actions";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -25,6 +26,7 @@ export default async function AccountPage() {
     orderBy: { updatedAt: "desc" },
     include: {
       data: true,
+      guests: { select: { status: true } },
       _count: { select: { guests: true } },
     },
   });
@@ -49,7 +51,28 @@ export default async function AccountPage() {
 
       {sites.length ? (
         <section className="account-projects">
-          {sites.map((site) => (
+          {sites.map((site) => {
+            const accepted = site.guests.filter(
+              (guest) => guest.status === "ACCEPTED",
+            ).length;
+            const declined = site.guests.filter(
+              (guest) => guest.status === "DECLINED",
+            ).length;
+            const responseProgress = site.guests.length
+              ? Math.round(((accepted + declined) / site.guests.length) * 100)
+              : 0;
+            const daysLeft = site.data
+              ? Math.max(
+                  0,
+                  Math.ceil(
+                    // Server render intentionally calculates a live countdown.
+                    // eslint-disable-next-line react-hooks/purity
+                    (site.data.weddingDate.getTime() - Date.now()) / 86_400_000,
+                  ),
+                )
+              : 0;
+
+            return (
             <article className="account-project" key={site.id}>
               <div className="account-project-cover">
                 <Heart size={20} />
@@ -72,6 +95,27 @@ export default async function AccountPage() {
                 )}
               </div>
               <div className="account-project-body">
+                <div className="account-project-insights">
+                  <article>
+                    <strong>{daysLeft}</strong>
+                    <span>дней до свадьбы</span>
+                  </article>
+                  <article>
+                    <strong>{accepted}</strong>
+                    <span>подтвердили</span>
+                  </article>
+                  <article>
+                    <strong>{declined}</strong>
+                    <span>не смогут прийти</span>
+                  </article>
+                </div>
+                <div className="account-rsvp-progress">
+                  <div>
+                    <span>Ответы гостей</span>
+                    <strong>{responseProgress}%</strong>
+                  </div>
+                  <i><b style={{ width: `${responseProgress}%` }} /></i>
+                </div>
                 <div className="account-project-meta">
                   <span>
                     <small>Статус публикации</small>
@@ -88,20 +132,11 @@ export default async function AccountPage() {
                     <strong>/wedding/{site.slug}</strong>
                   </span>
                 </div>
-                <div className="account-actions">
-                  <Link href={`/constructor?siteId=${site.id}`}>
-                    <Pencil size={16} />
-                    Перейти в конструктор
-                  </Link>
-                  <Link href={`/constructor?siteId=${site.id}&tab=guests`}>
-                    <Users size={16} />
-                    Посмотреть ответы гостей (CRM)
-                  </Link>
-                  <Link href={`/wedding/${site.slug}`} target="_blank">
-                    <ExternalLink size={16} />
-                    Открыть сайт
-                  </Link>
-                </div>
+                <ProjectActions
+                  siteId={site.id}
+                  slug={site.slug}
+                  status={site.status}
+                />
                 <BrandingToggle
                   siteId={site.id}
                   isPremium={site.isPremium}
@@ -109,7 +144,8 @@ export default async function AccountPage() {
                 />
               </div>
             </article>
-          ))}
+            );
+          })}
         </section>
       ) : (
         <section className="account-empty">

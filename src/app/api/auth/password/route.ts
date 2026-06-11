@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 const loginSchema = z.object({
   email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
   password: z.string().min(8).max(200),
+  adminOnly: z.boolean().default(false),
 });
 
 export async function POST(request: Request) {
@@ -22,15 +23,29 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password } = parsed.data;
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const { email, password, adminOnly } = parsed.data;
+  const adminEmail = (
+    process.env.ADMIN_EMAIL ??
+    (process.env.NODE_ENV !== "production" ? "admin@vowly.ru" : "")
+  )
+    .trim()
+    .toLowerCase();
+  const adminPassword =
+    process.env.ADMIN_PASSWORD ??
+    (process.env.NODE_ENV !== "production" ? "VowlyAdmin2026!" : "");
   const isAdminBootstrap =
     Boolean(adminEmail && adminPassword) &&
     email === adminEmail &&
     password === adminPassword;
 
   let user = await prisma.user.findUnique({ where: { email } });
+
+  if (adminOnly && !isAdminBootstrap && user?.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Неверный логин или пароль администратора." },
+      { status: 401 },
+    );
+  }
 
   if (user?.passwordHash) {
     const validPassword = await verifyPassword(password, user.passwordHash);

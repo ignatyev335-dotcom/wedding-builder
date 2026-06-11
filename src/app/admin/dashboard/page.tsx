@@ -3,9 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/features/auth/ui/logout-button";
+import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
+import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
 import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
+import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { decryptSetting, maskSetting } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +24,21 @@ export default async function AdminDashboardPage() {
   if (!user) redirect("/login");
   if (user.role !== "ADMIN") redirect("/");
 
-  const [usersCount, sitesCount, sites] = await Promise.all([
+  const [
+    usersCount,
+    sitesCount,
+    publishedCount,
+    guestsCount,
+    sites,
+    settings,
+    tracks,
+    templates,
+    designThemes,
+  ] = await Promise.all([
     prisma.user.count(),
     prisma.weddingSite.count(),
+    prisma.weddingSite.count({ where: { status: "PUBLISHED" } }),
+    prisma.guest.count(),
     prisma.weddingSite.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -37,6 +53,26 @@ export default async function AdminDashboardPage() {
         _count: { select: { guests: true } },
       },
       take: 100,
+    }),
+    prisma.systemSetting.findMany({ orderBy: { updatedAt: "desc" } }),
+    prisma.audioTrack.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      select: { id: true, title: true, artist: true, fileUrl: true },
+    }),
+    prisma.invitationTemplate.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      select: { id: true, title: true, content: true },
+    }),
+    prisma.designTheme.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        backgroundColor: true,
+        primaryColor: true,
+        textColor: true,
+        fontFamily: true,
+      },
     }),
   ]);
 
@@ -73,15 +109,45 @@ export default async function AdminDashboardPage() {
         </article>
         <article>
           <Database size={20} />
-          <span>PostgreSQL</span>
-          <strong>{sitesCount}</strong>
+          <span>Опубликовано</span>
+          <strong>{publishedCount}</strong>
         </article>
         <article>
           <Database size={20} />
-          <span>SQLite</span>
-          <strong>0</strong>
+          <span>Ответов гостей</span>
+          <strong>{guestsCount}</strong>
         </article>
       </section>
+
+      <SystemSettingsPanel
+        initialSettings={settings.map((setting) => {
+          let readableValue = setting.value;
+          if (setting.isSecret) {
+            try {
+              readableValue = decryptSetting(setting.value);
+            } catch {
+              readableValue = "";
+            }
+          }
+          return {
+            key: setting.key,
+            label: setting.label,
+            category: setting.category,
+            maskedValue: setting.isSecret
+              ? maskSetting(readableValue)
+              : readableValue,
+            isSecret: setting.isSecret,
+            updatedAt: setting.updatedAt.toISOString(),
+          };
+        })}
+      />
+
+      <ContentCatalogPanel
+        initialTracks={tracks}
+        initialTemplates={templates}
+      />
+
+      <DesignThemePanel initialThemes={designThemes} />
 
       <section className="admin-sites">
         <div className="admin-sites-heading">

@@ -7,23 +7,32 @@ import { hashLoginCode } from "@/lib/auth/login-code";
 import { prisma } from "@/lib/prisma";
 
 const requestSchema = z.object({
-  email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
+  email: z.string().trim().optional(),
+  identifier: z.string().trim().optional(),
 });
 
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Укажите корректную почту." }, { status: 400 });
+  const identifier = normalizeIdentifier(
+    parsed.success ? parsed.data.identifier ?? parsed.data.email ?? "" : "",
+  );
+  if (!identifier) {
+    return NextResponse.json(
+      { error: "Укажите корректную почту или номер телефона." },
+      { status: 400 },
+    );
   }
 
-  const email = parsed.data.email;
+  const isEmail = identifier.includes("@");
   const code = randomInt(100000, 1000000).toString();
   await prisma.$transaction([
-    prisma.loginCode.deleteMany({ where: { email } }),
+    prisma.loginCode.deleteMany({
+      where: isEmail ? { email: identifier } : { phone: identifier },
+    }),
     prisma.loginCode.create({
       data: {
-        email,
-        codeHash: hashLoginCode(email, code),
+        ...(isEmail ? { email: identifier } : { phone: identifier }),
+        codeHash: hashLoginCode(identifier, code),
         expiresAt: new Date(Date.now() + 10 * 60_000),
       },
     }),
@@ -37,4 +46,13 @@ export async function POST(request: Request) {
       ? { developmentCode: code }
       : {}),
   });
+}
+
+function normalizeIdentifier(value: string) {
+  if (value.includes("@")) {
+    const email = z.string().email().safeParse(value.toLowerCase());
+    return email.success ? email.data : "";
+  }
+  const phone = value.replace(/[^\d+]/g, "");
+  return /^\+?\d{10,15}$/.test(phone) ? phone : "";
 }

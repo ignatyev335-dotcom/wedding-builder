@@ -21,11 +21,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import type {
+  AudioTrackOption,
   BuilderModule,
   CardStyleCode,
   ContentBlockCode,
   FontCode,
   CountdownStyleCode,
+  DesignThemeOption,
+  InvitationTemplateOption,
   PhotoMaskCode,
   ThemeCode,
 } from "@/entities/wedding/model";
@@ -35,10 +38,6 @@ import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extra
 import { imageToDataUrl } from "@/features/constructor/lib/image-to-data-url";
 import { MediaPanel } from "@/features/constructor/ui/media-panel";
 import { PackagesPanel } from "@/features/constructor/ui/packages-panel";
-import {
-  DEFAULT_TRACKS,
-  getDefaultTrack,
-} from "@/features/constructor/model/default-tracks";
 
 export type ConstructorTab =
   | "content"
@@ -73,25 +72,6 @@ const moduleLabels: Record<BuilderModule, string> = {
   MAP: "Место встречи",
   COUNTDOWN: "Таймер до свадьбы",
 };
-
-const invitationTemplates = {
-  official:
-    "С радостью приглашаем вас на торжество, посвященное дню нашей свадьбы. Для нас будет большой честью разделить этот важный момент вместе с вами.",
-  heartfelt:
-    "{names} приглашают вас разделить этот особенный день. Мы не представляем этот праздник без самых близких людей и будем счастливы видеть вас рядом.",
-  playful:
-    "Кажется, всё серьезно: мы женимся! Приходите обнимать нас, смеяться, танцевать и стать частью дня, который мы точно никогда не забудем.",
-  concise:
-    "Будем счастливы видеть вас рядом в день нашей свадьбы. До встречи на празднике!",
-  poetic:
-    "В нашей истории начинается новая глава, и нам хочется открыть ее рядом с вами. Приглашаем разделить день, наполненный любовью, светом и счастливыми мгновениями.",
-  family:
-    "{names} приглашают вас на теплый семейный праздник. Ваши улыбки, объятия и добрые слова сделают день нашей свадьбы по-настоящему родным.",
-  modern:
-    "Мы выбрали друг друга и скоро скажем главное «да». Будем рады, если вы проведете этот красивый день вместе с нами.",
-  tender:
-    "Есть моменты, которые хочется бережно сохранить в сердце. Наша свадьба — один из них, и мы мечтаем разделить его с вами.",
-} as const;
 
 const themeOptions: Array<{
   code: ThemeCode;
@@ -232,8 +212,15 @@ export function ConstructorSidebar({
     "DRESS_CODE",
   ]);
   const [activeInvitationTemplate, setActiveInvitationTemplate] = useState<
-    keyof typeof invitationTemplates | null
+    string | null
   >(null);
+  const [catalogTracks, setCatalogTracks] = useState<AudioTrackOption[]>([]);
+  const [catalogTemplates, setCatalogTemplates] = useState<
+    InvitationTemplateOption[]
+  >([]);
+  const [catalogThemes, setCatalogThemes] = useState<DesignThemeOption[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
   const [draggedBlock, setDraggedBlock] = useState<ContentBlockCode | null>(null);
   const saveExtrasQuietly = () => {
@@ -250,12 +237,14 @@ export function ConstructorSidebar({
     mapLatitude,
     mapLongitude,
     currentTheme,
+    designTheme,
     fontCode,
     photoMask,
     cardStyle,
     blockOrder,
     moduleVisibility,
     musicTrack,
+    musicTrackTitle,
     customMusicDataUrl,
     customMusicName,
     countdownTitle,
@@ -295,6 +284,7 @@ export function ConstructorSidebar({
     setVenueAddress,
     setMapCoordinates,
     setCurrentTheme,
+    setDesignTheme,
     setFontCode,
     setPhotoMask,
     setCardStyle,
@@ -345,12 +335,50 @@ export function ConstructorSidebar({
     (moduleVisibility.RSVP ? 20 : 0) +
     (customMusicDataUrl || musicTrack ? 20 : 0);
 
-  const applyInvitationTemplate = (template: keyof typeof invitationTemplates) => {
-    const names = `${partnerOneName || "Александр"} и ${partnerTwoName || "Валентина"}`;
-    setInvitationText(invitationTemplates[template].replace("{names}", names));
-    setActiveInvitationTemplate(template);
+  const applyInvitationTemplate = (template: InvitationTemplateOption) => {
+    const firstName = partnerOneName.trim();
+    const secondName = partnerTwoName.trim();
+    const names = [firstName, secondName].filter(Boolean).join(" и ");
+    setInvitationText(
+      template.content
+        .replaceAll("{names}", names)
+        .replaceAll("{partnerOne}", firstName)
+        .replaceAll("{partnerTwo}", secondName),
+    );
+    setActiveInvitationTemplate(template.id);
     saveExtrasQuietly();
   };
+
+  useEffect(() => {
+    let active = true;
+
+    void fetch("/api/catalog", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Не удалось загрузить библиотеку.");
+        return (await response.json()) as {
+          tracks: AudioTrackOption[];
+          templates: InvitationTemplateOption[];
+          designThemes: DesignThemeOption[];
+        };
+      })
+      .then((catalog) => {
+        if (!active) return;
+        setCatalogTracks(catalog.tracks);
+        setCatalogTemplates(catalog.templates);
+        setCatalogThemes(catalog.designThemes);
+        setCatalogError("");
+      })
+      .catch(() => {
+        if (active) setCatalogError("Библиотека временно недоступна.");
+      })
+      .finally(() => {
+        if (active) setCatalogLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const openPublish = () => {
@@ -562,63 +590,29 @@ export function ConstructorSidebar({
                   <label className="constructor-field invitation-copy-field">
                     <span>Текст приглашения</span>
                     <div className="tone-chips" aria-label="Стиль текста">
-                      <button
-                        className={activeInvitationTemplate === "official" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("official")}
-                      >
-                        Официально
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "heartfelt" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("heartfelt")}
-                      >
-                        Душевно
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "playful" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("playful")}
-                      >
-                        С юмором
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "concise" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("concise")}
-                      >
-                        Лаконично
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "poetic" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("poetic")}
-                      >
-                        Поэтично
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "family" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("family")}
-                      >
-                        По-семейному
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "modern" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("modern")}
-                      >
-                        Современно
-                      </button>
-                      <button
-                        className={activeInvitationTemplate === "tender" ? "is-selected" : ""}
-                        type="button"
-                        onClick={() => applyInvitationTemplate("tender")}
-                      >
-                        Нежно
-                      </button>
+                      {catalogTemplates.map((template) => (
+                        <button
+                          className={
+                            activeInvitationTemplate === template.id
+                              ? "is-selected"
+                              : ""
+                          }
+                          key={template.id}
+                          type="button"
+                          onClick={() => applyInvitationTemplate(template)}
+                        >
+                          {template.title}
+                        </button>
+                      ))}
                     </div>
+                    {catalogLoading && (
+                      <small className="catalog-message">Загружаем шаблоны...</small>
+                    )}
+                    {!catalogLoading && catalogTemplates.length === 0 && (
+                      <small className="catalog-message">
+                        Шаблоны появятся здесь после добавления в админке.
+                      </small>
+                    )}
                     <textarea
                       value={invitationText}
                       onChange={(event) => {
@@ -632,13 +626,15 @@ export function ConstructorSidebar({
               )}
             </div>
 
-            <div className="editor-section-heading">
-              <span>Блоки сайта</span>
-              <small>Настройте содержание</small>
-            </div>
+            {!postWeddingMode && (
+              <>
+                <div className="editor-section-heading">
+                  <span>Блоки сайта</span>
+                  <small>Настройте содержание</small>
+                </div>
 
-            <div className="content-accordion-list">
-              {blockOrder.map((block) => {
+                <div className="content-accordion-list">
+                  {blockOrder.map((block) => {
                 if (block === "WISHLIST") {
                   return (
                     <DraggableContentBlock
@@ -1128,19 +1124,29 @@ export function ConstructorSidebar({
                               </button>
                             ))}
                           </div>
-                          <div>
+                          <div className="grid w-full grid-cols-4 justify-items-center gap-3 sm:grid-cols-6 md:grid-cols-8">
                             {colorPalette.map((color, index) => (
-                              <label key={`${index}-${color}`}>
-                                <input
-                                  type="color"
-                                  value={color}
-                                  aria-label={`Цвет палитры ${index + 1}`}
-                                  onInput={(event) =>
-                                    setPaletteColor(index, event.currentTarget.value)
-                                  }
-                                  onBlur={saveExtrasQuietly}
-                                />
-                                <span>{color.toUpperCase()}</span>
+                              <label className="min-w-0 w-full" key={`${index}-${color}`}>
+                                <div className="relative h-12 w-12">
+                                  <input
+                                    className="!h-12 !w-12 cursor-pointer rounded-full border border-stone-200 shadow-sm transition-transform active:scale-95"
+                                    type="color"
+                                    value={color}
+                                    aria-label={`Цвет палитры ${index + 1}`}
+                                    onInput={(event) =>
+                                      setPaletteColor(index, event.currentTarget.value)
+                                    }
+                                    onBlur={saveExtrasQuietly}
+                                  />
+                                  <Check
+                                    className="pointer-events-none absolute inset-0 m-auto text-white drop-shadow"
+                                    size={18}
+                                    strokeWidth={3}
+                                  />
+                                </div>
+                                <span className="w-full truncate text-center text-xs text-stone-500">
+                                  {color.toUpperCase()}
+                                </span>
                                 <button
                                   type="button"
                                   disabled={colorPalette.length <= 3}
@@ -1373,8 +1379,10 @@ export function ConstructorSidebar({
                     </div>
                   </DraggableContentBlock>
                 );
-              })}
-            </div>
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -1385,12 +1393,60 @@ export function ConstructorSidebar({
               title="Выберите настроение"
               description="Контент остается прежним при любой смене оформления."
             />
+            <div className="editor-section-heading">
+              <span>Темы от Vowly</span>
+              <small>Созданы и настроены администратором</small>
+            </div>
+            <div className="constructor-theme-list">
+              {catalogThemes.map((theme) => (
+                <button
+                  key={theme.id}
+                  className={`constructor-theme-card ${
+                    designTheme?.id === theme.id ? "is-selected" : ""
+                  }`}
+                  style={{
+                    color: theme.textColor,
+                    backgroundColor: theme.backgroundColor,
+                    borderColor: theme.primaryColor,
+                  }}
+                  type="button"
+                  onClick={() => {
+                    setDesignTheme(theme);
+                    window.setTimeout(saveExtrasQuietly, 0);
+                  }}
+                >
+                  <span
+                    className="theme-sample"
+                    style={{
+                      color: theme.backgroundColor,
+                      backgroundColor: theme.primaryColor,
+                    }}
+                  >
+                    A &amp; A
+                  </span>
+                  <span>
+                    <strong>{theme.name}</strong>
+                    <small>{theme.fontFamily.replaceAll("_", " ")}</small>
+                  </span>
+                  <i>{designTheme?.id === theme.id && <Check size={15} />}</i>
+                </button>
+              ))}
+            </div>
+            {!catalogLoading && catalogThemes.length === 0 && (
+              <p className="catalog-message">
+                Пользовательские темы появятся после добавления в админке.
+              </p>
+            )}
+            <div className="editor-section-heading">
+              <span>Базовые темы</span>
+              <small>Резервные пресеты проекта</small>
+            </div>
             <div className="constructor-theme-list">
               {themeOptions.map((theme) => (
                 <button
                   key={theme.code}
                   className={`constructor-theme-card theme-sample-${theme.code.toLowerCase()} ${
-                    currentTheme === theme.code ? "is-selected" : ""
+                    !designTheme && currentTheme === theme.code ? "is-selected" : ""
                   }`}
                   type="button"
                   onClick={() => {
@@ -1404,7 +1460,7 @@ export function ConstructorSidebar({
                     <strong>{theme.title}</strong>
                     <small>{theme.description}</small>
                   </span>
-                  <i>{currentTheme === theme.code && <Check size={15} />}</i>
+                  <i>{!designTheme && currentTheme === theme.code && <Check size={15} />}</i>
                 </button>
               ))}
             </div>
@@ -1493,8 +1549,8 @@ export function ConstructorSidebar({
               description="Выберите спокойную композицию из библиотеки или загрузите свой MP3."
             />
             <div className="default-track-list">
-              {DEFAULT_TRACKS.map((track) => {
-                const selected = musicTrack === track.src;
+              {catalogTracks.map((track) => {
+                const selected = musicTrack === track.id;
 
                 return (
                   <article
@@ -1505,14 +1561,14 @@ export function ConstructorSidebar({
                       <Music2 size={17} />
                       <span>
                         <strong>{track.title}</strong>
-                        <small>{track.category}</small>
+                        <small>{track.artist}</small>
                       </span>
                     </div>
-                    <audio controls preload="none" src={track.src} />
+                    <audio controls preload="none" src={track.fileUrl} />
                     <button
                       type="button"
                       onClick={() => {
-                        setMusicTrack(selected ? null : track.src);
+                        setMusicTrack(selected ? null : track);
                         window.setTimeout(saveExtrasQuietly, 0);
                       }}
                     >
@@ -1523,6 +1579,15 @@ export function ConstructorSidebar({
                 );
               })}
             </div>
+            {catalogLoading && (
+              <p className="catalog-message">Загружаем музыкальную библиотеку...</p>
+            )}
+            {!catalogLoading && catalogTracks.length === 0 && (
+              <p className="catalog-message">
+                В библиотеке пока нет треков. Администратор может добавить их в панели управления.
+              </p>
+            )}
+            {catalogError && <p className="telegram-error">{catalogError}</p>}
             <div className="music-choice-divider">
               <span>или загрузите свою композицию</span>
             </div>
@@ -1531,7 +1596,7 @@ export function ConstructorSidebar({
               <span>
                 <strong>
                   {customMusicName ||
-                    getDefaultTrack(musicTrack)?.title ||
+                    musicTrackTitle ||
                     "Выбрать MP3 с вашего устройства"}
                 </strong>
                 <small>Только MP3, не более 5 МБ</small>
@@ -1714,7 +1779,7 @@ function EditorHeading({
   return (
     <header className="editor-heading">
       <span>{eyebrow}</span>
-      <h2>{title}</h2>
+      <h2 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">{title}</h2>
       <p>{description}</p>
     </header>
   );

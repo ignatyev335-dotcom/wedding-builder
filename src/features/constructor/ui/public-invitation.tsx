@@ -7,6 +7,7 @@ import type {
   WeddingBuilderData,
 } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
+import { getDesignThemeStyle } from "@/features/constructor/lib/design-theme-style";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 
 export function PublicInvitation({
@@ -86,7 +87,10 @@ export function PublicInvitation({
 
   return (
     <main
-      className={`public-invitation preloader-theme-${initialData.currentTheme.toLowerCase()}`}
+      className={`public-invitation preloader-theme-${initialData.currentTheme.toLowerCase()} ${
+        initialData.designTheme ? "has-dynamic-theme" : ""
+      }`}
+      style={getDesignThemeStyle(initialData.designTheme)}
       ref={rootRef}
     >
       <div

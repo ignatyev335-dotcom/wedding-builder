@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
-export function hashLoginCode(email: string, code: string) {
+export function hashLoginCode(identifier: string, code: string) {
   return createHash("sha256")
-    .update(`${email}:${code}:${process.env.AUTH_SECRET ?? "local"}`)
+    .update(`${identifier}:${code}:${process.env.AUTH_SECRET ?? "local"}`)
     .digest("hex");
 }

@@ -54,6 +54,7 @@ export async function persistSiteExtras() {
       customMusicDataUrl: state.customMusicDataUrl,
       customMusicName: state.customMusicName,
       musicTrack: state.musicTrack,
+      designThemeId: state.designTheme?.id ?? null,
       countdownTitle: state.countdownTitle,
       countdownStyle: state.countdownStyle,
       colorPalette: state.colorPalette,

@@ -78,8 +78,8 @@ export async function POST(request: Request) {
           slug,
           theme: data.theme,
           templateStyle: data.templateStyle,
-          musicTrackId: data.audioUrl,
-          audioUrl: data.audioUrl,
+          musicTrackId: null,
+          audioUrl: null,
           data: {
             create: {
               partnerOneName: data.partnerOneName.trim(),
