@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 
 const updateSchema = z.object({ active: z.boolean() });
 
 async function requireAdmin() {
-  const user = await getCurrentUser();
-  return user?.role === "ADMIN" ? user : null;
+  return getCurrentAdmin();
 }
 
 export async function PATCH(

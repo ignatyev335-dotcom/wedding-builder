@@ -2,12 +2,12 @@ import { Database, Globe2, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LogoutButton } from "@/features/auth/ui/logout-button";
+import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
 import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptSetting, maskSetting } from "@/lib/system-settings";
 
@@ -20,9 +20,8 @@ const statusLabels = {
 } as const;
 
 export default async function AdminDashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (user.role !== "ADMIN") redirect("/");
+  const admin = await getCurrentAdmin();
+  if (!admin) redirect("/admin");
 
   const [
     usersCount,
@@ -86,7 +85,7 @@ export default async function AdminDashboardPage() {
           <span>
             <ShieldCheck size={15} /> Суперадмин
           </span>
-          <LogoutButton />
+          <AdminLogoutButton />
         </div>
       </header>
 

@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const protectedPrefixes = [
   "/account",
-  "/admin/dashboard",
   "/builder",
   "/constructor",
   "/dashboard",
@@ -10,6 +9,15 @@ const protectedPrefixes = [
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  if (
+    pathname === "/admin/dashboard" ||
+    pathname.startsWith("/admin/dashboard/")
+  ) {
+    return request.cookies.get("vowly-admin-session")?.value
+      ? NextResponse.next()
+      : NextResponse.redirect(new URL("/admin", request.url));
+  }
+
   const isProtected = protectedPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

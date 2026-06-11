@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { encryptSetting } from "@/lib/system-settings";
 import { prisma } from "@/lib/prisma";
 
@@ -14,8 +14,8 @@ const settingSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  const user = await getCurrentAdmin();
+  if (!user) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  const user = await getCurrentAdmin();
+  if (!user) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 

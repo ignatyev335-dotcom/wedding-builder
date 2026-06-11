@@ -3,14 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AdminLoginForm } from "@/features/admin/ui/admin-login-form";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage() {
-  const user = await getCurrentUser();
-  if (user?.role === "ADMIN") redirect("/admin/dashboard");
-  if (user && user.provider !== "ANONYMOUS") redirect("/");
+  const admin = await getCurrentAdmin();
+  if (admin) redirect("/admin/dashboard");
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f2eee5,transparent_42%),#f8f7f3] px-5 py-8 text-stone-900">

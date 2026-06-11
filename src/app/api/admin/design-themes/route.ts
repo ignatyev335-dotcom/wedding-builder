@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 
 const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
@@ -24,8 +24,7 @@ const themeSchema = z.object({
 });
 
 async function requireAdmin() {
-  const user = await getCurrentUser();
-  return user?.role === "ADMIN" ? user : null;
+  return getCurrentAdmin();
 }
 
 export async function POST(request: Request) {

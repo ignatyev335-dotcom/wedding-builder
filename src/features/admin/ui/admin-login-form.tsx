@@ -15,10 +15,10 @@ export function AdminLoginForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/password", {
+      const response = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, adminOnly: true }),
+        body: JSON.stringify({ email, password }),
       });
       const result = (await response.json()) as {
         error?: string;
