@@ -34,9 +34,11 @@ const transportOptions: Array<{
 
 export function RsvpQuestionnaire({
   personalizedGuest,
+  fallbackErrorText,
   onComplete,
 }: {
   personalizedGuest: PersonalizedGuest | null;
+  fallbackErrorText: string;
   onComplete: () => void;
 }) {
   const addGuest = useWeddingStore((state) => state.addGuest);
@@ -176,7 +178,7 @@ export function RsvpQuestionnaire({
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Не удалось сохранить ответ.",
+          : fallbackErrorText,
       );
     } finally {
       setIsSaving(false);

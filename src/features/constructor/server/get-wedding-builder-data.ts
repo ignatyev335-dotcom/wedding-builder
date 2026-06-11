@@ -11,6 +11,7 @@ import {
   parseSiteExtras,
 } from "@/features/constructor/lib/site-extras";
 import { prisma } from "@/lib/prisma";
+import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
 
 const builderModules: BuilderModule[] = [
   "RSVP",
@@ -47,6 +48,7 @@ export async function getWeddingBuilderData(
       guests: true,
       musicTrack: true,
       designTheme: true,
+      decorativeAsset: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -54,6 +56,9 @@ export async function getWeddingBuilderData(
   if (!site?.data) {
     return null;
   }
+  const platformContent =
+    (await prisma.platformContent.findUnique({ where: { id: "global" } })) ??
+    defaultPlatformContent;
 
   const enabledModules = new Set(
     site.modules.filter((module) => module.isEnabled).map((module) => module.type),
@@ -76,6 +81,8 @@ export async function getWeddingBuilderData(
     mapLongitude: site.data.mapLongitude,
     currentTheme: site.theme,
     designTheme: site.designTheme,
+    decorativeAsset: site.decorativeAsset,
+    platformContent,
     moduleVisibility: Object.fromEntries(
       builderModules.map((module) => [module, enabledModules.has(module)]),
     ) as Record<BuilderModule, boolean>,

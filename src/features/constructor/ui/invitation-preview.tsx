@@ -58,6 +58,8 @@ export function InvitationPreview({
     mapLongitude,
     currentTheme,
     designTheme,
+    decorativeAsset,
+    platformContent,
     fontCode,
     blockOrder,
     moduleVisibility,
@@ -219,6 +221,17 @@ export function InvitationPreview({
         </>
       )}
 
+      {decorativeAsset && (
+        <Image
+          className={`wedding-decorative-asset asset-${decorativeAsset.type.toLowerCase()}`}
+          src={decorativeAsset.url}
+          width={112}
+          height={112}
+          unoptimized
+          alt=""
+        />
+      )}
+
       <section
         className={`wedding-hero break-words hyphens-auto overflow-hidden ${
           heroImageDesktop || heroImageMobile || coverPhoto ? "has-cover" : ""
@@ -281,7 +294,7 @@ export function InvitationPreview({
         <span className="wedding-scroll-line" />
       </section>
 
-      {!postWeddingMode && <section className="wedding-welcome">
+      {!postWeddingMode && platformContent.greetingEnabled && <section className="wedding-welcome">
         <span>{postWeddingMode ? "С любовью к вам" : t.dearGuests}</span>
         <h2>
           {postWeddingMode
@@ -340,7 +353,9 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.TIMELINE && (
+      {!postWeddingMode &&
+        platformContent.timelineEnabled &&
+        moduleVisibility.TIMELINE && (
         <section
           className="wedding-module"
           style={{ order: blockOrder.indexOf("TIMELINE") }}
@@ -359,7 +374,9 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.DRESS_CODE && (
+      {!postWeddingMode &&
+        platformContent.dressCodeEnabled &&
+        moduleVisibility.DRESS_CODE && (
         <section
           className="wedding-module wedding-dress"
           style={{ order: blockOrder.indexOf("DRESS_CODE") }}
@@ -389,7 +406,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.MAP && (
+      {!postWeddingMode && platformContent.mapEnabled && moduleVisibility.MAP && (
         <section
           className="wedding-module wedding-location"
           style={{ order: blockOrder.indexOf("MAP") }}
@@ -568,7 +585,9 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.RSVP && (
+      {!postWeddingMode &&
+        platformContent.rsvpEnabled &&
+        moduleVisibility.RSVP && (
         <section
           className="wedding-module wedding-rsvp"
           style={{ order: blockOrder.indexOf("RSVP") }}
@@ -585,7 +604,7 @@ export function InvitationPreview({
                 setIsRsvpSent(false);
               }}
             >
-              {t.confirm}
+              {platformContent.primaryButtonText || t.confirm}
             </button>
           ) : isRsvpSent ? (
             <div className="rsvp-success">
@@ -607,6 +626,7 @@ export function InvitationPreview({
           ) : (
             <RsvpQuestionnaire
               personalizedGuest={personalizedGuest}
+              fallbackErrorText={platformContent.errorText}
               onComplete={() => setIsRsvpSent(true)}
             />
           )}
@@ -615,10 +635,15 @@ export function InvitationPreview({
       </div>
       {!removeBranding && (
         <footer className="vowly-signature">
-          Создано на{" "}
-          <Link href="/" onClick={(event) => event.stopPropagation()}>
-            Vowly
-          </Link>
+          {platformContent.footerText}
+          {!platformContent.footerText.toLowerCase().includes("vowly") && (
+            <>
+              {" "}
+              <Link href="/" onClick={(event) => event.stopPropagation()}>
+                Vowly
+              </Link>
+            </>
+          )}
         </footer>
       )}
     </article>

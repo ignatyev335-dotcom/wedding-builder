@@ -20,6 +20,7 @@ import {
 } from "@/features/wedding/server/private-access";
 import { PrivateWeddingGate } from "@/features/wedding/ui/private-wedding-gate";
 import { prisma } from "@/lib/prisma";
+import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
 
 const builderModules: BuilderModule[] = [
   "RSVP",
@@ -48,6 +49,7 @@ export default async function WeddingPage({
       guests: true,
       musicTrack: true,
       designTheme: true,
+      decorativeAsset: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -55,6 +57,9 @@ export default async function WeddingPage({
   if (!site?.data || site.status === "ARCHIVED") {
     notFound();
   }
+  const platformContent =
+    (await prisma.platformContent.findUnique({ where: { id: "global" } })) ??
+    defaultPlatformContent;
 
   if (site.pinCode) {
     const cookieStore = await cookies();
@@ -102,6 +107,8 @@ export default async function WeddingPage({
     mapLongitude: site.data.mapLongitude,
     currentTheme: site.theme,
     designTheme: site.designTheme,
+    decorativeAsset: site.decorativeAsset,
+    platformContent,
     moduleVisibility: Object.fromEntries(
       builderModules.map((module) => [module, enabledModules.has(module)]),
     ) as Record<BuilderModule, boolean>,

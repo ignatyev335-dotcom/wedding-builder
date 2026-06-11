@@ -53,6 +53,24 @@ export type DesignThemeOption = {
   fontFamily: string;
 };
 
+export type MediaAssetOption = {
+  id: string;
+  name: string;
+  type: "ICON" | "STICKER";
+  url: string;
+};
+
+export type PlatformContentConfig = {
+  greetingEnabled: boolean;
+  timelineEnabled: boolean;
+  dressCodeEnabled: boolean;
+  mapEnabled: boolean;
+  rsvpEnabled: boolean;
+  primaryButtonText: string;
+  footerText: string;
+  errorText: string;
+};
+
 export type BuilderModule = OptionalModule;
 
 export const fontCodes = [
@@ -220,6 +238,8 @@ export type WeddingBuilderData = {
   mapLongitude: number | null;
   currentTheme: ThemeCode;
   designTheme: DesignThemeOption | null;
+  decorativeAsset: MediaAssetOption | null;
+  platformContent: PlatformContentConfig;
   fontCode: FontCode;
   blockOrder: ContentBlockCode[];
   moduleVisibility: Record<BuilderModule, boolean>;

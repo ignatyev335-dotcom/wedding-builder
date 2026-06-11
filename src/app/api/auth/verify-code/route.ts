@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({
     role: user.role,
-    redirectTo: user.role === "ADMIN" ? "/admin/dashboard" : "/account",
+    redirectTo: "/dashboard",
   });
   setSessionCookie(response, user.id);
   return response;

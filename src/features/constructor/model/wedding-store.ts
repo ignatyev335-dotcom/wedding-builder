@@ -16,12 +16,14 @@ import type {
   PackageCode,
   PhotoMaskCode,
   LanguageCode,
+  MediaAssetOption,
   PremiumFeatureCode,
   TelegramProfile,
   ThemeCode,
   WeddingBuilderData,
   WishlistItem,
 } from "@/entities/wedding/model";
+import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
 
 type WeddingStore = WeddingBuilderData & {
   initializedSiteId: string | null;
@@ -37,6 +39,7 @@ type WeddingStore = WeddingBuilderData & {
   ) => void;
   setCurrentTheme: (theme: ThemeCode) => void;
   setDesignTheme: (theme: DesignThemeOption | null) => void;
+  setDecorativeAsset: (asset: MediaAssetOption | null) => void;
   setFontCode: (fontCode: FontCode) => void;
   reorderBlocks: (active: ContentBlockCode, over: ContentBlockCode) => void;
   toggleModule: (module: BuilderModule) => void;
@@ -159,6 +162,8 @@ const initialState: WeddingBuilderData = {
   mapLongitude: null,
   currentTheme: "MINIMAL",
   designTheme: null,
+  decorativeAsset: null,
+  platformContent: defaultPlatformContent,
   fontCode: "PLAYFAIR",
   blockOrder: [
     "COUNTDOWN",
@@ -256,6 +261,7 @@ export const useWeddingStore = create<WeddingStore>()(
       setCurrentTheme: (currentTheme) =>
         set({ currentTheme, designTheme: null }),
       setDesignTheme: (designTheme) => set({ designTheme }),
+      setDecorativeAsset: (decorativeAsset) => set({ decorativeAsset }),
       setFontCode: (fontCode) => set({ fontCode }),
       reorderBlocks: (active, over) =>
         set((state) => {
@@ -531,6 +537,8 @@ export const useWeddingStore = create<WeddingStore>()(
         mapLongitude: state.mapLongitude,
         currentTheme: state.currentTheme,
         designTheme: state.designTheme,
+        decorativeAsset: state.decorativeAsset,
+        platformContent: state.platformContent,
         fontCode: state.fontCode,
         blockOrder: state.blockOrder,
         moduleVisibility: state.moduleVisibility,

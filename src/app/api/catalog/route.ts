@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const [tracks, templates, designThemes] = await Promise.all([
+  const [tracks, templates, designThemes, mediaAssets] = await Promise.all([
     prisma.audioTrack.findMany({
       where: { isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -34,7 +34,12 @@ export async function GET() {
         fontFamily: true,
       },
     }),
+    prisma.mediaAsset.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, type: true, url: true },
+    }),
   ]);
 
-  return NextResponse.json({ tracks, templates, designThemes });
+  return NextResponse.json({ tracks, templates, designThemes, mediaAssets });
 }

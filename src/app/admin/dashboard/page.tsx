@@ -5,8 +5,14 @@ import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
+import { MediaManagerPanel } from "@/features/admin/ui/media-manager-panel";
+import {
+  PlatformContentPanel,
+  type PlatformContentDraft,
+} from "@/features/admin/ui/platform-content-panel";
 import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
+import { UserPlansPanel } from "@/features/admin/ui/user-plans-panel";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptSetting, maskSetting } from "@/lib/system-settings";
@@ -33,6 +39,9 @@ export default async function AdminDashboardPage() {
     tracks,
     templates,
     designThemes,
+    platformContent,
+    mediaAssets,
+    managedUsers,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.weddingSite.count(),
@@ -71,6 +80,23 @@ export default async function AdminDashboardPage() {
         primaryColor: true,
         textColor: true,
         fontFamily: true,
+      },
+    }),
+    prisma.platformContent.findUnique({ where: { id: "global" } }),
+    prisma.mediaAsset.findMany({
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, type: true, url: true },
+    }),
+    prisma.user.findMany({
+      where: { role: "USER" },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        subscriptionPlan: true,
+        _count: { select: { weddingSites: true } },
       },
     }),
   ]);
@@ -147,6 +173,33 @@ export default async function AdminDashboardPage() {
       />
 
       <DesignThemePanel initialThemes={designThemes} />
+
+      <PlatformContentPanel
+        initialContent={
+          (platformContent ?? {
+            greetingEnabled: true,
+            timelineEnabled: true,
+            dressCodeEnabled: true,
+            mapEnabled: true,
+            rsvpEnabled: true,
+            primaryButtonText: "Отправить ответ",
+            footerText: "Создано на Vowly",
+            errorText: "Что-то пошло не так. Попробуйте ещё раз.",
+          }) satisfies PlatformContentDraft
+        }
+      />
+
+      <MediaManagerPanel initialAssets={mediaAssets} />
+
+      <UserPlansPanel
+        initialUsers={managedUsers.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          subscriptionPlan: user.subscriptionPlan,
+          sitesCount: user._count.weddingSites,
+        }))}
+      />
 
       <section className="admin-sites">
         <div className="admin-sites-heading">

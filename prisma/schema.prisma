@@ -22,6 +22,17 @@ enum UserRole {
   ADMIN
 }
 
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+  VIP
+}
+
+enum MediaAssetType {
+  ICON
+  STICKER
+}
+
 enum SiteStatus {
   DRAFT
   PUBLISHED
@@ -82,23 +93,24 @@ enum PremiumFeature {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  telegramId     String?       @unique
-  telegramChatId String?       @unique
-  email          String?       @unique
-  emailVerified  DateTime?
-  phone          String?       @unique
-  image          String?
-  name           String?
-  provider       AuthProvider  @default(ANONYMOUS)
-  role           UserRole      @default(USER)
-  passwordHash   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  weddingSites   WeddingSite[]
-  orders         Order[]
-  accounts       Account[]
-  sessions       Session[]
+  id               String           @id @default(cuid())
+  telegramId       String?          @unique
+  telegramChatId   String?          @unique
+  email            String?          @unique
+  emailVerified    DateTime?
+  phone            String?          @unique
+  image            String?
+  name             String?
+  provider         AuthProvider     @default(ANONYMOUS)
+  role             UserRole         @default(USER)
+  subscriptionPlan SubscriptionPlan @default(FREE)
+  passwordHash     String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  weddingSites     WeddingSite[]
+  orders           Order[]
+  accounts         Account[]
+  sessions         Session[]
 
   @@index([createdAt])
 }
@@ -153,43 +165,74 @@ model VerificationToken {
 }
 
 model WeddingSite {
-  id               String       @id @default(cuid())
-  userId           String
-  slug             String       @unique
-  theme            ThemeCode    @default(MINIMAL)
-  templateStyle    String       @default("MINIMAL")
-  status           SiteStatus   @default(DRAFT)
-  musicTrackId     String?
-  designThemeId    String?
-  audioUrl         String?
-  heroImageDesktop String?
-  heroImageMobile  String?
-  giftPaymentLink  String?
-  giftQrCode       String?
-  pinCode          String?
-  defaultLanguage  String       @default("RU")
-  isPremium        Boolean      @default(false)
-  removeBranding   Boolean      @default(false)
-  rsvpEnabled      Boolean      @default(false)
-  telegramAlerts   Boolean      @default(false)
-  personalLinks    Boolean      @default(false)
-  premiumMusic     Boolean      @default(false)
-  galleryEnabled   Boolean      @default(false)
-  publishedAt      DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  data             WeddingData?
-  modules          SiteModule[]
-  guests           Guest[]
-  orders           Order[]
-  crewTimings      CrewTiming[]
-  musicTrack       AudioTrack?  @relation(fields: [musicTrackId], references: [id], onDelete: SetNull)
-  designTheme      DesignTheme? @relation(fields: [designThemeId], references: [id], onDelete: SetNull)
+  id                String       @id @default(cuid())
+  userId            String
+  slug              String       @unique
+  theme             ThemeCode    @default(MINIMAL)
+  templateStyle     String       @default("MINIMAL")
+  status            SiteStatus   @default(DRAFT)
+  musicTrackId      String?
+  designThemeId     String?
+  decorativeAssetId String?
+  audioUrl          String?
+  heroImageDesktop  String?
+  heroImageMobile   String?
+  giftPaymentLink   String?
+  giftQrCode        String?
+  pinCode           String?
+  defaultLanguage   String       @default("RU")
+  isPremium         Boolean      @default(false)
+  removeBranding    Boolean      @default(false)
+  rsvpEnabled       Boolean      @default(false)
+  telegramAlerts    Boolean      @default(false)
+  personalLinks     Boolean      @default(false)
+  premiumMusic      Boolean      @default(false)
+  galleryEnabled    Boolean      @default(false)
+  publishedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data              WeddingData?
+  modules           SiteModule[]
+  guests            Guest[]
+  orders            Order[]
+  crewTimings       CrewTiming[]
+  musicTrack        AudioTrack?  @relation(fields: [musicTrackId], references: [id], onDelete: SetNull)
+  designTheme       DesignTheme? @relation(fields: [designThemeId], references: [id], onDelete: SetNull)
+  decorativeAsset   MediaAsset?  @relation(fields: [decorativeAssetId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status, createdAt])
   @@index([designThemeId])
+  @@index([decorativeAssetId])
+}
+
+model PlatformContent {
+  id                String   @id @default("global")
+  greetingEnabled   Boolean  @default(true)
+  timelineEnabled   Boolean  @default(true)
+  dressCodeEnabled  Boolean  @default(true)
+  mapEnabled        Boolean  @default(true)
+  rsvpEnabled       Boolean  @default(true)
+  primaryButtonText String   @default("Отправить ответ")
+  footerText        String   @default("Создано на Vowly")
+  errorText         String   @default("Что-то пошло не так. Попробуйте ещё раз.")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model MediaAsset {
+  id        String         @id @default(cuid())
+  name      String
+  type      MediaAssetType
+  url       String         @db.Text
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  sites     WeddingSite[]
+
+  @@index([type, isActive])
+  @@index([createdAt])
 }
 
 model DesignTheme {

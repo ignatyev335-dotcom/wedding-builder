@@ -29,6 +29,7 @@ import type {
   CountdownStyleCode,
   DesignThemeOption,
   InvitationTemplateOption,
+  MediaAssetOption,
   PhotoMaskCode,
   ThemeCode,
 } from "@/entities/wedding/model";
@@ -219,6 +220,7 @@ export function ConstructorSidebar({
     InvitationTemplateOption[]
   >([]);
   const [catalogThemes, setCatalogThemes] = useState<DesignThemeOption[]>([]);
+  const [catalogMedia, setCatalogMedia] = useState<MediaAssetOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
@@ -238,6 +240,7 @@ export function ConstructorSidebar({
     mapLongitude,
     currentTheme,
     designTheme,
+    decorativeAsset,
     fontCode,
     photoMask,
     cardStyle,
@@ -285,6 +288,7 @@ export function ConstructorSidebar({
     setMapCoordinates,
     setCurrentTheme,
     setDesignTheme,
+    setDecorativeAsset,
     setFontCode,
     setPhotoMask,
     setCardStyle,
@@ -359,6 +363,7 @@ export function ConstructorSidebar({
           tracks: AudioTrackOption[];
           templates: InvitationTemplateOption[];
           designThemes: DesignThemeOption[];
+          mediaAssets: MediaAssetOption[];
         };
       })
       .then((catalog) => {
@@ -366,6 +371,7 @@ export function ConstructorSidebar({
         setCatalogTracks(catalog.tracks);
         setCatalogTemplates(catalog.templates);
         setCatalogThemes(catalog.designThemes);
+        setCatalogMedia(catalog.mediaAssets);
         setCatalogError("");
       })
       .catch(() => {
@@ -1437,6 +1443,50 @@ export function ConstructorSidebar({
                 Пользовательские темы появятся после добавления в админке.
               </p>
             )}
+            <div className="editor-section-heading">
+              <span>Декоративный акцент</span>
+              <small>Иконки и стикеры из библиотеки Vowly</small>
+            </div>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              <button
+                className={`grid min-h-28 place-items-center rounded-2xl border bg-stone-50 p-3 text-sm ${
+                  !decorativeAsset ? "border-stone-900" : "border-stone-200"
+                }`}
+                type="button"
+                onClick={() => {
+                  setDecorativeAsset(null);
+                  window.setTimeout(saveExtrasQuietly, 0);
+                }}
+              >
+                Без декора
+              </button>
+              {catalogMedia.map((asset) => (
+                <button
+                  className={`grid min-h-28 place-items-center rounded-2xl border bg-stone-50 p-3 ${
+                    decorativeAsset?.id === asset.id
+                      ? "border-stone-900"
+                      : "border-stone-200"
+                  }`}
+                  key={asset.id}
+                  type="button"
+                  title={asset.name}
+                  onClick={() => {
+                    setDecorativeAsset(asset);
+                    window.setTimeout(saveExtrasQuietly, 0);
+                  }}
+                >
+                  <Image
+                    className="h-16 w-16 object-contain"
+                    src={asset.url}
+                    width={64}
+                    height={64}
+                    unoptimized
+                    alt=""
+                  />
+                  <span className="w-full truncate text-xs">{asset.name}</span>
+                </button>
+              ))}
+            </div>
             <div className="editor-section-heading">
               <span>Базовые темы</span>
               <small>Резервные пресеты проекта</small>

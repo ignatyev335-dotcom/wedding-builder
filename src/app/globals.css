@@ -4519,6 +4519,22 @@ a {
   font-family: var(--theme-body, var(--font-montserrat)), sans-serif;
 }
 
+.wedding-decorative-asset {
+  position: absolute;
+  z-index: 8;
+  top: 22px;
+  left: 22px;
+  width: clamp(56px, 12vw, 112px);
+  height: clamp(56px, 12vw, 112px);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.wedding-decorative-asset.asset-icon {
+  width: clamp(42px, 8vw, 72px);
+  height: clamp(42px, 8vw, 72px);
+}
+
 .wedding-site-preview.has-dynamic-theme {
   color: var(--theme-text);
   background: var(--theme-bg);

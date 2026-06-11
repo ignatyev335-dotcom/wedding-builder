@@ -18,8 +18,8 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const finishLogin = (redirectTo: string) => {
-    window.location.href = redirectTo;
+  const finishLogin = () => {
+    window.location.assign("/dashboard");
   };
 
   const submitPassword = async (event: React.FormEvent) => {
@@ -39,7 +39,7 @@ export function LoginForm() {
       if (!response.ok || !data.redirectTo) {
         throw new Error(data.error || "Не удалось войти.");
       }
-      finishLogin(data.redirectTo);
+      finishLogin();
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Не удалось войти.",
@@ -93,7 +93,7 @@ export function LoginForm() {
       if (!response.ok || !data.redirectTo) {
         throw new Error(data.error || "Не удалось проверить код.");
       }
-      finishLogin(data.redirectTo);
+      finishLogin();
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -113,7 +113,7 @@ export function LoginForm() {
       const result = await signIn("resend", {
         email,
         redirect: false,
-        redirectTo: "/account",
+        redirectTo: "/dashboard",
       });
       if (result?.error) throw new Error(result.error);
       setCodeRequested(true);

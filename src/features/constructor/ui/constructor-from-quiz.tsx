@@ -1,6 +1,7 @@
 "use client";
 
 import type { BuilderModule, WeddingBuilderData } from "@/entities/wedding/model";
+import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
 import { ConstructorClient } from "@/features/constructor/ui/constructor-client";
 
@@ -31,6 +32,8 @@ export function ConstructorFromQuiz() {
     mapLongitude: null,
     currentTheme: quiz.theme,
     designTheme: null,
+    decorativeAsset: null,
+    platformContent: defaultPlatformContent,
     fontCode: "PLAYFAIR",
     blockOrder: [
       "COUNTDOWN",

@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 export default async function LoginPage() {
   const user = await getCurrentUser();
   if (user?.provider !== "ANONYMOUS") {
-    redirect(user?.role === "ADMIN" ? "/admin/dashboard" : "/account");
+    redirect("/dashboard");
   }
 
   return (

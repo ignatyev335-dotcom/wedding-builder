@@ -15,6 +15,7 @@ import {
 } from "@/features/constructor/lib/site-extras";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
+import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
 
 type BuilderPageProps = {
   params: Promise<{ siteId: string }>;
@@ -42,6 +43,7 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
       guests: true,
       musicTrack: true,
       designTheme: true,
+      decorativeAsset: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -49,6 +51,9 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
   if (!site?.data) {
     notFound();
   }
+  const platformContent =
+    (await prisma.platformContent.findUnique({ where: { id: "global" } })) ??
+    defaultPlatformContent;
   if (user.role !== "ADMIN" && site.userId !== user.id) {
     redirect("/");
   }
@@ -78,6 +83,8 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
     mapLongitude: site.data.mapLongitude,
     currentTheme: site.theme,
     designTheme: site.designTheme,
+    decorativeAsset: site.decorativeAsset,
+    platformContent,
     moduleVisibility: Object.fromEntries(
       builderModules.map((module) => [module, enabledModules.has(module)]),
     ) as Record<BuilderModule, boolean>,
