@@ -28,7 +28,10 @@ import type {
   CountdownStyleCode,
 } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
-import { getDesignThemeStyle } from "@/features/constructor/lib/design-theme-style";
+import {
+  getDesignThemeFontFace,
+  getDesignThemeStyle,
+} from "@/features/constructor/lib/design-theme-style";
 import { RsvpQuestionnaire } from "@/features/constructor/ui/rsvp-questionnaire";
 import { RsvpSuccessActions } from "@/features/constructor/ui/rsvp-success-actions";
 import { weddingCopy } from "@/features/wedding/lib/wedding-copy";
@@ -194,6 +197,7 @@ export function InvitationPreview({
   const formattedDate = weddingDate
     ? monthFormatter.format(new Date(`${weddingDate}T12:00:00.000Z`))
     : "Дата вашей свадьбы";
+  const customFontFace = getDesignThemeFontFace(designTheme);
 
   return (
     <article
@@ -203,6 +207,7 @@ export function InvitationPreview({
       style={getDesignThemeStyle(designTheme)}
       onClick={playSelectedTrack}
     >
+      {customFontFace && <style>{customFontFace}</style>}
       {selectedAudioSource && (
         <>
           <audio ref={audioRef} src={selectedAudioSource} loop preload="none" />

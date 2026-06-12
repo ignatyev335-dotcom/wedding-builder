@@ -19,7 +19,9 @@ export function getDesignThemeStyle(
 ): ThemeCssProperties | undefined {
   if (!theme) return undefined;
 
-  const font = fontStacks[theme.fontFamily] ?? fontStacks.PLAYFAIR;
+  const font = theme.customFont
+    ? `"${theme.customFont.family}", Georgia, serif`
+    : (fontStacks[theme.fontFamily] ?? fontStacks.PLAYFAIR);
 
   return {
     color: theme.textColor,
@@ -33,4 +35,13 @@ export function getDesignThemeStyle(
     "--theme-display": font,
     "--selected-font": font,
   };
+}
+
+export function getDesignThemeFontFace(theme: DesignThemeOption | null) {
+  const font = theme?.customFont;
+  if (!font) return null;
+
+  return `@font-face{font-family:${JSON.stringify(font.family)};src:url(${JSON.stringify(
+    font.fileUrl,
+  )}) format(${JSON.stringify(font.format)});font-display:swap;font-style:normal;}`;
 }

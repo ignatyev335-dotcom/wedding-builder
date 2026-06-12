@@ -242,11 +242,28 @@ model DesignTheme {
   primaryColor    String
   textColor       String
   fontFamily      String
+  customFontId    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   sites           WeddingSite[]
+  customFont      CustomFont?   @relation(fields: [customFontId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+  @@index([customFontId])
+}
+
+model CustomFont {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  family    String
+  fileUrl   String        @db.Text
+  format    String        @default("woff2")
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  themes    DesignTheme[]
+
+  @@index([isActive, createdAt])
 }
 
 model AudioTrack {

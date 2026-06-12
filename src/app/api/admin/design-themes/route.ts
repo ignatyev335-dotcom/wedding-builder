@@ -5,7 +5,7 @@ import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 
 const colorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
-const fontFamilies = [
+const builtInFontFamilies = [
   "CORMORANT",
   "ORANIENBAUM",
   "MARCK",
@@ -20,7 +20,8 @@ const themeSchema = z.object({
   backgroundColor: colorSchema,
   primaryColor: colorSchema,
   textColor: colorSchema,
-  fontFamily: z.enum(fontFamilies),
+  fontFamily: z.string().trim().min(2).max(100),
+  customFontId: z.string().cuid().nullable().optional(),
 });
 
 async function requireAdmin() {
@@ -38,6 +39,31 @@ export async function POST(request: Request) {
       { error: "Проверьте название, цвета и выбранный шрифт." },
       { status: 400 },
     );
+  }
+
+  if (
+    !parsed.data.customFontId &&
+    !builtInFontFamilies.includes(
+      parsed.data.fontFamily as (typeof builtInFontFamilies)[number],
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Выбранный встроенный шрифт не поддерживается." },
+      { status: 400 },
+    );
+  }
+
+  if (parsed.data.customFontId) {
+    const customFont = await prisma.customFont.findFirst({
+      where: { id: parsed.data.customFontId, isActive: true },
+      select: { id: true },
+    });
+    if (!customFont) {
+      return NextResponse.json(
+        { error: "Пользовательский шрифт не найден." },
+        { status: 400 },
+      );
+    }
   }
 
   const existing = await prisma.designTheme.findUnique({
@@ -60,6 +86,15 @@ export async function POST(request: Request) {
       primaryColor: true,
       textColor: true,
       fontFamily: true,
+      customFont: {
+        select: {
+          id: true,
+          name: true,
+          family: true,
+          fileUrl: true,
+          format: true,
+        },
+      },
     },
   });
 

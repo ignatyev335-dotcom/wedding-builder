@@ -51,6 +51,15 @@ export type DesignThemeOption = {
   primaryColor: string;
   textColor: string;
   fontFamily: string;
+  customFont?: CustomFontOption | null;
+};
+
+export type CustomFontOption = {
+  id: string;
+  name: string;
+  family: string;
+  fileUrl: string;
+  format: string;
 };
 
 export type MediaAssetOption = {

@@ -6,6 +6,7 @@ import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
+import { FontManagerPanel } from "@/features/admin/ui/font-manager-panel";
 import { MediaManagerPanel } from "@/features/admin/ui/media-manager-panel";
 import {
   PlatformContentPanel,
@@ -27,7 +28,7 @@ const statusLabels = {
 
 export default async function AdminDashboardPage() {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin");
+  if (!admin || admin.role !== "ADMIN") redirect("/login");
 
   const [
     usersCount,
@@ -39,6 +40,7 @@ export default async function AdminDashboardPage() {
     tracks,
     templates,
     designThemes,
+    customFonts,
     platformContent,
     mediaAssets,
     managedUsers,
@@ -80,6 +82,26 @@ export default async function AdminDashboardPage() {
         primaryColor: true,
         textColor: true,
         fontFamily: true,
+        customFont: {
+          select: {
+            id: true,
+            name: true,
+            family: true,
+            fileUrl: true,
+            format: true,
+          },
+        },
+      },
+    }),
+    prisma.customFont.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        family: true,
+        fileUrl: true,
+        format: true,
       },
     }),
     prisma.platformContent.findUnique({ where: { id: "global" } }),
@@ -169,7 +191,12 @@ export default async function AdminDashboardPage() {
 
       <ContentCatalogPanel initialTracks={tracks} initialTemplates={templates} />
 
-      <DesignThemePanel initialThemes={designThemes} />
+      <FontManagerPanel initialFonts={customFonts} />
+
+      <DesignThemePanel
+        initialThemes={designThemes}
+        customFonts={customFonts}
+      />
 
       <PlatformContentPanel
         initialContent={

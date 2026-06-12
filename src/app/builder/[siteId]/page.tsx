@@ -42,7 +42,11 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
       user: true,
       guests: true,
       musicTrack: true,
-      designTheme: true,
+      designTheme: {
+        include: {
+          customFont: true,
+        },
+      },
       decorativeAsset: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },

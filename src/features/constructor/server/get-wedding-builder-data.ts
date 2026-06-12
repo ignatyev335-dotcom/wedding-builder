@@ -47,7 +47,11 @@ export async function getWeddingBuilderData(
       user: true,
       guests: true,
       musicTrack: true,
-      designTheme: true,
+      designTheme: {
+        include: {
+          customFont: true,
+        },
+      },
       decorativeAsset: true,
       crewTimings: { orderBy: { sortOrder: "asc" } },
     },

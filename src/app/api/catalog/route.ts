@@ -32,6 +32,15 @@ export async function GET() {
         primaryColor: true,
         textColor: true,
         fontFamily: true,
+        customFont: {
+          select: {
+            id: true,
+            name: true,
+            family: true,
+            fileUrl: true,
+            format: true,
+          },
+        },
       },
     }),
     prisma.mediaAsset.findMany({
