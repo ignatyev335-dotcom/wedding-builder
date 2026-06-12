@@ -9,3 +9,4 @@ prisma/dev.db
 
 .vercel
 .env*
+/.local-postgres/

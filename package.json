@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/stable-dev.mjs",
+    "dev": "node scripts/hot-dev.mjs",
     "dev:stable": "node scripts/stable-dev.mjs",
-    "dev:hot": "next dev --webpack",
+    "dev:hot": "node scripts/hot-dev.mjs",
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",

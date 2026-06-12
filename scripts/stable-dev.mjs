@@ -2,6 +2,11 @@ import { spawn } from "node:child_process";
 import { rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import {
+  applyLocalMigrations,
+  localDatabaseEnv,
+} from "./local-postgres.mjs";
+
 const projectRoot = resolve(import.meta.dirname, "..");
 const stableBuildDir = resolve(projectRoot, ".next-stable");
 const expectedBuildDir = join(projectRoot, ".next-stable");
@@ -13,11 +18,12 @@ if (stableBuildDir !== expectedBuildDir) {
 rmSync(stableBuildDir, { recursive: true, force: true });
 
 const nextBin = join(projectRoot, "node_modules", "next", "dist", "bin", "next");
-const env = {
+const env = localDatabaseEnv({
   ...process.env,
   NODE_ENV: "production",
   VOWLY_STABLE: "1",
-};
+});
+applyLocalMigrations(env);
 
 function runNext(args) {
   return new Promise((resolveRun, rejectRun) => {
