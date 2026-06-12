@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { cookies } from "next/headers";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const adminCookieName = "vowly-admin-session";
@@ -83,6 +84,29 @@ export function clearAdminSessionCookie(response: Response) {
 }
 
 export async function getCurrentAdmin() {
+  const authSession = await auth();
+  const authSessionUserId =
+    authSession?.user?.role === "ADMIN" ? authSession.user.id : null;
+
+  if (authSessionUserId) {
+    const authSessionAdmin = await prisma.user.findFirst({
+      where: {
+        id: authSessionUserId,
+        role: "ADMIN",
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
+
+    if (authSessionAdmin) {
+      return authSessionAdmin;
+    }
+  }
+
   const cookieStore = await cookies();
   const session = readAdminToken(cookieStore.get(adminCookieName)?.value);
   if (!session) return null;

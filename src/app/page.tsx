@@ -2,14 +2,23 @@ import { ArrowRight, LayoutDashboard } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function HomePage() {
+import { auth } from "@/auth";
+
+export default async function HomePage() {
+  const session = await auth();
+  const dashboardHref = session?.user?.role === "ADMIN"
+    ? "/admin/dashboard"
+    : session?.user?.id
+      ? "/dashboard"
+      : "/login";
+
   return (
     <main className="landing">
       <header className="landing-nav">
         <Link className="brand" href="/" aria-label="Vowly">
           vowly
         </Link>
-        <Link className="nav-action" href="/login">
+        <Link className="nav-action" href={dashboardHref}>
           <LayoutDashboard size={16} />
           <span>Вход / Личный кабинет</span>
         </Link>

@@ -1,8 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
-function isAdminProtectedPath(pathname: string) {
-  return pathname.startsWith("/admin/") && pathname !== "/admin";
+function isAdminPath(pathname: string) {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
 function isDashboardPath(pathname: string) {
@@ -17,9 +17,13 @@ export async function middleware(request: NextRequest) {
     secureCookie: process.env.NODE_ENV === "production",
   });
 
-  if (isAdminProtectedPath(pathname)) {
+  if (isAdminPath(pathname)) {
+    if (pathname === "/admin") {
+      return NextResponse.next();
+    }
+
     if (!token || token.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/admin", request.url));
+      return NextResponse.redirect(new URL("/login", request.url));
     }
     return NextResponse.next();
   }
@@ -27,6 +31,9 @@ export async function middleware(request: NextRequest) {
   if (isDashboardPath(pathname)) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+    if (token.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
     return NextResponse.next();
   }

@@ -34,7 +34,7 @@ export function AuthProviderButtons() {
         ...Object.fromEntries(
           Object.entries(payload).map(([key, value]) => [key, String(value)]),
         ),
-        redirectTo: "/dashboard",
+        redirectTo: "/login",
       });
     };
     return () => {
@@ -45,7 +45,7 @@ export function AuthProviderButtons() {
   const oauth = async (provider: "google" | "yandex") => {
     setError("");
     try {
-      await signIn(provider, { redirectTo: "/dashboard" });
+      await signIn(provider, { redirectTo: "/login" });
     } catch {
       setError("Провайдер пока не настроен. Проверьте ключи в Vercel.");
     }

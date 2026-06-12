@@ -1,13 +1,12 @@
 "use client";
 
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
 
 type LoginMode = "password" | "code" | "magic";
-const ADMIN_EMAIL = "admin@vowly.ru";
 
 export function LoginForm() {
   const [mode, setMode] = useState<LoginMode>("password");
@@ -38,24 +37,22 @@ export function LoginForm() {
     event.preventDefault();
     setIsLoading(true);
     setError("");
+
     try {
-      const isAdminEmail = email.trim().toLowerCase() === ADMIN_EMAIL;
-      const response = await fetch(
-        isAdminEmail ? "/api/admin/login" : "/api/auth/password",
-        {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        },
-      );
-      const data = (await response.json()) as {
-        error?: string;
-        redirectTo?: string;
-      };
-      if (!response.ok || !data.redirectTo) {
-        throw new Error(data.error || "Не удалось войти.");
+      const result = await signIn("password", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error("Не удалось войти.");
       }
-      finishLogin(data.redirectTo);
+
+      const session = await getSession();
+      finishLogin(
+        session?.user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard",
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Не удалось войти.",
@@ -129,7 +126,7 @@ export function LoginForm() {
       const result = await signIn("resend", {
         email,
         redirect: false,
-        redirectTo: "/dashboard",
+        redirectTo: "/login",
       });
       if (result?.error) throw new Error(result.error);
       setCodeRequested(true);

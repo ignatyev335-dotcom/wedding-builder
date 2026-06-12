@@ -8,6 +8,7 @@ import Yandex from "next-auth/providers/yandex";
 import { z } from "zod";
 
 import { hashLoginCode } from "@/lib/auth/login-code";
+import { verifyPassword } from "@/lib/auth/password";
 import {
   type TelegramLoginPayload,
   verifyTelegramLogin,
@@ -17,6 +18,11 @@ import { prisma } from "@/lib/prisma";
 const otpSchema = z.object({
   identifier: z.string().trim().min(3).max(200),
   code: z.string().regex(/^\d{6}$/),
+});
+
+const passwordSchema = z.object({
+  email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
+  password: z.string().min(8).max(200),
 });
 
 const telegramSchema = z.object({
@@ -53,6 +59,82 @@ async function withAuthTimeout<T>(operation: Promise<T>, timeoutMs = 8000) {
 }
 
 const providers: NextAuthConfig["providers"] = [
+  Credentials({
+    id: "password",
+    name: "Email и пароль",
+    credentials: {
+      email: { label: "Email", type: "email" },
+      password: { label: "Пароль", type: "password" },
+    },
+    async authorize(credentials) {
+      try {
+        const parsed = passwordSchema.safeParse(credentials);
+        if (!parsed.success) return null;
+
+        const { email, password } = parsed.data;
+        const adminEmail = (
+          process.env.ADMIN_EMAIL ??
+          (process.env.NODE_ENV !== "production" ? "admin@vowly.ru" : "")
+        )
+          .trim()
+          .toLowerCase();
+        const adminPassword =
+          process.env.ADMIN_PASSWORD ??
+          (process.env.NODE_ENV !== "production" ? "VowlyAdmin2026!" : "");
+        const isAdminBootstrap =
+          Boolean(adminEmail && adminPassword) &&
+          email === adminEmail &&
+          password === adminPassword;
+
+        let user = await withAuthTimeout(
+          prisma.user.findUnique({
+            where: { email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              role: true,
+              passwordHash: true,
+            },
+          }),
+        );
+
+        if (user?.passwordHash) {
+          const validPassword = await verifyPassword(password, user.passwordHash);
+          if (!validPassword) return null;
+        } else if (!isAdminBootstrap) {
+          return null;
+        }
+
+        if (user && isAdminBootstrap && user.role !== "ADMIN") {
+          user = await withAuthTimeout(
+            prisma.user.update({
+              where: { id: user.id },
+              data: { role: "ADMIN" },
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                image: true,
+                role: true,
+                passwordHash: true,
+              },
+            }),
+          );
+        }
+
+        if (!user) {
+          return null;
+        }
+
+        return toAuthUser(user);
+      } catch (error) {
+        console.error("Password authorize failed", error);
+        return null;
+      }
+    },
+  }),
   Credentials({
     id: "otp",
     name: "Email или телефон",
@@ -191,8 +273,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.id) {
-        token.sub = user.id;
+      if (user) {
+        token.sub = user.id ?? token.sub;
+        token.email = user.email ?? token.email;
         token.role = (user as typeof user & { role?: UserRole }).role ?? "USER";
       }
 
@@ -201,10 +284,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const dbUser = await withAuthTimeout(
             prisma.user.findUnique({
               where: { id: token.sub },
-              select: { role: true },
+              select: { role: true, email: true },
             }),
           );
           token.role = dbUser?.role ?? "USER";
+          token.email = dbUser?.email ?? token.email;
         } catch (error) {
           console.error("JWT role hydration failed", error);
           token.role = "USER";
@@ -273,7 +357,7 @@ function authProviderByAccount(provider: string): AuthProvider | null {
   if (provider === "google") return "GOOGLE";
   if (provider === "yandex") return "YANDEX";
   if (provider === "telegram") return "TELEGRAM";
-  if (provider === "otp") return "EMAIL";
+  if (provider === "otp" || provider === "password") return "EMAIL";
   return null;
 }
 
