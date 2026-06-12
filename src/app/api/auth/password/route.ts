@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  clearAdminSessionCookie,
+  setAdminSessionCookie,
+} from "@/lib/auth/admin-session";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import {
   getRequestSession,
@@ -11,7 +15,6 @@ import { prisma } from "@/lib/prisma";
 const loginSchema = z.object({
   email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
   password: z.string().min(8).max(200),
-  adminOnly: z.boolean().default(false),
 });
 
 export async function POST(request: Request) {
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password, adminOnly } = parsed.data;
+  const { email, password } = parsed.data;
   const adminEmail = (
     process.env.ADMIN_EMAIL ??
     (process.env.NODE_ENV !== "production" ? "admin@vowly.ru" : "")
@@ -39,13 +42,6 @@ export async function POST(request: Request) {
     password === adminPassword;
 
   let user = await prisma.user.findUnique({ where: { email } });
-
-  if (adminOnly && !isAdminBootstrap && user?.role !== "ADMIN") {
-    return NextResponse.json(
-      { error: "Неверный логин или пароль администратора." },
-      { status: 401 },
-    );
-  }
 
   if (user?.passwordHash) {
     const validPassword = await verifyPassword(password, user.passwordHash);
@@ -109,10 +105,24 @@ export async function POST(request: Request) {
     }
   }
 
+  const isAdmin = user.role === "ADMIN" || isAdminBootstrap;
+  const redirectTo = isAdmin ? "/admin/dashboard" : "/dashboard";
+
   const response = NextResponse.json({
     role: user.role,
-    redirectTo: "/dashboard",
+    redirectTo,
   });
+
   setSessionCookie(response, user.id);
+
+  if (isAdmin) {
+    setAdminSessionCookie(response, {
+      id: user.id,
+      email: user.email ?? adminEmail,
+    });
+  } else {
+    clearAdminSessionCookie(response);
+  }
+
   return response;
 }

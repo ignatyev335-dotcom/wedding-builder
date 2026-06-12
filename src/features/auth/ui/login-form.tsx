@@ -2,11 +2,12 @@
 
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
 
 type LoginMode = "password" | "code" | "magic";
+const ADMIN_EMAIL = "admin@vowly.ru";
 
 export function LoginForm() {
   const [mode, setMode] = useState<LoginMode>("password");
@@ -18,8 +19,19 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const finishLogin = () => {
-    window.location.assign("/dashboard");
+  useEffect(() => {
+    if (
+      window.location.pathname === "/login" &&
+      window.location.search.includes("callbackUrl=")
+    ) {
+      window.history.replaceState(null, "", "/login");
+    }
+  }, []);
+
+  const finishLogin = (redirectTo?: string) => {
+    window.location.assign(
+      redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard",
+    );
   };
 
   const submitPassword = async (event: React.FormEvent) => {
@@ -27,11 +39,15 @@ export function LoginForm() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/auth/password", {
+      const isAdminEmail = email.trim().toLowerCase() === ADMIN_EMAIL;
+      const response = await fetch(
+        isAdminEmail ? "/api/admin/login" : "/api/auth/password",
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      });
+        },
+      );
       const data = (await response.json()) as {
         error?: string;
         redirectTo?: string;
@@ -39,7 +55,7 @@ export function LoginForm() {
       if (!response.ok || !data.redirectTo) {
         throw new Error(data.error || "Не удалось войти.");
       }
-      finishLogin();
+      finishLogin(data.redirectTo);
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Не удалось войти.",
@@ -93,7 +109,7 @@ export function LoginForm() {
       if (!response.ok || !data.redirectTo) {
         throw new Error(data.error || "Не удалось проверить код.");
       }
-      finishLogin();
+      finishLogin(data.redirectTo);
     } catch (requestError) {
       setError(
         requestError instanceof Error

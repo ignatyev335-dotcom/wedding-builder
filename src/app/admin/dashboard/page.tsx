@@ -27,7 +27,7 @@ const statusLabels = {
 
 export default async function AdminDashboardPage() {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin");
+  if (!admin) redirect("/login");
 
   const [
     usersCount,

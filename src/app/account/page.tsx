@@ -19,6 +19,7 @@ const statusLabels = {
 export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user || user.provider === "ANONYMOUS") redirect("/login");
+  if (user.role === "ADMIN") redirect("/admin/dashboard");
 
   const sites = await prisma.weddingSite.findMany({
     where: { userId: user.id },

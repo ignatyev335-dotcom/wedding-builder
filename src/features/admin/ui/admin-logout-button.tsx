@@ -9,7 +9,7 @@ export function AdminLogoutButton() {
       type="button"
       onClick={async () => {
         await fetch("/api/admin/logout", { method: "POST" });
-        window.location.href = "/admin";
+        window.location.href = "/login";
       }}
     >
       <LogOut size={15} />

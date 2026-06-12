@@ -15,7 +15,7 @@ export function proxy(request: NextRequest) {
   ) {
     return request.cookies.get("vowly-admin-session")?.value
       ? NextResponse.next()
-      : NextResponse.redirect(new URL("/admin", request.url));
+      : NextResponse.redirect(new URL("/login", request.url));
   }
 
   const isProtected = protectedPrefixes.some(
@@ -37,12 +37,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set(
-    "callbackUrl",
-    `${pathname}${request.nextUrl.search}`,
-  );
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {

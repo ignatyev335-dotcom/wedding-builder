@@ -3,12 +3,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/features/auth/ui/login-form";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function LoginPage() {
+  const admin = await getCurrentAdmin();
+  if (admin) redirect("/admin/dashboard");
+
   const user = await getCurrentUser();
   if (user?.provider !== "ANONYMOUS") {
-    redirect("/dashboard");
+    redirect(user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard");
   }
 
   return (
