@@ -1,43 +1,6 @@
-import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
-function isAdminPath(pathname: string) {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
-}
-
-function isDashboardPath(pathname: string) {
-  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
-}
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
-  });
-
-  if (isAdminPath(pathname)) {
-    if (pathname === "/admin") {
-      return NextResponse.next();
-    }
-
-    if (!token || token.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (isDashboardPath(pathname)) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-    if (token.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
-    return NextResponse.next();
-  }
-
+export function middleware(_request: NextRequest) {
   return NextResponse.next();
 }
 

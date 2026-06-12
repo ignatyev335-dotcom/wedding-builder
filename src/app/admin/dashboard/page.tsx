@@ -1,6 +1,5 @@
 import { Database, Globe2, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
@@ -13,7 +12,6 @@ import {
 import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
 import { UserPlansPanel } from "@/features/admin/ui/user-plans-panel";
-import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptSetting, maskSetting } from "@/lib/system-settings";
 
@@ -26,9 +24,6 @@ const statusLabels = {
 } as const;
 
 export default async function AdminDashboardPage() {
-  const admin = await getCurrentAdmin();
-  if (!admin) redirect("/login");
-
   const [
     usersCount,
     sitesCount,
