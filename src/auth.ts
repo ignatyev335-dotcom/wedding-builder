@@ -29,6 +29,29 @@ const telegramSchema = z.object({
   hash: z.string().min(1),
 });
 
+class AuthTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthTimeoutError";
+  }
+}
+
+async function withAuthTimeout<T>(operation: Promise<T>, timeoutMs = 8000) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new AuthTimeoutError("Authentication timed out."));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const providers: NextAuthConfig["providers"] = [
   Credentials({
     id: "otp",
@@ -38,35 +61,47 @@ const providers: NextAuthConfig["providers"] = [
       code: { label: "Одноразовый код", type: "text" },
     },
     async authorize(credentials) {
-      const parsed = otpSchema.safeParse(credentials);
-      if (!parsed.success) return null;
+      try {
+        const parsed = otpSchema.safeParse(credentials);
+        if (!parsed.success) return null;
 
-      const identifier = normalizeIdentifier(parsed.data.identifier);
-      const isEmail = identifier.includes("@");
-      const loginCode = await prisma.loginCode.findFirst({
-        where: {
-          ...(isEmail ? { email: identifier } : { phone: identifier }),
-          codeHash: hashLoginCode(identifier, parsed.data.code),
-          expiresAt: { gt: new Date() },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      if (!loginCode) return null;
+        const identifier = normalizeIdentifier(parsed.data.identifier);
+        const isEmail = identifier.includes("@");
+        const loginCode = await withAuthTimeout(
+          prisma.loginCode.findFirst({
+            where: {
+              ...(isEmail ? { email: identifier } : { phone: identifier }),
+              codeHash: hashLoginCode(identifier, parsed.data.code),
+              expiresAt: { gt: new Date() },
+            },
+            orderBy: { createdAt: "desc" },
+          }),
+        );
+        if (!loginCode) return null;
 
-      const user = await prisma.user.upsert({
-        where: isEmail ? { email: identifier } : { phone: identifier },
-        update: { provider: "EMAIL" },
-        create: {
-          ...(isEmail ? { email: identifier } : { phone: identifier }),
-          name: isEmail ? identifier.split("@")[0] : identifier,
-          provider: "EMAIL",
-        },
-      });
-      await prisma.loginCode.deleteMany({
-        where: isEmail ? { email: identifier } : { phone: identifier },
-      });
+        const user = await withAuthTimeout(
+          prisma.user.upsert({
+            where: isEmail ? { email: identifier } : { phone: identifier },
+            update: { provider: "EMAIL" },
+            create: {
+              ...(isEmail ? { email: identifier } : { phone: identifier }),
+              name: isEmail ? identifier.split("@")[0] : identifier,
+              provider: "EMAIL",
+            },
+          }),
+        );
 
-      return toAuthUser(user);
+        await withAuthTimeout(
+          prisma.loginCode.deleteMany({
+            where: isEmail ? { email: identifier } : { phone: identifier },
+          }),
+        );
+
+        return toAuthUser(user);
+      } catch (error) {
+        console.error("OTP authorize failed", error);
+        return null;
+      }
     },
   }),
   Credentials({
@@ -82,36 +117,40 @@ const providers: NextAuthConfig["providers"] = [
       hash: { label: "Подпись", type: "text" },
     },
     async authorize(credentials) {
-      const parsed = telegramSchema.safeParse(credentials);
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      if (
-        !parsed.success ||
-        !botToken ||
-        !verifyTelegramLogin(
-          parsed.data as TelegramLoginPayload,
-          botToken,
-        )
-      ) {
+      try {
+        const parsed = telegramSchema.safeParse(credentials);
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (
+          !parsed.success ||
+          !botToken ||
+          !verifyTelegramLogin(parsed.data as TelegramLoginPayload, botToken)
+        ) {
+          return null;
+        }
+
+        const profile = parsed.data;
+        const user = await withAuthTimeout(
+          prisma.user.upsert({
+            where: { telegramId: profile.id },
+            update: {
+              name: [profile.first_name, profile.last_name].filter(Boolean).join(" "),
+              image: profile.photo_url,
+              provider: "TELEGRAM",
+            },
+            create: {
+              telegramId: profile.id,
+              name: [profile.first_name, profile.last_name].filter(Boolean).join(" "),
+              image: profile.photo_url,
+              provider: "TELEGRAM",
+            },
+          }),
+        );
+
+        return toAuthUser(user);
+      } catch (error) {
+        console.error("Telegram authorize failed", error);
         return null;
       }
-
-      const profile = parsed.data;
-      const user = await prisma.user.upsert({
-        where: { telegramId: profile.id },
-        update: {
-          name: [profile.first_name, profile.last_name].filter(Boolean).join(" "),
-          image: profile.photo_url,
-          provider: "TELEGRAM",
-        },
-        create: {
-          telegramId: profile.id,
-          name: [profile.first_name, profile.last_name].filter(Boolean).join(" "),
-          image: profile.photo_url,
-          provider: "TELEGRAM",
-        },
-      });
-
-      return toAuthUser(user);
     },
   }),
 ];
@@ -156,31 +195,69 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.sub = user.id;
         token.role = (user as typeof user & { role?: UserRole }).role ?? "USER";
       }
+
+      if (token.sub && !token.role) {
+        try {
+          const dbUser = await withAuthTimeout(
+            prisma.user.findUnique({
+              where: { id: token.sub },
+              select: { role: true },
+            }),
+          );
+          token.role = dbUser?.role ?? "USER";
+        } catch (error) {
+          console.error("JWT role hydration failed", error);
+          token.role = "USER";
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
+        session.user.email = token.email ?? session.user.email;
         (session.user as typeof session.user & { role: UserRole }).role =
           (token.role as UserRole | undefined) ?? "USER";
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
+      try {
+        const target = new URL(url);
+        return target.origin === baseUrl ? target.toString() : baseUrl;
+      } catch {
+        return baseUrl;
+      }
+    },
     async signIn({ user, account }) {
       if (!user.id || !account) return true;
+
       const provider = authProviderByAccount(account.provider);
       const isConfiguredAdmin =
         Boolean(user.email) &&
         user.email?.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase();
+
       if (provider || isConfiguredAdmin) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            ...(provider ? { provider } : {}),
-            ...(isConfiguredAdmin ? { role: "ADMIN" as const } : {}),
-          },
-        });
+        try {
+          await withAuthTimeout(
+            prisma.user.update({
+              where: { id: user.id },
+              data: {
+                ...(provider ? { provider } : {}),
+                ...(isConfiguredAdmin ? { role: "ADMIN" as const } : {}),
+              },
+            }),
+          );
+        } catch (error) {
+          console.error("signIn role sync failed", error);
+        }
       }
+
       return true;
     },
   },

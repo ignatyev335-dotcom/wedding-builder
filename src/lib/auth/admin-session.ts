@@ -37,7 +37,9 @@ function createAdminToken(userId: string, email: string) {
   return `${encoded}.${sign(encoded)}`;
 }
 
-function readAdminToken(token?: string | null): AdminSessionPayload | null {
+export function readAdminToken(
+  token?: string | null,
+): AdminSessionPayload | null {
   if (!token) return null;
   const [encoded, signature] = token.split(".");
   if (!encoded || !signature) return null;

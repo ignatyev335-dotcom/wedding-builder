@@ -1,18 +1,40 @@
 import { Heart } from "lucide-react";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { auth } from "@/auth";
 import { LoginForm } from "@/features/auth/ui/login-form";
-import { getCurrentAdmin } from "@/lib/auth/admin-session";
-import { getCurrentUser } from "@/lib/auth/session";
+import {
+  adminCookieName,
+  readAdminToken,
+} from "@/lib/auth/admin-session";
+import {
+  authCookieName,
+  hasValidSessionToken,
+} from "@/lib/auth/session";
 
 export default async function LoginPage() {
-  const admin = await getCurrentAdmin();
-  if (admin) redirect("/admin/dashboard");
+  const cookieStore = await cookies();
+  const authJsSession = await auth();
 
-  const user = await getCurrentUser();
-  if (user?.provider !== "ANONYMOUS") {
-    redirect(user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard");
+  if (authJsSession?.user?.role === "ADMIN") {
+    redirect("/admin/dashboard");
+  }
+
+  if (authJsSession?.user?.id) {
+    redirect("/dashboard");
+  }
+
+  const adminSession = readAdminToken(
+    cookieStore.get(adminCookieName)?.value,
+  );
+  if (adminSession) {
+    redirect("/admin/dashboard");
+  }
+
+  if (hasValidSessionToken(cookieStore.get(authCookieName)?.value)) {
+    redirect("/dashboard");
   }
 
   return (

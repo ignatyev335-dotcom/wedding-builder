@@ -56,6 +56,10 @@ export function readSessionToken(token?: string | null): SessionPayload | null {
   }
 }
 
+export function hasValidSessionToken(token?: string | null) {
+  return Boolean(readSessionToken(token));
+}
+
 export function setSessionCookie(response: Response, userId: string) {
   const token = createSessionToken(userId);
   response.headers.append(
