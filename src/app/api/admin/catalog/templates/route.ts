@@ -10,40 +10,59 @@ const templateSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-async function requireAdmin() {
-  return getCurrentAdmin();
-}
-
 export async function POST(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await getCurrentAdmin())) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 
-  const parsed = templateSchema.safeParse(await request.json());
-  if (!parsed.success) {
+  try {
+    const parsed = templateSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Проверьте название и текст шаблона." },
+        { status: 400 },
+      );
+    }
+
+    const sortOrder = await prisma.invitationTemplate.count();
+    const template = await prisma.invitationTemplate.create({
+      data: { ...parsed.data, sortOrder },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        isActive: true,
+        sortOrder: true,
+      },
+    });
+    return NextResponse.json({ template }, { status: 201 });
+  } catch (error) {
+    console.error("Template create failed", error);
     return NextResponse.json(
-      { error: "Проверьте название и текст шаблона." },
-      { status: 400 },
+      { error: "Не удалось добавить шаблон." },
+      { status: 500 },
     );
   }
-
-  const sortOrder = await prisma.invitationTemplate.count();
-  const template = await prisma.invitationTemplate.create({
-    data: { ...parsed.data, sortOrder },
-  });
-  return NextResponse.json({ template }, { status: 201 });
 }
 
 export async function DELETE(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await getCurrentAdmin())) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 
-  const id = new URL(request.url).searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "Шаблон не указан." }, { status: 400 });
-  }
+  try {
+    const id = new URL(request.url).searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Шаблон не указан." }, { status: 400 });
+    }
 
-  await prisma.invitationTemplate.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+    await prisma.invitationTemplate.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Template delete failed", error);
+    return NextResponse.json(
+      { error: "Не удалось удалить шаблон." },
+      { status: 500 },
+    );
+  }
 }

@@ -1,6 +1,8 @@
 import { Database, Globe2, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
+import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
@@ -9,9 +11,9 @@ import {
   PlatformContentPanel,
   type PlatformContentDraft,
 } from "@/features/admin/ui/platform-content-panel";
-import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
 import { UserPlansPanel } from "@/features/admin/ui/user-plans-panel";
+import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptSetting, maskSetting } from "@/lib/system-settings";
 
@@ -20,10 +22,13 @@ export const dynamic = "force-dynamic";
 const statusLabels = {
   DRAFT: "Черновик",
   PUBLISHED: "Активен",
-  ARCHIVED: "Деактивирован",
+  ARCHIVED: "Архив",
 } as const;
 
 export default async function AdminDashboardPage() {
+  const admin = await getCurrentAdmin();
+  if (!admin) redirect("/admin");
+
   const [
     usersCount,
     sitesCount,
@@ -113,7 +118,7 @@ export default async function AdminDashboardPage() {
       <section className="admin-heading">
         <span>Центр управления</span>
         <h1>Платформа под контролем</h1>
-        <p>Пользователи, проекты и состояние публикаций в одном окне.</p>
+        <p>Пользователи, проекты, библиотека контента и ключевые настройки в одном окне.</p>
       </section>
 
       <section className="admin-stats">
@@ -162,10 +167,7 @@ export default async function AdminDashboardPage() {
         })}
       />
 
-      <ContentCatalogPanel
-        initialTracks={tracks}
-        initialTemplates={templates}
-      />
+      <ContentCatalogPanel initialTracks={tracks} initialTemplates={templates} />
 
       <DesignThemePanel initialThemes={designThemes} />
 
@@ -196,47 +198,20 @@ export default async function AdminDashboardPage() {
         }))}
       />
 
-      <section className="admin-sites">
-        <div className="admin-sites-heading">
-          <div>
-            <span>Последние 100 проектов</span>
-            <h2>Свадебные сайты</h2>
-          </div>
-        </div>
-        <div className="admin-table">
-          <div className="admin-table-head">
-            <span>Проект</span>
-            <span>Владелец</span>
-            <span>Статус</span>
-            <span>Гости</span>
-            <span>Действия</span>
-          </div>
-          {sites.map((site) => (
-            <article key={site.id}>
-              <div>
-                <strong>
-                  {site.data
-                    ? `${site.data.partnerOneName} & ${site.data.partnerTwoName}`
-                    : site.slug}
-                </strong>
-                <small>/wedding/{site.slug}</small>
-              </div>
-              <div>
-                <span>{site.user.email || site.user.name || "Анонимный пользователь"}</span>
-                <small>{site.createdAt.toLocaleDateString("ru-RU")}</small>
-              </div>
-              <span className={`admin-status status-${site.status.toLowerCase()}`}>
-                {statusLabels[site.status]}
-              </span>
-              <strong>{site._count.guests}</strong>
-              <SiteAdminActions
-                siteId={site.id}
-                isArchived={site.status === "ARCHIVED"}
-              />
-            </article>
-          ))}
-        </div>
-      </section>
+      <AdminSitesPanel
+        initialSites={sites.map((site) => ({
+          id: site.id,
+          slug: site.slug,
+          ownerEmail: site.user.email,
+          ownerName: site.user.name,
+          partnerOneName: site.data?.partnerOneName ?? null,
+          partnerTwoName: site.data?.partnerTwoName ?? null,
+          status: site.status,
+          guestsCount: site._count.guests,
+          createdAt: site.createdAt.toLocaleDateString("ru-RU"),
+        }))}
+        statusLabels={statusLabels}
+      />
     </main>
   );
 }

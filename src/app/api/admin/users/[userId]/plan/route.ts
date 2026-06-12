@@ -15,22 +15,32 @@ export async function PATCH(
   if (!(await getCurrentAdmin())) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
-  const parsed = planSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Неизвестный тариф." }, { status: 400 });
-  }
 
-  const { userId } = await params;
-  const [user] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { subscriptionPlan: parsed.data.plan },
-      select: { id: true, subscriptionPlan: true },
-    }),
-    prisma.weddingSite.updateMany({
-      where: { userId },
-      data: { isPremium: parsed.data.plan !== "FREE" },
-    }),
-  ]);
-  return NextResponse.json({ user });
+  try {
+    const parsed = planSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Неизвестный тариф." }, { status: 400 });
+    }
+
+    const { userId } = await params;
+    const [user] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { subscriptionPlan: parsed.data.plan },
+        select: { id: true, subscriptionPlan: true },
+      }),
+      prisma.weddingSite.updateMany({
+        where: { userId },
+        data: { isPremium: parsed.data.plan !== "FREE" },
+      }),
+    ]);
+
+    return NextResponse.json({ user });
+  } catch (error) {
+    console.error("User plan update failed", error);
+    return NextResponse.json(
+      { error: "Не удалось обновить тариф пользователя." },
+      { status: 500 },
+    );
+  }
 }

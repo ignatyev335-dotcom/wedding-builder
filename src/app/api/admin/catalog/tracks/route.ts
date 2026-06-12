@@ -11,40 +11,60 @@ const trackSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-async function requireAdmin() {
-  return getCurrentAdmin();
-}
-
 export async function POST(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await getCurrentAdmin())) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 
-  const parsed = trackSchema.safeParse(await request.json());
-  if (!parsed.success) {
+  try {
+    const parsed = trackSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Проверьте название, исполнителя и ссылку на аудиофайл." },
+        { status: 400 },
+      );
+    }
+
+    const sortOrder = await prisma.audioTrack.count();
+    const track = await prisma.audioTrack.create({
+      data: { ...parsed.data, sortOrder },
+      select: {
+        id: true,
+        title: true,
+        artist: true,
+        fileUrl: true,
+        isActive: true,
+        sortOrder: true,
+      },
+    });
+    return NextResponse.json({ track }, { status: 201 });
+  } catch (error) {
+    console.error("Track create failed", error);
     return NextResponse.json(
-      { error: "Проверьте название, исполнителя и ссылку на аудиофайл." },
-      { status: 400 },
+      { error: "Не удалось добавить трек." },
+      { status: 500 },
     );
   }
-
-  const sortOrder = await prisma.audioTrack.count();
-  const track = await prisma.audioTrack.create({
-    data: { ...parsed.data, sortOrder },
-  });
-  return NextResponse.json({ track }, { status: 201 });
 }
 
 export async function DELETE(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await getCurrentAdmin())) {
     return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
   }
 
-  const id = new URL(request.url).searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "Трек не указан." }, { status: 400 });
-  }
+  try {
+    const id = new URL(request.url).searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Трек не указан." }, { status: 400 });
+    }
 
-  await prisma.audioTrack.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+    await prisma.audioTrack.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Track delete failed", error);
+    return NextResponse.json(
+      { error: "Не удалось удалить трек." },
+      { status: 500 },
+    );
+  }
 }

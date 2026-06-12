@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, KeyRound, Mail } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, Mail } from "lucide-react";
+import { getSession, signIn } from "next-auth/react";
 import { useState } from "react";
 
 export function AdminLoginForm() {
@@ -15,22 +16,22 @@ export function AdminLoginForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("password", {
+        email,
+        password,
+        redirect: false,
       });
-      const result = (await response.json()) as {
-        error?: string;
-        role?: string;
-        redirectTo?: string;
-      };
 
-      if (!response.ok || result.role !== "ADMIN") {
-        throw new Error(result.error || "У этого аккаунта нет прав администратора.");
+      if (result?.error) {
+        throw new Error("Неверный логин или пароль администратора.");
       }
 
-      window.location.href = "/admin/dashboard";
+      const session = await getSession();
+      if (session?.user?.role !== "ADMIN") {
+        throw new Error("У этого аккаунта нет прав администратора.");
+      }
+
+      window.location.assign("/admin/dashboard");
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -82,8 +83,17 @@ export function AdminLoginForm() {
         type="submit"
         disabled={isLoading}
       >
-        {isLoading ? "Проверяем доступ..." : "Войти в панель"}
-        <ArrowRight size={18} />
+        {isLoading ? (
+          <>
+            <Loader2 className="animate-spin" size={18} />
+            Проверяем доступ...
+          </>
+        ) : (
+          <>
+            Войти в панель
+            <ArrowRight size={18} />
+          </>
+        )}
       </button>
     </form>
   );
