@@ -6,7 +6,7 @@
     "dev": "node scripts/hot-dev.mjs",
     "dev:stable": "node scripts/stable-dev.mjs",
     "dev:hot": "node scripts/hot-dev.mjs",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "node scripts/build.mjs",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint .",
