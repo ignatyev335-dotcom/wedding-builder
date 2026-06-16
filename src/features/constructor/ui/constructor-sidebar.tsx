@@ -54,22 +54,22 @@ type ContentSection =
   | BuilderModule;
 
 const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> = [
-  { id: "content", label: "РљРѕРЅС‚РµРЅС‚", icon: FileText },
-  { id: "styles", label: "РЎС‚РёР»Рё", icon: Palette },
-  { id: "music", label: "РњСѓР·С‹РєР°", icon: Music2 },
-  { id: "media", label: "РњРµРґРёР°", icon: Images },
-  { id: "guests", label: "Р›СЋР±РёРјС‹Рµ РіРѕСЃС‚Рё", icon: UsersRound },
-  { id: "crew", label: "РљРѕРјР°РЅРґР°", icon: Clock3 },
-  { id: "publish", label: "РћР¶РёРІРёС‚СЊ СЃР°Р№С‚", icon: Upload },
+  { id: "content", label: "Контент", icon: FileText },
+  { id: "styles", label: "Стили", icon: Palette },
+  { id: "music", label: "Музыка", icon: Music2 },
+  { id: "media", label: "Медиа", icon: Images },
+  { id: "guests", label: "Гости", icon: UsersRound },
+  { id: "crew", label: "Команда", icon: Clock3 },
+  { id: "publish", label: "Публикация", icon: Upload },
 ];
 
 const moduleLabels: Record<BuilderModule, string> = {
-  RSVP: "РЈРјРЅС‹Р№ РѕРїСЂРѕСЃ РіРѕСЃС‚РµР№",
-  DRESS_CODE: "РџРѕР¶РµР»Р°РЅРёСЏ РїРѕ СЃС‚РёР»СЋ",
-  TIMELINE: "РџР»Р°РЅ СЃС‡Р°СЃС‚Р»РёРІРѕРіРѕ РґРЅСЏ",
-  TRANSFER: "Р—Р°Р±РѕС‚Р° Рѕ РґРѕСЂРѕРіРµ",
-  MAP: "РњРµСЃС‚Рѕ РІСЃС‚СЂРµС‡Рё",
-  COUNTDOWN: "РўР°Р№РјРµСЂ РґРѕ СЃРІР°РґСЊР±С‹",
+  RSVP: "Умный опрос гостей",
+  DRESS_CODE: "Пожелания по стилю",
+  TIMELINE: "План дня",
+  TRANSFER: "Забота о дороге",
+  MAP: "Место встречи",
+  COUNTDOWN: "Таймер",
 };
 
 const palettePresets = [
@@ -381,8 +381,8 @@ export function ConstructorSidebar({
       className={`constructor-sidebar ${hideTabs ? "is-mobile-editor" : ""}`}
     >
       <nav
-        className={`constructor-tabs ${hideTabs ? "hidden" : "hidden md:flex"}`}
-        aria-label="Р Р°Р·РґРµР»С‹ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°"
+        className={`constructor-tabs ${hideTabs ? "hidden" : "hidden lg:flex"}`}
+        aria-label="Разделы конструктора"
       >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -400,34 +400,33 @@ export function ConstructorSidebar({
       <div className="constructor-editor">
         <section className="constructor-progress">
           <div>
-            <span>Р’Р°С€ СЃР°Р№С‚ СЃС‚Р°РЅРѕРІРёС‚СЃСЏ Р¶РёРІС‹Рј</span>
+            <span>Ваш сайт становится живым</span>
             <strong>{completion}%</strong>
           </div>
           <div className="constructor-progress-track">
             <i style={{ width: `${completion}%` }} />
           </div>
           <p>
-            Р’Р°С€ РёРґРµР°Р»СЊРЅС‹Р№ СЃР°Р№С‚ РіРѕС‚РѕРІ РЅР° {completion}%.{" "}
+            Сайт готов на {completion}%.{" "}
             {completion === 100
-              ? "РњРѕР¶РЅРѕ РґРµР»РёС‚СЊСЃСЏ СЃ Р»СЋР±РёРјС‹РјРё РіРѕСЃС‚СЏРјРё!"
-              : "РћСЃС‚Р°Р»РѕСЃСЊ СЃРѕРІСЃРµРј С‡СѓС‚СЊ-С‡СѓС‚СЊ!"}
+              ? "Можно делиться ссылкой с гостями."
+              : "Осталось совсем немного."}
           </p>
         </section>
 
         {activeTab === "content" && (
           <>
             <EditorHeading
-              eyebrow="РЎРѕРґРµСЂР¶Р°РЅРёРµ"
-              title="Р Р°СЃСЃРєР°Р¶РёС‚Рµ РІР°С€Сѓ РёСЃС‚РѕСЂРёСЋ"
-              description="Р’СЃРµ РёР·РјРµРЅРµРЅРёСЏ СЃСЂР°Р·Сѓ РїРѕСЏРІР»СЏСЋС‚СЃСЏ РІ РїСЂРµРґРїСЂРѕСЃРјРѕС‚СЂРµ."
+              eyebrow="Содержание"
+              title="Расскажите вашу историю"
+              description="Все изменения сразу сохраняются в конструкторе."
             />
 
             <section className="post-wedding-toggle">
               <div>
-                <strong>Р РµР¶РёРј В«РџРѕСЃР»Рµ СЃРІР°РґСЊР±С‹В»</strong>
+                <strong>Режим «После свадьбы»</strong>
                 <small>
-                  Р’РєР»СЋС‡РёС‚Рµ СЌС‚РѕС‚ СЂРµР¶РёРј РїРѕСЃР»Рµ РјРµСЂРѕРїСЂРёСЏС‚РёСЏ, С‡С‚РѕР±С‹ РѕС‚РєР»СЋС‡РёС‚СЊ РѕРїСЂРѕСЃ
-                  РіРѕСЃС‚РµР№ Рё СЃРѕР±СЂР°С‚СЊ РёС… С„РѕС‚Рѕ
+                  Включите после мероприятия: опрос гостей скроется, а на сайте останутся благодарность и фото.
                 </small>
               </div>
               <button
@@ -446,7 +445,7 @@ export function ConstructorSidebar({
             {postWeddingMode && (
               <div className="post-wedding-settings">
                 <label className="constructor-field">
-                  <span>РўРµРєСЃС‚ Р±Р»Р°РіРѕРґР°СЂРЅРѕСЃС‚Рё</span>
+                  <span>Текст благодарности</span>
                   <textarea
                     value={postWeddingThankYouText}
                     onChange={(event) =>
@@ -456,7 +455,7 @@ export function ConstructorSidebar({
                   />
                 </label>
                 <label className="constructor-field post-wedding-link-field">
-                  <span>РЎСЃС‹Р»РєР° РЅР° РіРѕС‚РѕРІС‹Рµ С„РѕС‚РѕРіСЂР°С„РёРё</span>
+                  <span>Ссылка на готовые фотографии</span>
                   <input
                     type="url"
                     value={postWeddingPhotoUrl}
@@ -467,7 +466,7 @@ export function ConstructorSidebar({
                     onBlur={saveExtrasQuietly}
                   />
                   <small>
-                    РџРѕ СЌС‚РѕР№ СЃСЃС‹Р»РєРµ РіРѕСЃС‚Рё СЃРјРѕРіСѓС‚ СЃРєР°С‡Р°С‚СЊ С„РѕС‚РѕРіСЂР°С„РёРё РїРѕСЃР»Рµ СЃРІР°РґСЊР±С‹.
+                    По этой ссылке гости смогут скачать фотографии после свадьбы.
                   </small>
                 </label>
               </div>
@@ -475,7 +474,7 @@ export function ConstructorSidebar({
 
             <div className="content-accordion">
               <ContentAccordionHeader
-                title="Р“Р»Р°РІРЅС‹Р№ Р±Р»РѕРє"
+                title="Главный блок"
                 isOpen={openSections.includes("HERO")}
                 onOpen={() => toggleSection("HERO")}
               />
@@ -483,20 +482,20 @@ export function ConstructorSidebar({
                 <div className="accordion-body">
                   <div className="constructor-field-grid">
                     <label className="constructor-field">
-                      <span>Р–РµРЅРёС…</span>
+                      <span>Жених</span>
                       <input
                         value={partnerOneName}
-                        placeholder="Р–РµРЅРёС…"
+                        placeholder="Жених"
                         onChange={(event) =>
                           setNames(event.target.value, partnerTwoName)
                         }
                       />
                     </label>
                     <label className="constructor-field">
-                      <span>РќРµРІРµСЃС‚Р°</span>
+                      <span>Невеста</span>
                       <input
                         value={partnerTwoName}
-                        placeholder="РќРµРІРµСЃС‚Р°"
+                        placeholder="Невеста"
                         onChange={(event) =>
                           setNames(partnerOneName, event.target.value)
                         }
@@ -504,7 +503,7 @@ export function ConstructorSidebar({
                     </label>
                   </div>
                   <label className="constructor-field">
-                    <span>Р”Р°С‚Р° СЃРІР°РґСЊР±С‹</span>
+                    <span>Дата свадьбы</span>
                     <input
                       type="date"
                       value={weddingDate}
@@ -512,7 +511,7 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field">
-                    <span>Р’СЂРµРјСЏ РЅР°С‡Р°Р»Р°</span>
+                    <span>Время начала</span>
                     <input
                       type="time"
                       step={15 * 60}
@@ -522,8 +521,8 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field invitation-copy-field">
-                    <span>РўРµРєСЃС‚ РїСЂРёРіР»Р°С€РµРЅРёСЏ</span>
-                    <div className="tone-chips" aria-label="РЎС‚РёР»СЊ С‚РµРєСЃС‚Р°">
+                    <span>Текст приглашения</span>
+                    <div className="tone-chips" aria-label="Стиль текста">
                       {catalogTemplates.map((template) => (
                         <button
                           className={
@@ -540,11 +539,11 @@ export function ConstructorSidebar({
                       ))}
                     </div>
                     {catalogLoading && (
-                      <small className="catalog-message">Р—Р°РіСЂСѓР¶Р°РµРј С€Р°Р±Р»РѕРЅС‹...</small>
+                      <small className="catalog-message">Загружаем шаблоны...</small>
                     )}
                     {!catalogLoading && catalogTemplates.length === 0 && (
                       <small className="catalog-message">
-                        РЁР°Р±Р»РѕРЅС‹ РїРѕСЏРІСЏС‚СЃСЏ Р·РґРµСЃСЊ РїРѕСЃР»Рµ РґРѕР±Р°РІР»РµРЅРёСЏ РІ Р°РґРјРёРЅРєРµ.
+                        Шаблоны появятся здесь после добавления в админке.
                       </small>
                     )}
                     <textarea
@@ -563,8 +562,8 @@ export function ConstructorSidebar({
             {!postWeddingMode && (
               <>
                 <div className="editor-section-heading">
-                  <span>Р‘Р»РѕРєРё СЃР°Р№С‚Р°</span>
-                  <small>РќР°СЃС‚СЂРѕР№С‚Рµ СЃРѕРґРµСЂР¶Р°РЅРёРµ</small>
+                  <span>Блоки сайта</span>
+                  <small>Настройте состав и порядок приглашения</small>
                 </div>
 
                 <div className="content-accordion-list">

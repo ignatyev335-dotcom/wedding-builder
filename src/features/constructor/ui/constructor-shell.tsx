@@ -40,9 +40,7 @@ export function ConstructorShell({
   const scrollPreview = (event: React.WheelEvent<HTMLElement>) => {
     const screen = previewScreenRef.current;
 
-    if (!screen) {
-      return;
-    }
+    if (!screen) return;
 
     event.preventDefault();
     screen.scrollBy({
@@ -53,16 +51,16 @@ export function ConstructorShell({
   };
 
   return (
-    <main className="constructor-shell min-w-0 pb-20 md:pb-0">
+    <main className="constructor-shell min-w-0 pb-24 lg:pb-0">
       <header className="constructor-header">
         <div className="constructor-header-start">
           <Link href="/" className="icon-button" aria-label="На главную">
             <ArrowLeft size={18} />
           </Link>
           <span className="brand">vowly</span>
-          <span className="save-status">Ваши изменения бережно сохранены</span>
+          <span className="save-status">Изменения сохраняются автоматически</span>
         </div>
-        <div className="constructor-header-actions">
+        <div className="constructor-header-actions hidden lg:flex">
           <button
             className={`device-button ${previewMode === "mobile" ? "is-active" : ""}`}
             type="button"
@@ -84,9 +82,7 @@ export function ConstructorShell({
           <button
             className="publish-button flex-shrink-0 whitespace-nowrap"
             type="button"
-            onClick={() =>
-              window.dispatchEvent(new Event("vowly-open-publish"))
-            }
+            onClick={() => window.dispatchEvent(new Event("vowly-open-publish"))}
           >
             Оживить сайт <ExternalLink size={15} />
           </button>
@@ -94,10 +90,10 @@ export function ConstructorShell({
       </header>
 
       <div className="constructor-layout">
-        <div className="hidden min-h-0 w-full md:block">
+        <div className="hidden min-h-0 w-full lg:block">
           <ConstructorSidebar initialTab={initialTab} />
         </div>
-        <div className="block min-h-0 w-full pb-20 md:hidden">
+        <div className="block min-h-0 w-full pb-24 lg:hidden">
           <ConstructorSidebar
             activeTab={mobileTab}
             onTabChange={setMobileTab}
@@ -105,7 +101,7 @@ export function ConstructorShell({
           />
         </div>
         <section
-          className={`constructor-preview-area hidden md:flex preview-${previewMode}`}
+          className={`constructor-preview-area hidden lg:flex preview-${previewMode}`}
           onWheel={scrollPreview}
         >
           <div className="constructor-preview-label">
@@ -114,9 +110,7 @@ export function ConstructorShell({
             </span>
             <small>{previewMode === "mobile" ? "390 × 844" : "1440 × 900"}</small>
           </div>
-          <div
-            className={`constructor-device constructor-${previewMode}`}
-          >
+          <div className={`constructor-device constructor-${previewMode}`}>
             {previewMode === "mobile" ? (
               <div className="constructor-phone-bar" />
             ) : (
@@ -127,10 +121,7 @@ export function ConstructorShell({
                 <span>vowly.ru/wedding</span>
               </div>
             )}
-            <div
-              className="constructor-device-screen"
-              ref={previewScreenRef}
-            >
+            <div className="constructor-device-screen" ref={previewScreenRef}>
               <InvitationPreview previewMode={previewMode} />
             </div>
           </div>
@@ -139,7 +130,7 @@ export function ConstructorShell({
 
       {initialData.slug && (
         <a
-          className="fixed top-4 right-4 z-50 rounded-full border bg-white/80 px-4 py-1.5 text-sm shadow-sm backdrop-blur transition-opacity hover:bg-white md:hidden"
+          className="fixed top-4 right-4 z-50 rounded-full border bg-white/80 px-4 py-1.5 text-sm shadow-sm backdrop-blur transition-opacity hover:bg-white lg:hidden"
           href={`/wedding/${initialData.slug}`}
           target="_blank"
           rel="noreferrer"
@@ -148,7 +139,7 @@ export function ConstructorShell({
         </a>
       )}
 
-      <nav className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-stone-200 bg-white p-2 md:hidden">
+      <nav className="fixed bottom-0 left-0 z-50 flex w-full justify-around border-t border-stone-200 bg-white p-2 lg:hidden">
         {([
           ["content", "Настройки", FileText],
           ["music", "Музыка", Music2],

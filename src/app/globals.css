@@ -1100,7 +1100,7 @@ a {
   scrollbar-width: thin;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .constructor-shell {
     height: auto;
     min-width: 0;
@@ -1136,6 +1136,7 @@ a {
     height: auto;
     min-height: calc(100svh - 60px);
     display: block;
+    grid-template-columns: 1fr;
     overflow: visible;
     border-right: 0;
   }
@@ -2423,7 +2424,12 @@ a {
 
 .switch {
   width: 39px;
+  min-width: 39px;
+  max-width: 39px;
   height: 23px;
+  min-height: 23px;
+  max-height: 23px;
+  flex: 0 0 39px;
   padding: 2px;
   position: relative;
   background: #d6d8d3;
@@ -7601,7 +7607,12 @@ a {
 
   .switch {
     width: 48px;
+    min-width: 48px;
+    max-width: 48px;
     height: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    flex-basis: 48px;
   }
 
   .switch i {
