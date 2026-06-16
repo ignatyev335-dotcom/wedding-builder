@@ -3472,6 +3472,11 @@ a {
   font-weight: 850;
 }
 
+.package-checkout > button:disabled {
+  cursor: wait;
+  opacity: 0.76;
+}
+
 .package-checkout button small {
   padding: 3px 6px;
   color: white;
@@ -3485,6 +3490,53 @@ a {
   color: #aeb7ab;
   font-size: 0.53rem;
   text-align: center;
+}
+
+.publish-feedback.is-success {
+  padding: 10px 12px;
+  color: #eff7ee;
+  background: rgba(244, 241, 232, 0.12);
+  border: 1px solid rgba(244, 241, 232, 0.16);
+  border-radius: 14px;
+}
+
+.publish-result {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  border-radius: 14px;
+  background: rgba(244, 241, 232, 0.08);
+  border: 1px solid rgba(244, 241, 232, 0.14);
+}
+
+.publish-result > a {
+  color: #f7f5ee;
+  font-size: 0.68rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.publish-result > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.publish-result > div > button,
+.publish-result > div > a {
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2b332c;
+  background: #f4f1e8;
+  border: 0;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .qr-card {

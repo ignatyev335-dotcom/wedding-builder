@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Check,
@@ -27,38 +27,38 @@ const packages: Array<{
 }> = [
   {
     code: "BASIC",
-    title: "Базовый",
+    title: "Р‘Р°Р·РѕРІС‹Р№",
     price: 0,
-    description: "Красивое приглашение для камерного запуска.",
+    description: "РљСЂР°СЃРёРІРѕРµ РїСЂРёРіР»Р°С€РµРЅРёРµ РґР»СЏ РєР°РјРµСЂРЅРѕРіРѕ Р·Р°РїСѓСЃРєР°.",
     features: [
-      "Бесплатный свадебный сайт",
-      "Стандартные стили",
-      "Логотип Vowly в футере",
+      "Р‘РµСЃРїР»Р°С‚РЅС‹Р№ СЃРІР°РґРµР±РЅС‹Р№ СЃР°Р№С‚",
+      "РЎС‚Р°РЅРґР°СЂС‚РЅС‹Рµ СЃС‚РёР»Рё",
+      "Р›РѕРіРѕС‚РёРї Vowly РІ С„СѓС‚РµСЂРµ",
     ],
   },
   {
     code: "INTERACTIVE",
-    title: "Интерактив",
+    title: "РРЅС‚РµСЂР°РєС‚РёРІ",
     price: 1990,
-    description: "Самые необходимые функции для работы с гостями.",
+    description: "РЎР°РјС‹Рµ РЅРµРѕР±С…РѕРґРёРјС‹Рµ С„СѓРЅРєС†РёРё РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РіРѕСЃС‚СЏРјРё.",
     features: [
-      "Всё из Базового",
-      "Без логотипа Vowly",
-      "Умный опрос гостей",
-      "Выгрузка ответов в таблицу",
+      "Р’СЃС‘ РёР· Р‘Р°Р·РѕРІРѕРіРѕ",
+      "Р‘РµР· Р»РѕРіРѕС‚РёРїР° Vowly",
+      "РЈРјРЅС‹Р№ РѕРїСЂРѕСЃ РіРѕСЃС‚РµР№",
+      "Р’С‹РіСЂСѓР·РєР° РѕС‚РІРµС‚РѕРІ РІ С‚Р°Р±Р»РёС†Сѓ",
     ],
     accent: true,
   },
   {
     code: "PREMIUM",
-    title: "Премиум Вайл",
+    title: "РџСЂРµРјРёСѓРј Р’Р°Р№Р»",
     price: 2990,
-    description: "Полный набор для персонального приглашения.",
+    description: "РџРѕР»РЅС‹Р№ РЅР°Р±РѕСЂ РґР»СЏ РїРµСЂСЃРѕРЅР°Р»СЊРЅРѕРіРѕ РїСЂРёРіР»Р°С€РµРЅРёСЏ.",
     features: [
-      "Всё из Интерактива",
-      "Премиум музыка Suno",
-      "Именные ссылки для гостей",
-      "Интеграция с Telegram-ботом",
+      "Р’СЃС‘ РёР· РРЅС‚РµСЂР°РєС‚РёРІР°",
+      "РџСЂРµРјРёСѓРј РјСѓР·С‹РєР° Suno",
+      "РРјРµРЅРЅС‹Рµ СЃСЃС‹Р»РєРё РґР»СЏ РіРѕСЃС‚РµР№",
+      "РРЅС‚РµРіСЂР°С†РёСЏ СЃ Telegram-Р±РѕС‚РѕРј",
     ],
   },
 ];
@@ -68,6 +68,7 @@ const currency = new Intl.NumberFormat("ru-RU");
 export function PackagesPanel() {
   const {
     siteId,
+    slug,
     isPremium,
     removeBranding,
     selectedPackage,
@@ -91,8 +92,12 @@ export function PackagesPanel() {
   const [telegramError, setTelegramError] = useState("");
   const [cardError, setCardError] = useState("");
   const [brandingError, setBrandingError] = useState("");
+  const [publishError, setPublishError] = useState("");
+  const [publishSuccess, setPublishSuccess] = useState("");
+  const [publishedUrl, setPublishedUrl] = useState("");
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const selected = packages.find((item) => item.code === selectedPackage) ?? packages[0];
 
   const connectTelegram = async () => {
@@ -101,12 +106,12 @@ export function PackagesPanel() {
     const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 
     if (!siteId || siteId === "quiz-draft") {
-      setTelegramError("Сначала сохраните свадебный сайт.");
+      setTelegramError("РЎРЅР°С‡Р°Р»Р° СЃРѕС…СЂР°РЅРёС‚Рµ СЃРІР°РґРµР±РЅС‹Р№ СЃР°Р№С‚.");
       setIsConnecting(false);
       return;
     }
     if (!botUsername) {
-      setTelegramError("Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME в настройках проекта.");
+      setTelegramError("РЈРєР°Р¶РёС‚Рµ NEXT_PUBLIC_TELEGRAM_BOT_USERNAME РІ РЅР°СЃС‚СЂРѕР№РєР°С… РїСЂРѕРµРєС‚Р°.");
       setIsConnecting(false);
       return;
     }
@@ -125,6 +130,64 @@ export function PackagesPanel() {
     }, 0);
   };
 
+  const copyPublishedUrl = async () => {
+    if (!publishedUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(publishedUrl);
+      setPublishError("");
+      setPublishSuccess("РЎСЃС‹Р»РєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°. РњРѕР¶РЅРѕ СЃСЂР°Р·Сѓ РѕС‚РїСЂР°РІР»СЏС‚СЊ РіРѕСЃС‚СЏРј.");
+    } catch {
+      setPublishError("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ СЃСЃС‹Р»РєСѓ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё. Р•С‘ РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ Рё СЃРєРѕРїРёСЂРѕРІР°С‚СЊ РІСЂСѓС‡РЅСѓСЋ.");
+    }
+  };
+
+  const publishSite = async () => {
+    if (!siteId || siteId === "quiz-draft") {
+      setPublishError("РЎРЅР°С‡Р°Р»Р° Р·Р°РІРµСЂС€РёС‚Рµ РєРІРёР· Рё СЃРѕС…СЂР°РЅРёС‚Рµ СЃР°Р№С‚, С‡С‚РѕР±С‹ РјС‹ РјРѕРіР»Рё РµРіРѕ РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ.");
+      return;
+    }
+
+    setIsPublishing(true);
+    setPublishError("");
+    setPublishSuccess("");
+
+    try {
+      await persistSiteExtras();
+
+      const response = await fetch(`/api/wedding-sites/${siteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ СЃР°Р№С‚.");
+      }
+
+      const nextUrl =
+        slug && typeof window !== "undefined"
+          ? `${window.location.origin}/wedding/${slug}`
+          : "";
+
+      setPublishedUrl(nextUrl);
+      setPublishSuccess(
+        selected.price === 0
+          ? "РЎР°Р№С‚ РѕРїСѓР±Р»РёРєРѕРІР°РЅ. РњРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ РµРіРѕ Рё РѕС‚РїСЂР°РІРёС‚СЊ СЃСЃС‹Р»РєСѓ РіРѕСЃС‚СЏРј."
+          : "РЎР°Р№С‚ РѕРїСѓР±Р»РёРєРѕРІР°РЅ РІ С‚РµСЃС‚РѕРІРѕРј СЂРµР¶РёРјРµ. РЎР»РµРґСѓСЋС‰РёРј С€Р°РіРѕРј РјРѕР¶РЅРѕ РїРѕРґРєР»СЋС‡РёС‚СЊ РѕРїР»Р°С‚Сѓ Рё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєСѓСЋ Р°РєС‚РёРІР°С†РёСЋ РІС‹Р±СЂР°РЅРЅРѕРіРѕ С‚Р°СЂРёС„Р°.",
+      );
+    } catch (error) {
+      setPublishError(
+        error instanceof Error
+          ? error.message
+          : "РќРµ СѓРґР°Р»РѕСЃСЊ РѕР¶РёРІРёС‚СЊ СЃР°Р№С‚. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р· С‡РµСЂРµР· РїР°СЂСѓ СЃРµРєСѓРЅРґ.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const toggleBranding = async () => {
     if (!siteId || siteId === "quiz-draft" || !isPremium || isSavingBranding) return;
 
@@ -140,14 +203,14 @@ export function PackagesPanel() {
     const data = (await response.json()) as { error?: string };
 
     if (response.ok) setRemoveBranding(nextValue);
-    else setBrandingError(data.error || "Не удалось сохранить настройку.");
+    else setBrandingError(data.error || "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєСѓ.");
     setIsSavingBranding(false);
   };
 
   const downloadSaveTheDate = async () => {
     const source = heroImageMobile ?? heroImageDesktop ?? coverPhoto;
     if (!source) {
-      setCardError("Сначала загрузите фотографию обложки.");
+      setCardError("РЎРЅР°С‡Р°Р»Р° Р·Р°РіСЂСѓР·РёС‚Рµ С„РѕС‚РѕРіСЂР°С„РёСЋ РѕР±Р»РѕР¶РєРё.");
       return;
     }
 
@@ -161,7 +224,7 @@ export function PackagesPanel() {
       canvas.height = 1350;
       const context = canvas.getContext("2d");
 
-      if (!context) throw new Error("Canvas недоступен.");
+      if (!context) throw new Error("Canvas РЅРµРґРѕСЃС‚СѓРїРµРЅ.");
 
       const scale = Math.max(canvas.width / image.width, canvas.height / image.height);
       const width = image.width * scale;
@@ -184,7 +247,7 @@ export function PackagesPanel() {
       context.textAlign = "center";
       context.fillStyle = "#ffffff";
       context.font = "500 42px Georgia";
-      context.fillText("СОХРАНИТЕ ЭТУ ДАТУ", 540, 1030);
+      context.fillText("РЎРћРҐР РђРќРРўР• Р­РўРЈ Р”РђРўРЈ", 540, 1030);
       context.font = "italic 92px Georgia";
       context.fillText(`${partnerOneName} & ${partnerTwoName}`, 540, 1145);
       context.font = "500 43px Arial";
@@ -201,7 +264,7 @@ export function PackagesPanel() {
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/jpeg", 0.94),
       );
-      if (!blob) throw new Error("Не удалось создать изображение.");
+      if (!blob) throw new Error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ.");
 
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -211,7 +274,7 @@ export function PackagesPanel() {
       URL.revokeObjectURL(url);
     } catch (error) {
       setCardError(
-        error instanceof Error ? error.message : "Не удалось создать открытку.",
+        error instanceof Error ? error.message : "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РѕС‚РєСЂС‹С‚РєСѓ.",
       );
     } finally {
       setIsGeneratingCard(false);
@@ -221,9 +284,9 @@ export function PackagesPanel() {
   return (
     <>
       <header className="packages-heading">
-        <span>Ваш сайт почти готов</span>
-        <h2>Оживите приглашение</h2>
-        <p>Выберите уровень заботы, который подойдет именно вашей свадьбе.</p>
+        <span>Р’Р°С€ СЃР°Р№С‚ РїРѕС‡С‚Рё РіРѕС‚РѕРІ</span>
+        <h2>РћР¶РёРІРёС‚Рµ РїСЂРёРіР»Р°С€РµРЅРёРµ</h2>
+        <p>Р’С‹Р±РµСЂРёС‚Рµ СѓСЂРѕРІРµРЅСЊ Р·Р°Р±РѕС‚С‹, РєРѕС‚РѕСЂС‹Р№ РїРѕРґРѕР№РґРµС‚ РёРјРµРЅРЅРѕ РІР°С€РµР№ СЃРІР°РґСЊР±Рµ.</p>
       </header>
 
       <div className="package-grid">
@@ -248,7 +311,7 @@ export function PackagesPanel() {
                 <strong>{item.title}</strong>
               </span>
               <span className="package-price">
-                <b>{currency.format(item.price)}</b> ₽
+                <b>{currency.format(item.price)}</b> в‚Ѕ
               </span>
               <small>{item.description}</small>
               <span className="package-features">
@@ -268,11 +331,11 @@ export function PackagesPanel() {
         <section className="package-telegram">
           <span><Send size={18} /></span>
           <div>
-            <strong>{telegramProfile?.name ?? "Уведомления о гостях в Telegram"}</strong>
+            <strong>{telegramProfile?.name ?? "РЈРІРµРґРѕРјР»РµРЅРёСЏ Рѕ РіРѕСЃС‚СЏС… РІ Telegram"}</strong>
             <small>
               {telegramProfile
-                ? "Аккаунт подключен"
-                : "Привяжите аккаунт для уведомлений от бота"}
+                ? "РђРєРєР°СѓРЅС‚ РїРѕРґРєР»СЋС‡РµРЅ"
+                : "РџСЂРёРІСЏР¶РёС‚Рµ Р°РєРєР°СѓРЅС‚ РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РѕС‚ Р±РѕС‚Р°"}
             </small>
           </div>
           <button
@@ -283,9 +346,9 @@ export function PackagesPanel() {
             {isConnecting ? (
               <LoaderCircle className="spin" size={15} />
             ) : telegramProfile ? (
-              "Подключено"
+              "РџРѕРґРєР»СЋС‡РµРЅРѕ"
             ) : (
-              "Войти через Telegram"
+              "Р’РѕР№С‚Рё С‡РµСЂРµР· Telegram"
             )}
           </button>
         </section>
@@ -298,11 +361,11 @@ export function PackagesPanel() {
         <div className={`private-site-setting branding-setting ${!isPremium ? "is-locked" : ""}`}>
           <span>{isPremium ? <EyeOff size={18} /> : <LockKeyhole size={18} />}</span>
           <div>
-            <strong>Скрыть подпись платформы</strong>
+            <strong>РЎРєСЂС‹С‚СЊ РїРѕРґРїРёСЃСЊ РїР»Р°С‚С„РѕСЂРјС‹</strong>
             <small>
               {isPremium
-                ? "На сайте не будет строки «Создано на Vowly»"
-                : "Доступно только после активации премиального тарифа"}
+                ? "РќР° СЃР°Р№С‚Рµ РЅРµ Р±СѓРґРµС‚ СЃС‚СЂРѕРєРё В«РЎРѕР·РґР°РЅРѕ РЅР° VowlyВ»"
+                : "Р”РѕСЃС‚СѓРїРЅРѕ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ Р°РєС‚РёРІР°С†РёРё РїСЂРµРјРёР°Р»СЊРЅРѕРіРѕ С‚Р°СЂРёС„Р°"}
             </small>
           </div>
           <button
@@ -321,8 +384,8 @@ export function PackagesPanel() {
         <div className="private-site-setting">
           <span><LockKeyhole size={18} /></span>
           <div>
-            <strong>Закрытая свадьба</strong>
-            <small>Гости увидят сайт только после ввода PIN-кода</small>
+            <strong>Р—Р°РєСЂС‹С‚Р°СЏ СЃРІР°РґСЊР±Р°</strong>
+            <small>Р“РѕСЃС‚Рё СѓРІРёРґСЏС‚ СЃР°Р№С‚ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РІРІРѕРґР° PIN-РєРѕРґР°</small>
           </div>
           <button
             className={`switch ${isPrivate ? "is-on" : ""}`}
@@ -339,7 +402,7 @@ export function PackagesPanel() {
         </div>
         {isPrivate && (
           <label className="private-pin-field">
-            <span>PIN-код из четырех цифр</span>
+            <span>PIN-РєРѕРґ РёР· С‡РµС‚С‹СЂРµС… С†РёС„СЂ</span>
             <input
               inputMode="numeric"
               maxLength={4}
@@ -357,8 +420,8 @@ export function PackagesPanel() {
 
         <div className="language-setting">
           <div>
-            <strong>Язык приглашения</strong>
-            <small>Системные кнопки, формы и таймер</small>
+            <strong>РЇР·С‹Рє РїСЂРёРіР»Р°С€РµРЅРёСЏ</strong>
+            <small>РЎРёСЃС‚РµРјРЅС‹Рµ РєРЅРѕРїРєРё, С„РѕСЂРјС‹ Рё С‚Р°Р№РјРµСЂ</small>
           </div>
           <div>
             {(["RU", "EN"] as const).map((code) => (
@@ -384,30 +447,49 @@ export function PackagesPanel() {
           onClick={() => void downloadSaveTheDate()}
         >
           <Download size={17} />
-          {isGeneratingCard ? "Создаем открытку..." : "Скачать Save the Date"}
+          {isGeneratingCard ? "РЎРѕР·РґР°РµРј РѕС‚РєСЂС‹С‚РєСѓ..." : "РЎРєР°С‡Р°С‚СЊ Save the Date"}
         </button>
         {cardError && <p className="telegram-error">{cardError}</p>}
       </section>
 
       <section className="package-checkout">
-        <div>
-          <span>Выбран тариф</span>
-          <strong>{selected.title}</strong>
-          <b>{currency.format(selected.price)} ₽</b>
-        </div>
-        {selected.price === 0 ? (
-          <button type="button">Оживить сайт и отправить гостям</button>
-        ) : (
-          <button type="button">
-            Оживить сайт и отправить гостям
-            <small>СБП</small>
-          </button>
-        )}
-        <p>
-          Не переживайте, вы сможете вносить изменения даже после публикации,
-          вплоть до самого дня свадьбы.
-        </p>
-      </section>
+  <div>
+    <span>Выбран тариф</span>
+    <strong>{selected.title}</strong>
+    <b>{currency.format(selected.price)} ₽</b>
+  </div>
+  {selected.price === 0 ? (
+    <button type="button" disabled={isPublishing} onClick={() => void publishSite()}>
+      {isPublishing ? "Публикуем сайт..." : "Оживить сайт и отправить гостям"}
+    </button>
+  ) : (
+    <button type="button" disabled={isPublishing} onClick={() => void publishSite()}>
+      {isPublishing ? "Готовим публикацию..." : "Оживить сайт и отправить гостям"}
+      <small>СБП</small>
+    </button>
+  )}
+  {publishSuccess && <p className="publish-feedback is-success">{publishSuccess}</p>}
+  {publishError && <p className="telegram-error">{publishError}</p>}
+  {publishedUrl && (
+    <div className="publish-result">
+      <a href={publishedUrl} target="_blank" rel="noreferrer">
+        {publishedUrl}
+      </a>
+      <div>
+        <button type="button" onClick={() => void copyPublishedUrl()}>
+          Скопировать ссылку
+        </button>
+        <a href={publishedUrl} target="_blank" rel="noreferrer">
+          Открыть сайт
+        </a>
+      </div>
+    </div>
+  )}
+  <p>
+    Не переживайте, вы сможете вносить изменения даже после публикации,
+    вплоть до самого дня свадьбы.
+  </p>
+</section>
     </>
   );
 }
@@ -416,7 +498,8 @@ function loadCanvasImage(source: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Не удалось загрузить обложку."));
+    image.onerror = () => reject(new Error("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РѕР±Р»РѕР¶РєСѓ."));
     image.src = source;
   });
 }
+
