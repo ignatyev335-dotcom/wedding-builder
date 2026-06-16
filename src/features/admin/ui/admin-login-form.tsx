@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowRight, KeyRound, Loader2, Mail } from "lucide-react";
-import { getSession, signIn } from "next-auth/react";
 import { useState } from "react";
 
 export function AdminLoginForm() {
@@ -16,22 +15,21 @@ export function AdminLoginForm() {
     setError("");
 
     try {
-      const result = await signIn("password", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
+      const payload = (await response.json()) as {
+        error?: string;
+        redirectTo?: string;
+      };
 
-      if (result?.error) {
-        throw new Error("Неверный логин или пароль администратора.");
+      if (!response.ok) {
+        throw new Error(payload.error || "Неверный логин или пароль администратора.");
       }
 
-      const session = await getSession();
-      if (session?.user?.role !== "ADMIN") {
-        throw new Error("У этого аккаунта нет прав администратора.");
-      }
-
-      window.location.assign("/admin/dashboard");
+      window.location.assign(payload.redirectTo ?? "/admin/dashboard");
     } catch (requestError) {
       setError(
         requestError instanceof Error

@@ -28,7 +28,7 @@ const statusLabels = {
 
 export default async function AdminDashboardPage() {
   const admin = await getCurrentAdmin();
-  if (!admin || admin.role !== "ADMIN") redirect("/login");
+  if (!admin || admin.role !== "ADMIN") redirect("/admin");
 
   const [
     usersCount,
@@ -208,7 +208,7 @@ export default async function AdminDashboardPage() {
             rsvpEnabled: true,
             primaryButtonText: "Отправить ответ",
             footerText: "Создано на Vowly",
-            errorText: "Что-то пошло не так. Попробуйте ещё раз.",
+            errorText: "Что-то пошло не так. Попробуйте еще раз.",
           }) satisfies PlatformContentDraft
         }
       />

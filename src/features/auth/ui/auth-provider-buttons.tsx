@@ -57,27 +57,36 @@ export function AuthProviderButtons() {
         <span>или продолжить через</span>
       </div>
       <div className="auth-provider-buttons">
-        <button type="button" onClick={() => void loginWithYandex()}>
-          <b>Я</b> Яндекс ID
+        <button className="auth-provider-button yandex" type="button" onClick={() => void loginWithYandex()}>
+          <span aria-hidden="true">Я</span>
+          <i>Яндекс ID</i>
         </button>
+        {botUsername ? (
+          <div className="auth-provider-button telegram-widget">
+            <Script
+              src="https://telegram.org/js/telegram-widget.js?22"
+              strategy="afterInteractive"
+              data-telegram-login={botUsername}
+              data-size="large"
+              data-radius="12"
+              data-request-access="write"
+              data-userpic="false"
+              data-onauth={`${callbackName}(user)`}
+            />
+          </div>
+        ) : (
+          <button className="auth-provider-button telegram" type="button" disabled>
+            <span aria-hidden="true">
+              <Send size={15} />
+            </span>
+            <i>Telegram</i>
+          </button>
+        )}
       </div>
-      {botUsername ? (
-        <div className="telegram-login-widget">
-          <Script
-            src="https://telegram.org/js/telegram-widget.js?22"
-            strategy="afterInteractive"
-            data-telegram-login={botUsername}
-            data-size="large"
-            data-radius="12"
-            data-request-access="write"
-            data-userpic="false"
-            data-onauth={`${callbackName}(user)`}
-          />
-        </div>
-      ) : (
-        <button className="telegram-login-placeholder" type="button" disabled>
-          <Send size={16} /> Telegram появится после подключения бота
-        </button>
+      {!botUsername && (
+        <small className="telegram-login-note">
+          Telegram включится после подключения бота.
+        </small>
       )}
       {error && <p className="login-error">{error}</p>}
     </section>

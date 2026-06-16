@@ -8573,7 +8573,7 @@ a {
   gap: 8px;
 }
 
-.auth-provider-buttons button,
+.auth-provider-button,
 .telegram-login-placeholder {
   min-height: 46px;
   display: flex;
@@ -8588,15 +8588,58 @@ a {
   font-weight: 750;
 }
 
-.telegram-login-placeholder {
+.auth-provider-button {
   width: 100%;
-  color: #8b9088;
+  height: 48px;
+  padding: 0 12px;
 }
 
-.telegram-login-widget {
-  min-height: 46px;
+.auth-provider-button span {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.auth-provider-button i {
+  min-width: 0;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.auth-provider-button.yandex span {
+  background: #fc3f1d;
+}
+
+.auth-provider-button.telegram span {
+  background: #2aabee;
+}
+
+.auth-provider-button:disabled,
+.telegram-login-placeholder {
+  color: #8b9088;
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
+.auth-provider-button.telegram-widget {
   display: grid;
   place-items: center;
+  overflow: hidden;
+}
+
+.telegram-login-note {
+  margin: -4px 0 0;
+  color: #8b9088;
+  font-size: 0.72rem;
+  text-align: center;
 }
 
 .system-settings {
