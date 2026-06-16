@@ -34,7 +34,7 @@ export function AuthProviderButtons() {
         ...Object.fromEntries(
           Object.entries(payload).map(([key, value]) => [key, String(value)]),
         ),
-        redirectTo: "/login",
+        redirectTo: "/dashboard",
       });
     };
     return () => {
@@ -42,24 +42,23 @@ export function AuthProviderButtons() {
     };
   }, [callbackName]);
 
-  const oauth = async (provider: "google" | "yandex") => {
+  const loginWithYandex = async () => {
     setError("");
     try {
-      await signIn(provider, { redirectTo: "/login" });
+      await signIn("yandex", { redirectTo: "/dashboard" });
     } catch {
-      setError("Провайдер пока не настроен. Проверьте ключи в Vercel.");
+      setError("Яндекс ID пока не настроен. Проверьте ключи в Vercel.");
     }
   };
 
   return (
     <section className="auth-provider-section">
-      <div className="auth-divider"><span>или продолжить через</span></div>
+      <div className="auth-divider">
+        <span>или продолжить через</span>
+      </div>
       <div className="auth-provider-buttons">
-        <button type="button" onClick={() => void oauth("google")}>
-          <b>G</b> Google
-        </button>
-        <button type="button" onClick={() => void oauth("yandex")}>
-          <b>Я</b> Яндекс
+        <button type="button" onClick={() => void loginWithYandex()}>
+          <b>Я</b> Яндекс ID
         </button>
       </div>
       {botUsername ? (

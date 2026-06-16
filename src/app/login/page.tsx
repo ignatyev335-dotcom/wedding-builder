@@ -1,21 +1,9 @@
 import { Heart } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { LoginForm } from "@/features/auth/ui/login-form";
 
-export default async function LoginPage() {
-  const session = await auth();
-
-  if (session?.user?.role === "ADMIN") {
-    redirect("/admin/dashboard");
-  }
-
-  if (session?.user?.id) {
-    redirect("/dashboard");
-  }
-
+export default function LoginPage() {
   return (
     <main className="login-page">
       <Link className="brand" href="/">
@@ -27,10 +15,10 @@ export default async function LoginPage() {
             <Heart size={15} />
             Ваше свадебное пространство
           </span>
-          <h1>Все важное о свадьбе в одном красивом месте</h1>
+          <h1>Всё важное о свадьбе в одном красивом месте</h1>
           <p>
-            Войдите, чтобы продолжить работу над сайтом, увидеть ответы гостей
-            и управлять публикацией.
+            Войдите, чтобы продолжить работу над сайтом, посмотреть ответы
+            гостей и управлять публикацией.
           </p>
         </div>
         <LoginForm />

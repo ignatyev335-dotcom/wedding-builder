@@ -2,23 +2,14 @@ import { ArrowRight, LayoutDashboard } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { auth } from "@/auth";
-
-export default async function HomePage() {
-  const session = await auth();
-  const dashboardHref = session?.user?.role === "ADMIN"
-    ? "/admin/dashboard"
-    : session?.user?.id
-      ? "/dashboard"
-      : "/login";
-
+export default function HomePage() {
   return (
     <main className="landing">
       <header className="landing-nav">
         <Link className="brand" href="/" aria-label="Vowly">
           vowly
         </Link>
-        <Link className="nav-action" href={dashboardHref}>
+        <Link className="nav-action" href="/login">
           <LayoutDashboard size={16} />
           <span>Вход / Личный кабинет</span>
         </Link>
@@ -41,14 +32,14 @@ export default async function HomePage() {
             Идеальный свадебный сайт и пригласительные за 15 минут
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-gray-600 md:text-xl">
-            Интерактивная карта, подбор музыки, онлайн-подтверждение (RSVP) и
+            Интерактивная карта, подбор музыки, онлайн-подтверждение RSVP и
             списки гостей в один клик. Попробуйте бесплатно и без дизайнеров.
           </p>
           <Link
             className="mt-10 inline-flex flex-shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full bg-indigo-600 px-8 py-4 text-lg font-medium text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-xl"
             href="/create"
           >
-            Создать сайт бесплатно ✨
+            Создать сайт бесплатно
             <ArrowRight size={18} />
           </Link>
           <small className="mt-5 text-sm text-gray-500">

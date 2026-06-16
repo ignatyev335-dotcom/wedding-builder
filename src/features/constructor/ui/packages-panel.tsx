@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   Check,
@@ -27,38 +27,38 @@ const packages: Array<{
 }> = [
   {
     code: "BASIC",
-    title: "Базовый",
+    title: "�������",
     price: 0,
-    description: "Красивый свадебный сайт для быстрого запуска.",
+    description: "�������� ��������� ���� ��� �������� �������.",
     features: [
-      "Бесплатная публикация",
-      "Базовые функции сайта",
-      "Подпись платформы в футере",
+      "���������� ����������",
+      "������� ������� �����",
+      "������� ��������� � ������",
     ],
   },
   {
     code: "INTERACTIVE",
-    title: "Интерактив",
+    title: "����������",
     price: 1990,
-    description: "Функции для работы с гостями и ответами.",
+    description: "������� ��� ������ � ������� � ��������.",
     features: [
-      "Всё из базового",
-      "Без подписи платформы",
-      "Умный опрос гостей",
-      "Выгрузка ответов в таблицу",
+      "�� �� ��������",
+      "��� ������� ���������",
+      "����� ����� ������",
+      "�������� ������� � �������",
     ],
     accent: true,
   },
   {
     code: "PREMIUM",
-    title: "Премиум",
+    title: "�������",
     price: 2990,
-    description: "Полный набор для персональных приглашений.",
+    description: "������ ����� ��� ������������ �����������.",
     features: [
-      "Всё из интерактива",
-      "Премиум-медиа",
-      "Именные ссылки для гостей",
-      "Интеграция с Telegram-ботом",
+      "�� �� �����������",
+      "�������-�����",
+      "������� ������ ��� ������",
+      "���������� � Telegram-�����",
     ],
   },
 ];
@@ -106,12 +106,12 @@ export function PackagesPanel() {
     const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 
     if (!siteId || siteId === "quiz-draft") {
-      setTelegramError("РЎРЅР°С‡Р°Р»Р° СЃРѕС…СЂР°РЅРёС‚Рµ СЃРІР°РґРµР±РЅС‹Р№ СЃР°Р№С‚.");
+      setTelegramError("������� ��������� ��������� ����.");
       setIsConnecting(false);
       return;
     }
     if (!botUsername) {
-      setTelegramError("РЈРєР°Р¶РёС‚Рµ NEXT_PUBLIC_TELEGRAM_BOT_USERNAME РІ РЅР°СЃС‚СЂРѕР№РєР°С… РїСЂРѕРµРєС‚Р°.");
+      setTelegramError("������� NEXT_PUBLIC_TELEGRAM_BOT_USERNAME � ���������� �������.");
       setIsConnecting(false);
       return;
     }
@@ -136,15 +136,15 @@ export function PackagesPanel() {
     try {
       await navigator.clipboard.writeText(publishedUrl);
       setPublishError("");
-      setPublishSuccess("РЎСЃС‹Р»РєР° СЃРєРѕРїРёСЂРѕРІР°РЅР°. РњРѕР¶РЅРѕ СЃСЂР°Р·Сѓ РѕС‚РїСЂР°РІР»СЏС‚СЊ РіРѕСЃС‚СЏРј.");
+      setPublishSuccess("������ �����������. ����� ����� ���������� ������.");
     } catch {
-      setPublishError("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ СЃСЃС‹Р»РєСѓ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё. Р•С‘ РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ Рё СЃРєРѕРїРёСЂРѕРІР°С‚СЊ РІСЂСѓС‡РЅСѓСЋ.");
+      setPublishError("�� ���������� ����������� ������ �������������. �� ����� ������� � ����������� �������.");
     }
   };
 
   const publishSite = async () => {
     if (!siteId || siteId === "quiz-draft") {
-      setPublishError("РЎРЅР°С‡Р°Р»Р° Р·Р°РІРµСЂС€РёС‚Рµ РєРІРёР· Рё СЃРѕС…СЂР°РЅРёС‚Рµ СЃР°Р№С‚, С‡С‚РѕР±С‹ РјС‹ РјРѕРіР»Рё РµРіРѕ РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ.");
+      setPublishError("������� ��������� ���� � ��������� ����, ����� �� ����� ��� ������������.");
       return;
     }
 
@@ -163,7 +163,7 @@ export function PackagesPanel() {
       const payload = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ СЃР°Р№С‚.");
+        throw new Error(payload.error || "�� ������� ������������ ����.");
       }
 
       const nextUrl =
@@ -174,14 +174,14 @@ export function PackagesPanel() {
       setPublishedUrl(nextUrl);
       setPublishSuccess(
         selected.price === 0
-          ? "РЎР°Р№С‚ РѕРїСѓР±Р»РёРєРѕРІР°РЅ. РњРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ РµРіРѕ Рё РѕС‚РїСЂР°РІРёС‚СЊ СЃСЃС‹Р»РєСѓ РіРѕСЃС‚СЏРј."
-          : "РЎР°Р№С‚ РѕРїСѓР±Р»РёРєРѕРІР°РЅ РІ С‚РµСЃС‚РѕРІРѕРј СЂРµР¶РёРјРµ. РЎР»РµРґСѓСЋС‰РёРј С€Р°РіРѕРј РјРѕР¶РЅРѕ РїРѕРґРєР»СЋС‡РёС‚СЊ РѕРїР»Р°С‚Сѓ Рё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєСѓСЋ Р°РєС‚РёРІР°С†РёСЋ РІС‹Р±СЂР°РЅРЅРѕРіРѕ С‚Р°СЂРёС„Р°.",
+          ? "���� �����������. ����� ������� ��� � ��������� ������ ������."
+          : "���� ����������� � �������� ������. ��������� ����� ����� ���������� ������ � �������������� ��������� ���������� ������.",
       );
     } catch (error) {
       setPublishError(
         error instanceof Error
           ? error.message
-          : "РќРµ СѓРґР°Р»РѕСЃСЊ РѕР¶РёРІРёС‚СЊ СЃР°Р№С‚. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р· С‡РµСЂРµР· РїР°СЂСѓ СЃРµРєСѓРЅРґ.",
+          : "�� ������� ������� ����. ���������� ��� ��� ����� ���� ������.",
       );
     } finally {
       setIsPublishing(false);
@@ -203,14 +203,14 @@ export function PackagesPanel() {
     const data = (await response.json()) as { error?: string };
 
     if (response.ok) setRemoveBranding(nextValue);
-    else setBrandingError(data.error || "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєСѓ.");
+    else setBrandingError(data.error || "�� ������� ��������� ���������.");
     setIsSavingBranding(false);
   };
 
   const downloadSaveTheDate = async () => {
     const source = heroImageMobile ?? heroImageDesktop ?? coverPhoto;
     if (!source) {
-      setCardError("РЎРЅР°С‡Р°Р»Р° Р·Р°РіСЂСѓР·РёС‚Рµ С„РѕС‚РѕРіСЂР°С„РёСЋ РѕР±Р»РѕР¶РєРё.");
+      setCardError("������� ��������� ���������� �������.");
       return;
     }
 
@@ -224,7 +224,7 @@ export function PackagesPanel() {
       canvas.height = 1350;
       const context = canvas.getContext("2d");
 
-      if (!context) throw new Error("Canvas РЅРµРґРѕСЃС‚СѓРїРµРЅ.");
+      if (!context) throw new Error("Canvas ����������.");
 
       const scale = Math.max(canvas.width / image.width, canvas.height / image.height);
       const width = image.width * scale;
@@ -247,7 +247,7 @@ export function PackagesPanel() {
       context.textAlign = "center";
       context.fillStyle = "#ffffff";
       context.font = "500 42px Georgia";
-      context.fillText("РЎРћРҐР РђРќРРўР• Р­РўРЈ Р”РђРўРЈ", 540, 1030);
+      context.fillText("��������� ��� ����", 540, 1030);
       context.font = "italic 92px Georgia";
       context.fillText(`${partnerOneName} & ${partnerTwoName}`, 540, 1145);
       context.font = "500 43px Arial";
@@ -264,7 +264,7 @@ export function PackagesPanel() {
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/jpeg", 0.94),
       );
-      if (!blob) throw new Error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ.");
+      if (!blob) throw new Error("�� ������� ������� �����������.");
 
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -274,7 +274,7 @@ export function PackagesPanel() {
       URL.revokeObjectURL(url);
     } catch (error) {
       setCardError(
-        error instanceof Error ? error.message : "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РѕС‚РєСЂС‹С‚РєСѓ.",
+        error instanceof Error ? error.message : "�� ������� ������� ��������.",
       );
     } finally {
       setIsGeneratingCard(false);
@@ -284,9 +284,9 @@ export function PackagesPanel() {
   return (
     <>
       <header className="packages-heading">
-        <span>Ваш сайт почти готов</span>
-        <h2>Оживите приглашение</h2>
-        <p>Выберите тариф и опубликуйте сайт, чтобы отправить ссылку гостям.</p>
+        <span>��� ���� ����� �����</span>
+        <h2>������� �����������</h2>
+        <p>�������� ����� � ����������� ����, ����� ��������� ������ ������.</p>
       </header>
 
       <div className="package-grid">
@@ -311,7 +311,7 @@ export function PackagesPanel() {
                 <strong>{item.title}</strong>
               </span>
               <span className="package-price">
-                <b>{currency.format(item.price)}</b> в‚Ѕ
+                <b>{currency.format(item.price)}</b> ₽
               </span>
               <small>{item.description}</small>
               <span className="package-features">
@@ -331,11 +331,11 @@ export function PackagesPanel() {
         <section className="package-telegram">
           <span><Send size={18} /></span>
           <div>
-            <strong>{telegramProfile?.name ?? "РЈРІРµРґРѕРјР»РµРЅРёСЏ Рѕ РіРѕСЃС‚СЏС… РІ Telegram"}</strong>
+            <strong>{telegramProfile?.name ?? "����������� � ������ � Telegram"}</strong>
             <small>
               {telegramProfile
-                ? "РђРєРєР°СѓРЅС‚ РїРѕРґРєР»СЋС‡РµРЅ"
-                : "РџСЂРёРІСЏР¶РёС‚Рµ Р°РєРєР°СѓРЅС‚ РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёР№ РѕС‚ Р±РѕС‚Р°"}
+                ? "Аккаунт подключен"
+                : "��������� ������� ��� ����������� �� ����"}
             </small>
           </div>
           <button
@@ -346,9 +346,9 @@ export function PackagesPanel() {
             {isConnecting ? (
               <LoaderCircle className="spin" size={15} />
             ) : telegramProfile ? (
-              "РџРѕРґРєР»СЋС‡РµРЅРѕ"
+              "Подключено"
             ) : (
-              "Р’РѕР№С‚Рё С‡РµСЂРµР· Telegram"
+              "����� ����� Telegram"
             )}
           </button>
         </section>
@@ -361,11 +361,11 @@ export function PackagesPanel() {
         <div className={`private-site-setting branding-setting ${!isPremium ? "is-locked" : ""}`}>
           <span>{isPremium ? <EyeOff size={18} /> : <LockKeyhole size={18} />}</span>
           <div>
-            <strong>РЎРєСЂС‹С‚СЊ РїРѕРґРїРёСЃСЊ РїР»Р°С‚С„РѕСЂРјС‹</strong>
+            <strong>������ ������� ���������</strong>
             <small>
               {isPremium
-                ? "РќР° СЃР°Р№С‚Рµ РЅРµ Р±СѓРґРµС‚ СЃС‚СЂРѕРєРё В«РЎРѕР·РґР°РЅРѕ РЅР° VowlyВ»"
-                : "Р”РѕСЃС‚СѓРїРЅРѕ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ Р°РєС‚РёРІР°С†РёРё РїСЂРµРјРёР°Р»СЊРЅРѕРіРѕ С‚Р°СЂРёС„Р°"}
+                ? "�� ����� �� ����� ������ �������� �� Vowly�"
+                : "�������� ������ ����� ��������� ������������ ������"}
             </small>
           </div>
           <button
@@ -384,8 +384,8 @@ export function PackagesPanel() {
         <div className="private-site-setting">
           <span><LockKeyhole size={18} /></span>
           <div>
-            <strong>Р—Р°РєСЂС‹С‚Р°СЏ СЃРІР°РґСЊР±Р°</strong>
-            <small>Р“РѕСЃС‚Рё СѓРІРёРґСЏС‚ СЃР°Р№С‚ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РІРІРѕРґР° PIN-РєРѕРґР°</small>
+            <strong>�������� �������</strong>
+            <small>����� ������ ���� ������ ����� ����� PIN-����</small>
           </div>
           <button
             className={`switch ${isPrivate ? "is-on" : ""}`}
@@ -402,7 +402,7 @@ export function PackagesPanel() {
         </div>
         {isPrivate && (
           <label className="private-pin-field">
-            <span>PIN-РєРѕРґ РёР· С‡РµС‚С‹СЂРµС… С†РёС„СЂ</span>
+            <span>PIN-��� �� ������� ����</span>
             <input
               inputMode="numeric"
               maxLength={4}
@@ -420,8 +420,8 @@ export function PackagesPanel() {
 
         <div className="language-setting">
           <div>
-            <strong>РЇР·С‹Рє РїСЂРёРіР»Р°С€РµРЅРёСЏ</strong>
-            <small>РЎРёСЃС‚РµРјРЅС‹Рµ РєРЅРѕРїРєРё, С„РѕСЂРјС‹ Рё С‚Р°Р№РјРµСЂ</small>
+            <strong>���� �����������</strong>
+            <small>��������� ������, ����� � ������</small>
           </div>
           <div>
             {(["RU", "EN"] as const).map((code) => (
@@ -447,25 +447,25 @@ export function PackagesPanel() {
           onClick={() => void downloadSaveTheDate()}
         >
           <Download size={17} />
-          {isGeneratingCard ? "РЎРѕР·РґР°РµРј РѕС‚РєСЂС‹С‚РєСѓ..." : "РЎРєР°С‡Р°С‚СЊ Save the Date"}
+          {isGeneratingCard ? "������� ��������..." : "������� Save the Date"}
         </button>
         {cardError && <p className="telegram-error">{cardError}</p>}
       </section>
 
       <section className="package-checkout">
   <div>
-    <span>Выбран тариф</span>
+    <span>������ �����</span>
     <strong>{selected.title}</strong>
     <b>{currency.format(selected.price)} ₽</b>
   </div>
   {selected.price === 0 ? (
     <button type="button" disabled={isPublishing} onClick={() => void publishSite()}>
-      {isPublishing ? "Публикуем сайт..." : "Оживить сайт и отправить гостям"}
+      {isPublishing ? "��������� ����..." : "������� ���� � ��������� ������"}
     </button>
   ) : (
     <button type="button" disabled={isPublishing} onClick={() => void publishSite()}>
-      {isPublishing ? "Готовим публикацию..." : "Оживить сайт и отправить гостям"}
-      <small>СБП</small>
+      {isPublishing ? "������� ����������..." : "������� ���� � ��������� ������"}
+      <small>���</small>
     </button>
   )}
   {publishSuccess && <p className="publish-feedback is-success">{publishSuccess}</p>}
@@ -477,17 +477,17 @@ export function PackagesPanel() {
       </a>
       <div>
         <button type="button" onClick={() => void copyPublishedUrl()}>
-          Скопировать ссылку
+          ����������� ������
         </button>
         <a href={publishedUrl} target="_blank" rel="noreferrer">
-          Открыть сайт
+          ������� ����
         </a>
       </div>
     </div>
   )}
   <p>
-    Не переживайте, вы сможете вносить изменения даже после публикации,
-    вплоть до самого дня свадьбы.
+    �� �����������, �� ������� ������� ��������� ���� ����� ����������,
+    ������ �� ������ ��� �������.
   </p>
 </section>
     </>
@@ -498,7 +498,7 @@ function loadCanvasImage(source: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РѕР±Р»РѕР¶РєСѓ."));
+    image.onerror = () => reject(new Error("�� ������� ��������� �������."));
     image.src = source;
   });
 }

@@ -1,24 +1,16 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
+﻿import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { AuthProvider, UserRole } from "@prisma/client";
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import Resend from "next-auth/providers/resend";
 import Yandex from "next-auth/providers/yandex";
 import { z } from "zod";
 
-import { hashLoginCode } from "@/lib/auth/login-code";
 import { verifyPassword } from "@/lib/auth/password";
 import {
   type TelegramLoginPayload,
   verifyTelegramLogin,
 } from "@/lib/auth/telegram";
 import { prisma } from "@/lib/prisma";
-
-const otpSchema = z.object({
-  identifier: z.string().trim().min(3).max(200),
-  code: z.string().regex(/^\d{6}$/),
-});
 
 const passwordSchema = z.object({
   email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
@@ -136,57 +128,6 @@ const providers: NextAuthConfig["providers"] = [
     },
   }),
   Credentials({
-    id: "otp",
-    name: "Email или телефон",
-    credentials: {
-      identifier: { label: "Email или телефон", type: "text" },
-      code: { label: "Одноразовый код", type: "text" },
-    },
-    async authorize(credentials) {
-      try {
-        const parsed = otpSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-
-        const identifier = normalizeIdentifier(parsed.data.identifier);
-        const isEmail = identifier.includes("@");
-        const loginCode = await withAuthTimeout(
-          prisma.loginCode.findFirst({
-            where: {
-              ...(isEmail ? { email: identifier } : { phone: identifier }),
-              codeHash: hashLoginCode(identifier, parsed.data.code),
-              expiresAt: { gt: new Date() },
-            },
-            orderBy: { createdAt: "desc" },
-          }),
-        );
-        if (!loginCode) return null;
-
-        const user = await withAuthTimeout(
-          prisma.user.upsert({
-            where: isEmail ? { email: identifier } : { phone: identifier },
-            update: { provider: "EMAIL" },
-            create: {
-              ...(isEmail ? { email: identifier } : { phone: identifier }),
-              name: isEmail ? identifier.split("@")[0] : identifier,
-              provider: "EMAIL",
-            },
-          }),
-        );
-
-        await withAuthTimeout(
-          prisma.loginCode.deleteMany({
-            where: isEmail ? { email: identifier } : { phone: identifier },
-          }),
-        );
-
-        return toAuthUser(user);
-      } catch (error) {
-        console.error("OTP authorize failed", error);
-        return null;
-      }
-    },
-  }),
-  Credentials({
     id: "telegram",
     name: "Telegram",
     credentials: {
@@ -237,14 +178,6 @@ const providers: NextAuthConfig["providers"] = [
   }),
 ];
 
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-  providers.unshift(
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-    }),
-  );
-}
 
 if (process.env.AUTH_YANDEX_ID && process.env.AUTH_YANDEX_SECRET) {
   providers.unshift(
@@ -255,15 +188,6 @@ if (process.env.AUTH_YANDEX_ID && process.env.AUTH_YANDEX_SECRET) {
   );
 }
 
-if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
-  providers.unshift(
-    Resend({
-      apiKey: process.env.RESEND_API_KEY,
-      from: process.env.EMAIL_FROM,
-      name: "Войти по ссылке из письма",
-    }),
-  );
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -347,17 +271,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-function normalizeIdentifier(value: string) {
-  return value.includes("@")
-    ? value.toLowerCase()
-    : value.replace(/[^\d+]/g, "");
-}
-
 function authProviderByAccount(provider: string): AuthProvider | null {
-  if (provider === "google") return "GOOGLE";
   if (provider === "yandex") return "YANDEX";
   if (provider === "telegram") return "TELEGRAM";
-  if (provider === "otp" || provider === "password") return "EMAIL";
+  if (provider === "password") return "EMAIL";
   return null;
 }
 
@@ -376,3 +293,5 @@ function toAuthUser(user: {
     role: user.role,
   };
 }
+
+

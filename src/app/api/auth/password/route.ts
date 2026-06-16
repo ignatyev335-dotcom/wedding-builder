@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Укажите корректную почту и пароль не короче 8 символов." },
+      { error: "������� ���������� ����� � ������ �� ������ 8 ��������." },
       { status: 400 },
     );
   }
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const validPassword = await verifyPassword(password, user.passwordHash);
     if (!validPassword) {
       return NextResponse.json(
-        { error: "Неверная почта или пароль." },
+        { error: "�������� ����� ��� ������." },
         { status: 401 },
       );
     }
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Для этого аккаунта пароль еще не задан. Войдите по одноразовому коду.",
+          "��� ����� �������� ������ ��� �� �����. ������� ������ ��� ���������� � ���������.",
       },
       { status: 409 },
     );
