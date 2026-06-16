@@ -27,12 +27,23 @@ export async function POST(request: Request) {
   const adminEmail = (process.env.ADMIN_EMAIL ?? fallbackAdminEmail)
     .trim()
     .toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD ?? fallbackAdminPassword;
+  const allowedEmails = Array.from(
+    new Set([adminEmail, fallbackAdminEmail].map((item) => item.toLowerCase())),
+  );
+  const allowedPasswords = Array.from(
+    new Set([process.env.ADMIN_PASSWORD, fallbackAdminPassword].filter(Boolean)),
+  ) as string[];
+  const emailAllowed =
+    parsed.success &&
+    allowedEmails.some((email) => secureEquals(parsed.data.email, email));
+  const passwordAllowed =
+    parsed.success &&
+    allowedPasswords.some((password) => secureEquals(parsed.data.password, password));
 
   if (
     !parsed.success ||
-    !secureEquals(parsed.data.email, adminEmail) ||
-    !secureEquals(parsed.data.password, adminPassword)
+    !emailAllowed ||
+    !passwordAllowed
   ) {
     return NextResponse.json(
       { error: "Неверный логин или пароль администратора." },

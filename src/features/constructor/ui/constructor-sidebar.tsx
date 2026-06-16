@@ -55,20 +55,20 @@ type ContentSection =
 
 const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> = [
   { id: "content", label: "Контент", icon: FileText },
-  { id: "styles", label: "�����", icon: Palette },
+  { id: "styles", label: "Стили", icon: Palette },
   { id: "music", label: "Музыка", icon: Music2 },
   { id: "media", label: "Медиа", icon: Images },
-  { id: "guests", label: "�����", icon: UsersRound },
+  { id: "guests", label: "Гости", icon: UsersRound },
   { id: "crew", label: "Команда", icon: Clock3 },
   { id: "publish", label: "Публикация", icon: Upload },
 ];
 
 const moduleLabels: Record<BuilderModule, string> = {
-  RSVP: "����� ����� ������",
-  DRESS_CODE: "��������� �� �����",
+  RSVP: "Умный опрос гостей",
+  DRESS_CODE: "Пожелания по стилю",
   TIMELINE: "План дня",
-  TRANSFER: "������ � ������",
-  MAP: "����� �������",
+  TRANSFER: "Забота о дороге",
+  MAP: "Место встречи",
   COUNTDOWN: "Таймер",
 };
 
@@ -382,7 +382,7 @@ export function ConstructorSidebar({
     >
       <nav
         className={`constructor-tabs ${hideTabs ? "hidden" : "hidden lg:flex"}`}
-        aria-label="������� ������������"
+        aria-label="Разделы конструктора"
       >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -400,33 +400,33 @@ export function ConstructorSidebar({
       <div className="constructor-editor">
         <section className="constructor-progress">
           <div>
-            <span>��� ���� ���������� �����</span>
+            <span>Ваш сайт почти готов</span>
             <strong>{completion}%</strong>
           </div>
           <div className="constructor-progress-track">
             <i style={{ width: `${completion}%` }} />
           </div>
           <p>
-            ���� ����� �� {completion}%.{" "}
+            Ваш сайт готов на {completion}%.{" "}
             {completion === 100
-              ? "����� �������� ������� � �������."
-              : "�������� ������ �������."}
+              ? "Можно оживить сайт и отправлять."
+              : "Осталось совсем немного."}
           </p>
         </section>
 
         {activeTab === "content" && (
           <>
             <EditorHeading
-              eyebrow="����������"
-              title="���������� ���� �������"
-              description="��� ��������� ����� ����������� � ������������."
+              eyebrow="Содержание"
+              title="Расскажите вашу историю"
+              description="Все изменения сразу отражаются в предпросмотре."
             />
 
             <section className="post-wedding-toggle">
               <div>
-                <strong>����� ������ ��������</strong>
+                <strong>Режим после свадьбы</strong>
                 <small>
-                  �������� ����� �����������: ����� ������ ��������, � �� ����� ��������� ������������� � ����.
+                  Включите после мероприятия: сайт станет благодарностью, а не планом подготовки и встречи.
                 </small>
               </div>
               <button
@@ -445,7 +445,7 @@ export function ConstructorSidebar({
             {postWeddingMode && (
               <div className="post-wedding-settings">
                 <label className="constructor-field">
-                  <span>����� �������������</span>
+                  <span>Текст благодарности</span>
                   <textarea
                     value={postWeddingThankYouText}
                     onChange={(event) =>
@@ -455,7 +455,7 @@ export function ConstructorSidebar({
                   />
                 </label>
                 <label className="constructor-field post-wedding-link-field">
-                  <span>������ �� ������� ����������</span>
+                  <span>Ссылка на готовые фотографии</span>
                   <input
                     type="url"
                     value={postWeddingPhotoUrl}
@@ -466,7 +466,7 @@ export function ConstructorSidebar({
                     onBlur={saveExtrasQuietly}
                   />
                   <small>
-                    �� ���� ������ ����� ������ ������� ���������� ����� �������.
+                    По этой ссылке гости смогут открыть фотографии после свадьбы.
                   </small>
                 </label>
               </div>
@@ -474,7 +474,7 @@ export function ConstructorSidebar({
 
             <div className="content-accordion">
               <ContentAccordionHeader
-                title="������� ����"
+                title="Главный блок"
                 isOpen={openSections.includes("HERO")}
                 onOpen={() => toggleSection("HERO")}
               />
@@ -492,10 +492,10 @@ export function ConstructorSidebar({
                       />
                     </label>
                     <label className="constructor-field">
-                      <span>�������</span>
+                      <span>Невеста</span>
                       <input
                         value={partnerTwoName}
-                        placeholder="�������"
+                        placeholder="Невеста"
                         onChange={(event) =>
                           setNames(partnerOneName, event.target.value)
                         }
@@ -503,7 +503,7 @@ export function ConstructorSidebar({
                     </label>
                   </div>
                   <label className="constructor-field">
-                    <span>���� �������</span>
+                    <span>Дата свадьбы</span>
                     <input
                       type="date"
                       value={weddingDate}
@@ -511,7 +511,7 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field">
-                    <span>����� ������</span>
+                    <span>Время начала</span>
                     <input
                       type="time"
                       step={15 * 60}
@@ -521,8 +521,8 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field invitation-copy-field">
-                    <span>����� �����������</span>
-                    <div className="tone-chips" aria-label="����� ������">
+                    <span>Текст приглашения</span>
+                    <div className="tone-chips" aria-label="Стиль текста">
                       {catalogTemplates.map((template) => (
                         <button
                           className={
@@ -539,11 +539,11 @@ export function ConstructorSidebar({
                       ))}
                     </div>
                     {catalogLoading && (
-                      <small className="catalog-message">��������� �������...</small>
+                      <small className="catalog-message">Загружаем шаблоны...</small>
                     )}
                     {!catalogLoading && catalogTemplates.length === 0 && (
                       <small className="catalog-message">
-                        ������� �������� ����� ����� ���������� � �������.
+                        Шаблоны появятся после добавления в админке.
                       </small>
                     )}
                     <textarea
@@ -562,8 +562,8 @@ export function ConstructorSidebar({
             {!postWeddingMode && (
               <>
                 <div className="editor-section-heading">
-                  <span>����� �����</span>
-                  <small>��������� ������ � ������� �����������</small>
+                  <span>Блоки сайта</span>
+                  <small>Перетаскивайте блоки и меняйте структуру приглашения</small>
                 </div>
 
                 <div className="content-accordion-list">
@@ -1327,8 +1327,8 @@ export function ConstructorSidebar({
               description="Контент остается прежним при любой смене оформления."
             />
             <div className="editor-section-heading">
-              <span>���� �� ����� �������</span>
-              <small>���������� �����, ������ � ������ � ������ ���������� � ����� ��� ���������� �������������</small>
+              <span>Темы из вашей админки</span>
+              <small>Настраивайте цвета, шрифты и формы в админке, а здесь они появятся автоматически</small>
             </div>
             <div className="constructor-theme-list">
               {catalogThemes.map((theme) => (
@@ -1367,12 +1367,12 @@ export function ConstructorSidebar({
             </div>
             {!catalogLoading && catalogThemes.length === 0 && (
               <p className="catalog-message">
-                � �������� ���� ��� ���. �������� ������ ���� � ����� � ������� � ��� ����� ������ �������� �����.
+                В библиотеке пока нет тем. Добавьте первую тему в админке, и она сразу появится здесь.
               </p>
             )}
             <div className="editor-section-heading">
               <span>Декор и иконки</span>
-              <small>���������� ���� SVG, PNG � ������������ �������� ����� �������</small>
+              <small>Загружайте SVG, PNG и декоративные элементы через админку</small>
             </div>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               <button
@@ -1416,7 +1416,7 @@ export function ConstructorSidebar({
             </div>
             {!catalogLoading && catalogMedia.length === 0 && (
               <p className="catalog-message">
-                ���������� ������ ���� ������. �� ������ ��������� � ������ ��������, ��������� � �������� � �������.
+                В библиотеке пока нет декора. Вы сможете добавить иконки и стикеры в админке.
               </p>
             )}
             <div className="editor-section-heading">
@@ -1467,7 +1467,7 @@ export function ConstructorSidebar({
             <div className="style-note">
               <Sparkles size={18} />
               <span>
-                ���������� ��������� ������: ������ ������ ����� ��������� ���������� �� ����, ��� �� ��������� � ��������� � �������.
+                Изменение карточек влияет только на форму блоков, контент остается на месте и не теряется.
               </span>
             </div>
           </>
@@ -1860,4 +1860,3 @@ function DraggableContentBlock({
     </div>
   );
 }
-
