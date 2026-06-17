@@ -1587,6 +1587,63 @@ a {
   border-radius: 18px;
 }
 
+.media-stock-toggle {
+  margin-bottom: 14px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  background: #f7f5ef;
+  border: 1px solid #e4e1d8;
+  border-radius: 20px;
+}
+
+.media-stock-toggle strong,
+.media-stock-toggle small {
+  display: block;
+}
+
+.media-stock-toggle small {
+  margin-top: 4px;
+  color: #7b8176;
+  font-size: .84rem;
+}
+
+.stock-look-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stock-look-grid button {
+  position: relative;
+  overflow: hidden;
+  min-height: 190px;
+  border: 0;
+  border-radius: 22px;
+  background: #f4f0e8;
+  cursor: pointer;
+}
+
+.stock-look-grid img {
+  object-fit: cover;
+}
+
+.stock-look-grid span {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  padding: 9px 10px;
+  color: #2d2924;
+  background: rgba(255,255,255,.72);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  font-size: .84rem;
+  font-weight: 750;
+}
+
 .media-section-title {
   margin-bottom: 12px;
   display: flex;
@@ -5792,6 +5849,29 @@ a {
   backdrop-filter: blur(8px);
 }
 
+.card-style-swatch.style-liquid {
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255,255,255,.95), transparent 31%),
+    linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,255,255,.16));
+  border-color: rgba(255,255,255,.8);
+  box-shadow: inset 0 1px 10px rgba(255,255,255,.8), 0 16px 28px rgba(40,45,38,.16);
+}
+
+.card-style-swatch.style-editorial {
+  background: #fbfaf5;
+  border: 1px solid #22201d;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 8px #fbfaf5, inset 0 0 0 9px rgba(34,32,29,.35);
+}
+
+.card-style-swatch.style-silk {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255,255,255,.9), transparent 30%),
+    linear-gradient(135deg, #fbf2ea, #efe4d8);
+  border: 0;
+  box-shadow: 0 18px 30px rgba(130,104,82,.22);
+}
+
 .card-style-swatch.style-monogram {
   position: relative;
   background: transparent;
@@ -6304,6 +6384,32 @@ a {
   backdrop-filter: blur(18px) saturate(125%);
 }
 
+.card-style-liquid .wedding-welcome,
+.card-style-liquid .wedding-sortable-blocks > .wedding-module {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.92), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.58), rgba(255,255,255,.14));
+  border-color: rgba(255,255,255,.78);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 22px 60px rgba(27,31,24,.12);
+  backdrop-filter: blur(22px) saturate(1.25);
+}
+
+.card-style-editorial .wedding-welcome,
+.card-style-editorial .wedding-sortable-blocks > .wedding-module {
+  border: 1px solid color-mix(in srgb, var(--theme-text, #24211f) 55%, transparent);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.card-style-silk .wedding-welcome,
+.card-style-silk .wedding-sortable-blocks > .wedding-module {
+  background:
+    radial-gradient(circle at 0 0, rgba(255,255,255,.84), transparent 32%),
+    color-mix(in srgb, var(--theme-bg, #f7f3ea) 72%, #fff);
+  border-color: rgba(255,255,255,.6);
+  box-shadow: 0 24px 70px rgba(115,94,73,.16);
+}
+
 .card-style-monogram .wedding-welcome,
 .card-style-monogram .wedding-sortable-blocks > .wedding-module {
   position: relative;
@@ -6736,6 +6842,25 @@ a {
 }
 
 @media (max-width: 720px) {
+  .admin-panel,
+  .admin-section-grid,
+  .admin-stats,
+  .admin-sites,
+  .account-heading,
+  .admin-heading,
+  .account-projects,
+  .account-empty {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .admin-section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card-heading {
+    gap: 11px;
+  }
+
   .guest-stats {
     grid-template-columns: 1fr;
   }
@@ -8664,6 +8789,158 @@ a {
   background: #fff;
   border: 1px solid rgba(54, 61, 52, 0.1);
   border-radius: 24px;
+}
+
+.admin-panel,
+.admin-card {
+  width: min(1180px, calc(100% - 48px));
+  margin: 24px auto 0;
+  padding: clamp(22px, 4vw, 38px);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(54, 61, 52, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 18px 55px rgba(34, 31, 27, 0.06);
+}
+
+.admin-card {
+  width: 100%;
+  margin: 0;
+}
+
+.admin-section-grid {
+  width: min(1180px, calc(100% - 48px));
+  margin: 24px auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.admin-card-heading {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.admin-card-heading small {
+  color: #8a9087;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.admin-card-heading h2 {
+  margin: 4px 0 8px;
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.admin-card-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: #747b70;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.admin-card-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: #25211e;
+  border-radius: 16px;
+}
+
+.admin-input {
+  min-height: 48px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #dedfd8;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 15px;
+  color: #25211e;
+  font-size: 1rem;
+  outline: none;
+}
+
+textarea.admin-input {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.admin-input:focus {
+  border-color: #6b7567;
+  box-shadow: 0 0 0 3px rgba(107, 117, 103, 0.12);
+}
+
+.admin-primary-button,
+.admin-secondary-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 0.95rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-primary-button {
+  color: #fff;
+  background: #25211e;
+}
+
+.admin-secondary-button {
+  color: #3f453d;
+  background: #f2f1ec;
+  border: 1px solid #dedfd8;
+}
+
+.admin-primary-button:disabled,
+.admin-secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.admin-list-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fbfaf7;
+  border: 1px solid #e6e5df;
+  border-radius: 16px;
+}
+
+.admin-danger-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #9f2f2f;
+  background: #fff5f2;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.admin-muted {
+  margin: 0;
+  color: #878d82;
+  font-size: 0.95rem;
 }
 
 .system-settings-form {

@@ -1,3 +1,5 @@
+import { getSystemSettingValue } from "@/lib/system-settings";
+
 type WelcomeEmail = {
   email: string;
   partnerOneName: string;
@@ -19,12 +21,24 @@ function escapeHtml(value: string) {
   });
 }
 
+async function resolveMailSettings() {
+  const apiKey =
+    (await getSystemSettingValue("RESEND_API_KEY")) ?? process.env.RESEND_API_KEY;
+  const from =
+    (await getSystemSettingValue("SMTP_FROM")) ??
+    (await getSystemSettingValue("EMAIL_FROM")) ??
+    process.env.EMAIL_FROM;
+
+  return { apiKey, from };
+}
+
 export async function sendWeddingWelcomeEmail(data: WelcomeEmail) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
+  const { apiKey, from } = await resolveMailSettings();
   if (!apiKey || !from) return;
 
-  const couple = `${escapeHtml(data.partnerOneName)} и ${escapeHtml(data.partnerTwoName)}`;
+  const couple = `${escapeHtml(data.partnerOneName)} и ${escapeHtml(
+    data.partnerTwoName,
+  )}`;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

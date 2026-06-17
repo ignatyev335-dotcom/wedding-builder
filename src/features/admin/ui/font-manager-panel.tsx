@@ -1,11 +1,19 @@
 "use client";
 
 import { FileType2, Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { CustomFontOption } from "@/entities/wedding/model";
 
 type FontFormat = "woff2" | "woff" | "truetype" | "opentype";
+
+function detectFontFormat(fileName: string): FontFormat {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".woff")) return "woff";
+  if (lower.endsWith(".ttf")) return "truetype";
+  if (lower.endsWith(".otf")) return "opentype";
+  return "woff2";
+}
 
 export function FontManagerPanel({
   initialFonts,
@@ -15,22 +23,49 @@ export function FontManagerPanel({
   const [fonts, setFonts] = useState(initialFonts);
   const [name, setName] = useState("");
   const [family, setFamily] = useState("");
-  const [fileUrl, setFileUrl] = useState("");
-  const [format, setFormat] = useState<FontFormat>("woff2");
+  const [fontFile, setFontFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const uploadFont = async (file: File) => {
+    const formData = new FormData();
+    formData.append("kind", "font");
+    formData.append("file", file);
+
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const result = (await response.json()) as { error?: string; url?: string };
+    if (!response.ok || !result.url) {
+      throw new Error(result.error || "Не удалось загрузить файл шрифта.");
+    }
+    return result.url;
+  };
 
   const addFont = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!fontFile) {
+      setMessage("Выберите файл шрифта с компьютера.");
+      return;
+    }
+
     setIsSaving(true);
     setMessage("");
 
     try {
+      const fileUrl = await uploadFont(fontFile);
       const response = await fetch("/api/admin/fonts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, family, fileUrl, format }),
+        body: JSON.stringify({
+          name,
+          family,
+          fileUrl,
+          format: detectFontFormat(fontFile.name),
+        }),
       });
       const result = (await response.json()) as {
         error?: string;
@@ -48,10 +83,13 @@ export function FontManagerPanel({
       );
       setName("");
       setFamily("");
-      setFileUrl("");
+      setFontFile(null);
+      formRef.current?.reset();
       setMessage("Шрифт добавлен и доступен при создании тем.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не удалось добавить шрифт.");
+      setMessage(
+        error instanceof Error ? error.message : "Не удалось добавить шрифт.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -75,16 +113,18 @@ export function FontManagerPanel({
       window.dispatchEvent(
         new CustomEvent<string>("vowly:font-removed", { detail: id }),
       );
-      setMessage("Шрифт удалён. Темы, которые его использовали, вернутся к резервному шрифту.");
+      setMessage("Шрифт удален.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не удалось удалить шрифт.");
+      setMessage(
+        error instanceof Error ? error.message : "Не удалось удалить шрифт.",
+      );
     } finally {
       setDeletingId(null);
     }
   };
 
   return (
-    <section className="mx-auto mt-8 max-w-[1500px] rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+    <section className="admin-panel">
       <style>
         {fonts
           .map(
@@ -95,67 +135,52 @@ export function FontManagerPanel({
           )
           .join("\n")}
       </style>
-      <header className="mb-6 flex items-start gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-stone-900 text-white">
+      <header className="admin-card-heading">
+        <span className="admin-card-icon">
           <FileType2 size={21} />
         </span>
         <div>
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-stone-400">
-            Типографика
-          </span>
-          <h2 className="m-0 text-2xl font-semibold text-stone-900">
-            Пользовательские шрифты
-          </h2>
-          <p className="mb-0 mt-2 text-sm text-stone-500">
-            Подключайте файлы WOFF2, WOFF, TTF или OTF по HTTPS-ссылке. Лучше всего
-            использовать WOFF2: он меньше и быстрее загружается у гостей.
+          <small>Типографика</small>
+          <h2>Пользовательские шрифты</h2>
+          <p>
+            Загружайте WOFF2, WOFF, TTF или OTF с компьютера. После сохранения
+            шрифт сразу можно выбрать в конструкторе тем.
           </p>
         </div>
       </header>
 
       <form
-        className="grid gap-3 rounded-3xl bg-stone-50 p-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.5fr_160px_auto]"
+        className="grid gap-3 rounded-3xl bg-stone-50 p-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.3fr_auto]"
         onSubmit={addFont}
+        ref={formRef}
       >
         <input
-          className="min-h-12 rounded-xl border border-stone-200 bg-white px-4 outline-none focus:border-stone-500"
+          className="admin-input"
           required
           placeholder="Название в админке"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
         <input
-          className="min-h-12 rounded-xl border border-stone-200 bg-white px-4 outline-none focus:border-stone-500"
+          className="admin-input"
           required
           placeholder="CSS-семейство, например Cera Pro"
           value={family}
           onChange={(event) => setFamily(event.target.value)}
         />
         <input
-          className="min-h-12 rounded-xl border border-stone-200 bg-white px-4 outline-none focus:border-stone-500"
+          className="admin-input"
           required
-          type="url"
-          placeholder="https://cdn.example.ru/font.woff2"
-          value={fileUrl}
-          onChange={(event) => setFileUrl(event.target.value)}
+          accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff"
+          type="file"
+          onChange={(event) => setFontFile(event.target.files?.[0] ?? null)}
         />
-        <select
-          className="min-h-12 rounded-xl border border-stone-200 bg-white px-4 outline-none"
-          value={format}
-          onChange={(event) =>
-            setFormat(event.target.value as FontFormat)
-          }
-        >
-          <option value="woff2">WOFF2</option>
-          <option value="woff">WOFF</option>
-          <option value="truetype">TTF</option>
-          <option value="opentype">OTF</option>
-        </select>
-        <button
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 font-semibold text-white disabled:opacity-60"
-          disabled={isSaving}
-        >
-          {isSaving ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
+        <button className="admin-primary-button" disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="animate-spin" size={17} />
+          ) : (
+            <Plus size={17} />
+          )}
           Добавить
         </button>
       </form>
@@ -179,7 +204,7 @@ export function FontManagerPanel({
               </small>
             </div>
             <button
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-700 disabled:opacity-60"
+              className="admin-danger-icon"
               type="button"
               aria-label={`Удалить ${font.name}`}
               disabled={deletingId === font.id}
@@ -194,8 +219,9 @@ export function FontManagerPanel({
           </article>
         ))}
         {fonts.length === 0 && (
-          <p className="text-sm text-stone-500">
-            Пользовательских шрифтов пока нет. Встроенные шрифты продолжат работать.
+          <p className="admin-muted">
+            Пользовательских шрифтов пока нет. Добавьте первый файл, и он
+            появится в темах.
           </p>
         )}
       </div>

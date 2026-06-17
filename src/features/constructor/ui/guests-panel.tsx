@@ -23,12 +23,13 @@ import {
   type CustomQuestion,
   type GuestResponse,
   type GuestTagCode,
+  type LanguageCode,
 } from "@/entities/wedding/model";
-import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
+import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 
 const statusLabels = {
-  PENDING: "Ждем ответа",
+  PENDING: "Ждем ответ",
   ACCEPTED: "Придет",
   DECLINED: "Отказ",
 } as const;
@@ -39,6 +40,12 @@ const tagLabels: Record<GuestTagCode, string> = {
   COLLEAGUES: "Коллеги",
 };
 
+const languageLabels: Record<LanguageCode, string> = {
+  RU: "Русский",
+  EN: "English",
+  ZH: "中文",
+};
+
 export function GuestsPanel() {
   const siteId = useWeddingStore((state) => state.siteId);
   const guests = useWeddingStore((state) => state.guests);
@@ -47,11 +54,14 @@ export function GuestsPanel() {
   const updateGuest = useWeddingStore((state) => state.updateGuest);
   const customQuestions = useWeddingStore((state) => state.customQuestions);
   const setCustomQuestions = useWeddingStore((state) => state.setCustomQuestions);
+  const language = useWeddingStore((state) => state.language);
+  const setLanguage = useWeddingStore((state) => state.setLanguage);
   const [name, setName] = useState("");
   const [isCouple, setIsCouple] = useState(false);
   const [partnerName, setPartnerName] = useState("");
   const [tags, setTags] = useState<GuestTagCode[]>([]);
   const [phone, setPhone] = useState("");
+  const [inviteLanguage, setInviteLanguage] = useState<LanguageCode>(language);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -64,27 +74,19 @@ export function GuestsPanel() {
       : guests.filter((guest) => guest.status === statusFilter);
 
   useEffect(() => {
-    if (!siteId || siteId === "quiz-draft") {
-      return;
-    }
+    if (!siteId || siteId === "quiz-draft") return;
 
     const controller = new AbortController();
     fetch(`/api/wedding-sites/${encodeURIComponent(siteId)}/guests`, {
       signal: controller.signal,
     })
       .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Не удалось загрузить список гостей.");
-        }
-
+        if (!response.ok) throw new Error("Не удалось загрузить гостей.");
         return (await response.json()) as { guests: GuestResponse[] };
       })
       .then((data) => setGuests(data.guests))
       .catch((requestError: unknown) => {
-        if (requestError instanceof DOMException && requestError.name === "AbortError") {
-          return;
-        }
-
+        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
         setError("Не удалось обновить список гостей.");
       });
 
@@ -101,12 +103,11 @@ export function GuestsPanel() {
       total + (guest.status === "DECLINED" ? (guest.isCouple ? 2 : 1) : 0),
     0,
   );
-  const totalHeadcount =
-    guests.reduce(
-      (total, guest) =>
-        total + (guest.isCouple ? 2 : 1 + (guest.hasPlusOne ? 1 : 0)),
-      0,
-    );
+  const totalHeadcount = guests.reduce(
+    (total, guest) =>
+      total + (guest.isCouple ? 2 : 1 + (guest.hasPlusOne ? 1 : 0)),
+    0,
+  );
   const wine = guests.filter((guest) =>
     guest.alcoholPreferences.includes("WINE"),
   ).length;
@@ -134,6 +135,8 @@ export function GuestsPanel() {
 
     setIsSaving(true);
     setError("");
+    setLanguage(inviteLanguage);
+    window.setTimeout(() => void persistSiteExtras().catch(() => undefined), 0);
 
     try {
       const response = await fetch(
@@ -225,10 +228,7 @@ export function GuestsPanel() {
   };
 
   const copyInvitation = async (guest: GuestResponse) => {
-    if (!guest.invitationUrl) {
-      return;
-    }
-
+    if (!guest.invitationUrl) return;
     await navigator.clipboard.writeText(guest.invitationUrl);
     setCopiedId(guest.id);
     window.setTimeout(() => setCopiedId(null), 1600);
@@ -258,7 +258,10 @@ export function GuestsPanel() {
       <header className="guests-heading">
         <span>Все под рукой</span>
         <h2>Ваши любимые гости</h2>
-        <p>Добавьте близких и отправьте каждому персональное приглашение.</p>
+        <p>
+          Добавьте близких, выберите язык приглашения и отправьте каждому
+          персональную ссылку.
+        </p>
       </header>
 
       <div className="guest-stats">
@@ -280,41 +283,11 @@ export function GuestsPanel() {
       </div>
 
       <div className="guest-insights">
-        <article>
-          <Wine size={17} />
-          <div>
-            <span>Вино</span>
-            <strong>{wine}</strong>
-          </div>
-        </article>
-        <article>
-          <GlassWater size={17} />
-          <div>
-            <span>Шампанское</span>
-            <strong>{champagne}</strong>
-          </div>
-        </article>
-        <article>
-          <GlassWater size={17} />
-          <div>
-            <span>Крепкое</span>
-            <strong>{strong}</strong>
-          </div>
-        </article>
-        <article>
-          <GlassWater size={17} />
-          <div>
-            <span>Не пьют</span>
-            <strong>{nonAlcohol}</strong>
-          </div>
-        </article>
-        <article>
-          <BusFront size={17} />
-          <div>
-            <span>Нужен трансфер</span>
-            <strong>{transfer}</strong>
-          </div>
-        </article>
+        <Insight icon={<Wine size={17} />} label="Вино" value={wine} />
+        <Insight icon={<GlassWater size={17} />} label="Шампанское" value={champagne} />
+        <Insight icon={<GlassWater size={17} />} label="Крепкое" value={strong} />
+        <Insight icon={<GlassWater size={17} />} label="Не пьют" value={nonAlcohol} />
+        <Insight icon={<BusFront size={17} />} label="Нужен трансфер" value={transfer} />
       </div>
 
       <form className="guest-quick-form" onSubmit={addGuest}>
@@ -341,6 +314,21 @@ export function GuestsPanel() {
             placeholder="+7 999 123-45-67"
             onChange={(event) => setPhone(event.target.value)}
           />
+        </label>
+        <label>
+          <span>Язык приглашения</span>
+          <select
+            value={inviteLanguage}
+            onChange={(event) =>
+              setInviteLanguage(event.target.value as LanguageCode)
+            }
+          >
+            {(["RU", "EN", "ZH"] as const).map((code) => (
+              <option key={code} value={code}>
+                {languageLabels[code]}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="guest-couple-toggle">
           <input
@@ -396,9 +384,7 @@ export function GuestsPanel() {
             <input
               value={question.title}
               onChange={(event) =>
-                updateCustomQuestion(question.id, {
-                  title: event.target.value,
-                })
+                updateCustomQuestion(question.id, { title: event.target.value })
               }
             />
             <select
@@ -463,7 +449,7 @@ export function GuestsPanel() {
           disabled={!guests.length}
           onClick={() => void downloadGuests()}
         >
-          <Download size={15} /> Скачать таблицу (CSV)
+          <Download size={15} /> Скачать таблицу CSV
         </button>
       </div>
       <div className="guest-status-filters" aria-label="Фильтр гостей">
@@ -471,7 +457,7 @@ export function GuestsPanel() {
           ["ALL", "Все"],
           ["ACCEPTED", "Придут"],
           ["DECLINED", "Не придут"],
-          ["PENDING", "Ждём ответа"],
+          ["PENDING", "Ждем ответ"],
         ] as const).map(([value, label]) => (
           <button
             className={statusFilter === value ? "is-active" : ""}
@@ -507,54 +493,13 @@ export function GuestsPanel() {
 
           <div className="grid w-full gap-3 overflow-hidden md:hidden">
             {filteredGuests.map((guest) => (
-              <article
-                className="w-full min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm"
+              <GuestMobileCard
+                copied={copiedId === guest.id}
+                guest={guest}
                 key={guest.id}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="grid min-w-0 gap-1">
-                    <strong className="break-words">{guest.name}</strong>
-                    {guest.isCouple && <small>и {guest.partnerName}</small>}
-                    <small className="text-stone-500">
-                      {guest.phone || "Телефон не указан"}
-                    </small>
-                  </div>
-                  <span className={`guest-status status-${guest.status.toLowerCase()}`}>
-                    {guest.status === "DECLINED"
-                      ? "Не придет"
-                      : statusLabels[guest.status]}
-                  </span>
-                </div>
-                <div className="mt-3 grid min-w-0 gap-1 break-words text-sm text-stone-600">
-                  <span>Алкоголь: {guest.drinks || "не выбран"}</span>
-                  <span>Еда: {guest.foodPreference || "не выбрана"}</span>
-                  {guest.allergies && <span>Аллергии: {guest.allergies}</span>}
-                  {guest.musicRequest && (
-                    <span>Пожелание: {guest.musicRequest}</span>
-                  )}
-                </div>
-                <div className="guest-row-tags mt-3">
-                  {guestTagCodes.map((tag) => (
-                    <button
-                      className={guest.tags.includes(tag) ? "is-selected" : ""}
-                      type="button"
-                      key={tag}
-                      onClick={() => void toggleGuestTag(guest, tag)}
-                    >
-                      {tagLabels[tag]}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm text-white disabled:opacity-50"
-                  type="button"
-                  disabled={!guest.invitationUrl}
-                  onClick={() => void copyInvitation(guest)}
-                >
-                  {copiedId === guest.id ? <Check size={14} /> : <Copy size={14} />}
-                  {copiedId === guest.id ? "Скопировано" : "Скопировать ссылку"}
-                </button>
-              </article>
+                onCopy={copyInvitation}
+                onToggleTag={toggleGuestTag}
+              />
             ))}
           </div>
           {!filteredGuests.length && (
@@ -568,10 +513,88 @@ export function GuestsPanel() {
         <div className="guests-empty">
           <UserRoundX size={25} />
           <strong>Список пока пуст</strong>
-          <p>Добавьте первого гостя, и мы подготовим для него личную ссылку.</p>
+          <p>
+            Добавьте первого гостя, и мы подготовим для него личную ссылку.
+          </p>
         </div>
       )}
     </>
+  );
+}
+
+function Insight({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <article>
+      {icon}
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+    </article>
+  );
+}
+
+function GuestMobileCard({
+  guest,
+  copied,
+  onCopy,
+  onToggleTag,
+}: {
+  guest: GuestResponse;
+  copied: boolean;
+  onCopy: (guest: GuestResponse) => Promise<void>;
+  onToggleTag: (guest: GuestResponse, tag: GuestTagCode) => Promise<void>;
+}) {
+  return (
+    <article className="w-full min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="grid min-w-0 gap-1">
+          <strong className="break-words">{guest.name}</strong>
+          {guest.isCouple && <small>и {guest.partnerName}</small>}
+          <small className="text-stone-500">
+            {guest.phone || "Телефон не указан"}
+          </small>
+        </div>
+        <span className={`guest-status status-${guest.status.toLowerCase()}`}>
+          {guest.status === "DECLINED" ? "Не придет" : statusLabels[guest.status]}
+        </span>
+      </div>
+      <div className="mt-3 grid min-w-0 gap-1 break-words text-sm text-stone-600">
+        <span>Алкоголь: {guest.drinks || "не выбран"}</span>
+        <span>Еда: {guest.foodPreference || "не выбрана"}</span>
+        {guest.allergies && <span>Аллергии: {guest.allergies}</span>}
+        {guest.musicRequest && <span>Трек: {guest.musicRequest}</span>}
+      </div>
+      <div className="guest-row-tags mt-3">
+        {guestTagCodes.map((tag) => (
+          <button
+            className={guest.tags.includes(tag) ? "is-selected" : ""}
+            type="button"
+            key={tag}
+            onClick={() => void onToggleTag(guest, tag)}
+          >
+            {tagLabels[tag]}
+          </button>
+        ))}
+      </div>
+      <button
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm text-white disabled:opacity-50"
+        type="button"
+        disabled={!guest.invitationUrl}
+        onClick={() => void onCopy(guest)}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+        {copied ? "Скопировано" : "Скопировать ссылку"}
+      </button>
+    </article>
   );
 }
 
@@ -589,55 +612,45 @@ function GuestDesktopRow({
   return (
     <article>
       <div>
-                <strong>{guest.name}</strong>
-                {guest.isCouple && (
-                  <small className="guest-pair-name">и {guest.partnerName}</small>
-                )}
-                <small>{guest.phone || "Телефон не указан"}</small>
-                <small>
-                  {guest.foodPreference || "Еда не выбрана"}
-                  {guest.allergies ? ` · Аллергии: ${guest.allergies}` : ""}
-                </small>
-                {guest.isCouple && guest.partnerFoodPreference && (
-                  <small>
-                    {guest.partnerName}: {guest.partnerFoodPreference}
-                    {guest.partnerAllergies
-                      ? ` · Аллергии: ${guest.partnerAllergies}`
-                      : ""}
-                  </small>
-                )}
-                {guest.plusOneName && <small>С парой: {guest.plusOneName}</small>}
-                {guest.musicRequest && <small>Трек: {guest.musicRequest}</small>}
-                <div className="guest-row-tags">
-                  {guestTagCodes.map((tag) => (
-                    <button
-                      className={guest.tags.includes(tag) ? "is-selected" : ""}
-                      type="button"
-                      key={tag}
-                      onClick={() => void onToggleTag(guest, tag)}
-                    >
-                      {tagLabels[tag]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <span className={`guest-status status-${guest.status.toLowerCase()}`}>
-                {statusLabels[guest.status]}
-              </span>
-              <div className="guest-link-cell">
-                <span>
-                  <Link2 size={13} />
-                  {guest.invitationUrl ? "Ссылка готова" : "Старая запись"}
-                </span>
-                <button
-                  type="button"
-                  disabled={!guest.invitationUrl}
-                  onClick={() => void onCopy(guest)}
-                >
-                  {copied ? <Check size={14} /> : <Copy size={14} />}
-                  {copied ? "Скопировано" : "Копировать"}
-                </button>
-              </div>
+        <strong>{guest.name}</strong>
+        {guest.isCouple && <small className="guest-pair-name">и {guest.partnerName}</small>}
+        <small>{guest.phone || "Телефон не указан"}</small>
+        <small>
+          {guest.foodPreference || "Еда не выбрана"}
+          {guest.allergies ? ` · Аллергии: ${guest.allergies}` : ""}
+        </small>
+        {guest.plusOneName && <small>С парой: {guest.plusOneName}</small>}
+        {guest.musicRequest && <small>Трек: {guest.musicRequest}</small>}
+        <div className="guest-row-tags">
+          {guestTagCodes.map((tag) => (
+            <button
+              className={guest.tags.includes(tag) ? "is-selected" : ""}
+              type="button"
+              key={tag}
+              onClick={() => void onToggleTag(guest, tag)}
+            >
+              {tagLabels[tag]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <span className={`guest-status status-${guest.status.toLowerCase()}`}>
+        {statusLabels[guest.status]}
+      </span>
+      <div className="guest-link-cell">
+        <span>
+          <Link2 size={13} />
+          {guest.invitationUrl ? "Ссылка готова" : "Старая запись"}
+        </span>
+        <button
+          type="button"
+          disabled={!guest.invitationUrl}
+          onClick={() => void onCopy(guest)}
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          {copied ? "Скопировано" : "Копировать"}
+        </button>
+      </div>
     </article>
   );
 }

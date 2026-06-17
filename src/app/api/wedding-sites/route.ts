@@ -50,6 +50,18 @@ export async function POST(request: Request) {
     const baseSlug = nameSlug || "wedding";
     const slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
     const selectedModules = [...baseModules, ...data.modules] as ModuleType[];
+    const selectedTemplate = data.invitationTemplateId
+      ? await prisma.invitationTemplate.findFirst({
+          where: { id: data.invitationTemplateId, isActive: true },
+          select: { content: true },
+        })
+      : null;
+    const welcomeText =
+      selectedTemplate?.content
+        ?.replaceAll("{names}", `${data.partnerOneName} и ${data.partnerTwoName}`)
+        .replaceAll("{partnerOne}", data.partnerOneName)
+        .replaceAll("{partnerTwo}", data.partnerTwoName) ??
+      "Будем счастливы разделить этот день с вами.";
     const session = getRequestSession(request);
     const sessionUser = session
       ? await prisma.user.findUnique({
@@ -78,15 +90,16 @@ export async function POST(request: Request) {
           slug,
           theme: data.theme,
           templateStyle: data.templateStyle,
-          musicTrackId: null,
-          audioUrl: null,
+          musicTrackId: data.musicTrackId || null,
+          designThemeId: data.designThemeId || null,
+          audioUrl: data.audioUrl || null,
           data: {
             create: {
               partnerOneName: data.partnerOneName.trim(),
               partnerTwoName: data.partnerTwoName.trim(),
               weddingDate: new Date(`${data.weddingDate}T12:00:00.000Z`),
               ceremonyTime: data.ceremonyTime,
-              welcomeText: "Будем счастливы разделить этот день с вами.",
+              welcomeText,
               timeline: JSON.stringify([
                 { id: "arrival", time: "16:00", title: "Сбор гостей" },
                 { id: "ceremony", time: "16:30", title: "Церемония" },

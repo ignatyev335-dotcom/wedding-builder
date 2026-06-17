@@ -28,6 +28,12 @@ enum SubscriptionPlan {
   VIP
 }
 
+enum MonetizationPlan {
+  FREE
+  PREMIUM
+  VIP
+}
+
 enum MediaAssetType {
   ICON
   STICKER
@@ -241,6 +247,7 @@ model DesignTheme {
   backgroundColor String
   primaryColor    String
   textColor       String
+  gradientCss      String?       @db.Text
   fontFamily      String
   customFontId    String?
   createdAt       DateTime      @default(now())
@@ -250,6 +257,20 @@ model DesignTheme {
 
   @@index([createdAt])
   @@index([customFontId])
+}
+
+model MonetizationFeature {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  title       String
+  description String           @db.Text
+  plan        MonetizationPlan @default(FREE)
+  sortOrder   Int              @default(0)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([plan, sortOrder])
 }
 
 model CustomFont {

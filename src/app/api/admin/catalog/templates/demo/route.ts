@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 const demoTemplates = [
   {
-    title: "Тёплое приглашение",
+    title: "Теплое приглашение",
     content:
       "{partnerOne} и {partnerTwo} с радостью приглашают вас разделить с нами самый нежный день нашей истории. Нам очень хочется обнять вас, танцевать вместе и сохранить этот вечер в памяти навсегда.",
   },
@@ -15,7 +15,7 @@ const demoTemplates = [
       "Дорогие гости! Приглашаем вас на торжество в честь свадьбы {partnerOne} и {partnerTwo}. Для нас будет большой радостью провести этот день рядом с вами.",
   },
   {
-    title: "Лёгкий и современный",
+    title: "Легкий и современный",
     content:
       "Мы решили сказать друг другу «да» и будем счастливы, если вы будете рядом. {partnerOne} и {partnerTwo} ждут вас на празднике, где будет много любви, света и красивых моментов.",
   },
@@ -23,7 +23,7 @@ const demoTemplates = [
 
 export async function POST() {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {
@@ -40,8 +40,6 @@ export async function POST() {
             id: true,
             title: true,
             content: true,
-            isActive: true,
-            sortOrder: true,
           },
         }),
       ),

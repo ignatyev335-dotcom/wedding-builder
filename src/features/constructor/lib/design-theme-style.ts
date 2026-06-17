@@ -25,7 +25,9 @@ export function getDesignThemeStyle(
 
   return {
     color: theme.textColor,
-    background: theme.backgroundColor,
+    background: theme.gradientCss || theme.backgroundColor,
+    backgroundColor: theme.backgroundColor,
+    backgroundImage: theme.gradientCss ?? undefined,
     "--theme-bg": theme.backgroundColor,
     "--theme-surface": `color-mix(in srgb, ${theme.backgroundColor} 88%, ${theme.textColor})`,
     "--theme-text": theme.textColor,

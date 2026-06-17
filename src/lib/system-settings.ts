@@ -1,4 +1,11 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
+
+import { prisma } from "@/lib/prisma";
 
 const algorithm = "aes-256-gcm";
 
@@ -41,4 +48,19 @@ export function maskSetting(value: string) {
   if (!value) return "Не задан";
   if (value.length <= 8) return "••••••••";
   return `${value.slice(0, 4)}••••••••${value.slice(-4)}`;
+}
+
+export async function getSystemSettingValue(key: string) {
+  const setting = await prisma.systemSetting.findUnique({
+    where: { key },
+    select: { value: true, isSecret: true },
+  });
+  if (!setting) return null;
+  if (!setting.isSecret) return setting.value;
+
+  try {
+    return decryptSetting(setting.value);
+  } catch {
+    return null;
+  }
 }

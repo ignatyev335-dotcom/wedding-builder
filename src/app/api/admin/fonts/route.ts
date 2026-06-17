@@ -12,28 +12,28 @@ const fontSchema = z.object({
     .min(2)
     .max(100)
     .regex(/^[\p{L}\p{N}\s_-]+$/u),
-  fileUrl: z.string().trim().url().max(2000),
+  fileUrl: z.string().trim().min(2).max(2000),
   format: z.enum(["woff2", "woff", "truetype", "opentype"]),
 });
 
 export async function POST(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {
     const parsed = fontSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Проверьте название, семейство, формат и URL файла шрифта." },
+        { error: "Проверьте название, семейство и файл шрифта." },
         { status: 400 },
       );
     }
 
-    const url = new URL(parsed.data.fileUrl);
-    if (!["http:", "https:"].includes(url.protocol)) {
+    const isLocalUpload = parsed.data.fileUrl.startsWith("/uploads/admin/");
+    if (!isLocalUpload) {
       return NextResponse.json(
-        { error: "Допустимы только ссылки HTTP или HTTPS." },
+        { error: "Шрифты нужно загружать с компьютера через админку." },
         { status: 400 },
       );
     }
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {

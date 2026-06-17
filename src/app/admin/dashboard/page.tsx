@@ -2,12 +2,12 @@ import { Database, Globe2, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
+import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
 import { FontManagerPanel } from "@/features/admin/ui/font-manager-panel";
-import { MediaManagerPanel } from "@/features/admin/ui/media-manager-panel";
+import { MonetizationPanel } from "@/features/admin/ui/monetization-panel";
 import {
   PlatformContentPanel,
   type PlatformContentDraft,
@@ -42,8 +42,8 @@ export default async function AdminDashboardPage() {
     designThemes,
     customFonts,
     platformContent,
-    mediaAssets,
     managedUsers,
+    monetizationFeatures,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.weddingSite.count(),
@@ -81,6 +81,7 @@ export default async function AdminDashboardPage() {
         backgroundColor: true,
         primaryColor: true,
         textColor: true,
+        gradientCss: true,
         fontFamily: true,
         customFont: {
           select: {
@@ -105,10 +106,6 @@ export default async function AdminDashboardPage() {
       },
     }),
     prisma.platformContent.findUnique({ where: { id: "global" } }),
-    prisma.mediaAsset.findMany({
-      orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, type: true, url: true },
-    }),
     prisma.user.findMany({
       where: { role: "USER" },
       orderBy: { createdAt: "desc" },
@@ -119,6 +116,18 @@ export default async function AdminDashboardPage() {
         email: true,
         subscriptionPlan: true,
         _count: { select: { weddingSites: true } },
+      },
+    }),
+    prisma.monetizationFeature.findMany({
+      orderBy: [{ plan: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        code: true,
+        title: true,
+        description: true,
+        plan: true,
+        sortOrder: true,
+        isActive: true,
       },
     }),
   ]);
@@ -140,7 +149,10 @@ export default async function AdminDashboardPage() {
       <section className="admin-heading">
         <span>Центр управления</span>
         <h1>Платформа под контролем</h1>
-        <p>Пользователи, проекты, библиотека контента и ключевые настройки в одном окне.</p>
+        <p>
+          Пользователи, проекты, библиотека контента, тарифы и ключевые
+          настройки в одном ровном рабочем пространстве.
+        </p>
       </section>
 
       <section className="admin-stats">
@@ -193,10 +205,9 @@ export default async function AdminDashboardPage() {
 
       <FontManagerPanel initialFonts={customFonts} />
 
-      <DesignThemePanel
-        initialThemes={designThemes}
-        customFonts={customFonts}
-      />
+      <DesignThemePanel initialThemes={designThemes} customFonts={customFonts} />
+
+      <MonetizationPanel initialFeatures={monetizationFeatures} />
 
       <PlatformContentPanel
         initialContent={
@@ -212,8 +223,6 @@ export default async function AdminDashboardPage() {
           }) satisfies PlatformContentDraft
         }
       />
-
-      <MediaManagerPanel initialAssets={mediaAssets} />
 
       <UserPlansPanel
         initialUsers={managedUsers.map((user) => ({

@@ -26,6 +26,7 @@ import { createPortal } from "react-dom";
 import type {
   PersonalizedGuest,
   CountdownStyleCode,
+  LanguageCode,
 } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 import {
@@ -901,7 +902,7 @@ function Countdown({
   weddingDate: string;
   ceremonyTime: string;
   style: CountdownStyleCode;
-  language: "RU" | "EN";
+  language: LanguageCode;
 }) {
   const target = useMemo(
     () => new Date(`${weddingDate}T${ceremonyTime || "00:00"}:00`).getTime(),

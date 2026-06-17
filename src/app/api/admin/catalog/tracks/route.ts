@@ -6,37 +6,49 @@ import { prisma } from "@/lib/prisma";
 
 const trackSchema = z.object({
   title: z.string().trim().min(2).max(120),
-  artist: z.string().trim().min(1).max(120),
-  fileUrl: z.string().trim().url().max(2000),
+  artist: z.string().trim().min(2).max(120),
+  fileUrl: z.string().trim().min(2).max(2000),
   isActive: z.boolean().default(true),
 });
 
 export async function POST(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {
     const parsed = trackSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Проверьте название, исполнителя и ссылку на аудиофайл." },
+        { error: "Проверьте название, исполнителя и MP3-файл." },
         { status: 400 },
       );
     }
 
-    const sortOrder = await prisma.audioTrack.count();
+    if (!parsed.data.fileUrl.startsWith("/uploads/admin/")) {
+      return NextResponse.json(
+        { error: "Музыку нужно загружать с компьютера через админку." },
+        { status: 400 },
+      );
+    }
+
+    const lastTrack = await prisma.audioTrack.findFirst({
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
     const track = await prisma.audioTrack.create({
-      data: { ...parsed.data, sortOrder },
+      data: {
+        ...parsed.data,
+        sortOrder: (lastTrack?.sortOrder ?? -1) + 1,
+      },
       select: {
         id: true,
         title: true,
         artist: true,
         fileUrl: true,
-        isActive: true,
-        sortOrder: true,
       },
     });
+
     return NextResponse.json({ track }, { status: 201 });
   } catch (error) {
     console.error("Track create failed", error);
@@ -49,7 +61,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {

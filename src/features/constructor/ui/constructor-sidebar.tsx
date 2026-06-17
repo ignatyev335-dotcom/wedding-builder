@@ -28,7 +28,6 @@ import type {
   CountdownStyleCode,
   DesignThemeOption,
   InvitationTemplateOption,
-  MediaAssetOption,
   PhotoMaskCode,
 } from "@/entities/wedding/model";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
@@ -117,8 +116,10 @@ const cardStyleOptions: Array<{
   description: string;
 }> = [
   { code: "PLAIN", title: "Классика", description: "Чистые спокойные карточки" },
-  { code: "ARCH", title: "Арка", description: "Мягкий архитектурный силуэт" },
   { code: "GLASS", title: "Матовое стекло", description: "Полупрозрачность и blur" },
+  { code: "LIQUID", title: "Liquid Glass", description: "Прозрачный объем в духе Apple" },
+  { code: "EDITORIAL", title: "Журнал", description: "Крупная типографика и тонкие линии" },
+  { code: "SILK", title: "Шелк", description: "Мягкие светлые слои и тени" },
   { code: "MONOGRAM", title: "Вензель", description: "Тонкая рамка с акцентом" },
 ];
 
@@ -152,7 +153,6 @@ export function ConstructorSidebar({
     InvitationTemplateOption[]
   >([]);
   const [catalogThemes, setCatalogThemes] = useState<DesignThemeOption[]>([]);
-  const [catalogMedia, setCatalogMedia] = useState<MediaAssetOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
@@ -171,7 +171,6 @@ export function ConstructorSidebar({
     mapLatitude,
     mapLongitude,
     designTheme,
-    decorativeAsset,
     photoMask,
     cardStyle,
     blockOrder,
@@ -217,7 +216,6 @@ export function ConstructorSidebar({
     setVenueAddress,
     setMapCoordinates,
     setDesignTheme,
-    setDecorativeAsset,
     setPhotoMask,
     setCardStyle,
     reorderBlocks,
@@ -291,7 +289,6 @@ export function ConstructorSidebar({
           tracks: AudioTrackOption[];
           templates: InvitationTemplateOption[];
           designThemes: DesignThemeOption[];
-          mediaAssets: MediaAssetOption[];
         };
       })
       .then((catalog) => {
@@ -299,7 +296,6 @@ export function ConstructorSidebar({
         setCatalogTracks(catalog.tracks);
         setCatalogTemplates(catalog.templates);
         setCatalogThemes(catalog.designThemes);
-        setCatalogMedia(catalog.mediaAssets);
         setCatalogError("");
       })
       .catch(() => {
@@ -1340,6 +1336,7 @@ export function ConstructorSidebar({
                   style={{
                     color: theme.textColor,
                     backgroundColor: theme.backgroundColor,
+                    backgroundImage: theme.gradientCss ?? undefined,
                     borderColor: theme.primaryColor,
                   }}
                   type="button"
@@ -1370,56 +1367,7 @@ export function ConstructorSidebar({
                 В библиотеке пока нет тем. Добавьте первую тему в админке, и она сразу появится здесь.
               </p>
             )}
-            <div className="editor-section-heading">
-              <span>Декор и иконки</span>
-              <small>Загружайте SVG, PNG и декоративные элементы через админку</small>
-            </div>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              <button
-                className={`grid min-h-28 place-items-center rounded-2xl border bg-stone-50 p-3 text-sm ${
-                  !decorativeAsset ? "border-stone-900" : "border-stone-200"
-                }`}
-                type="button"
-                onClick={() => {
-                  setDecorativeAsset(null);
-                  window.setTimeout(saveExtrasQuietly, 0);
-                }}
-              >
-                Без декора
-              </button>
-              {catalogMedia.map((asset) => (
-                <button
-                  className={`grid min-h-28 place-items-center rounded-2xl border bg-stone-50 p-3 ${
-                    decorativeAsset?.id === asset.id
-                      ? "border-stone-900"
-                      : "border-stone-200"
-                  }`}
-                  key={asset.id}
-                  type="button"
-                  title={asset.name}
-                  onClick={() => {
-                    setDecorativeAsset(asset);
-                    window.setTimeout(saveExtrasQuietly, 0);
-                  }}
-                >
-                  <Image
-                    className="h-16 w-16 object-contain"
-                    src={asset.url}
-                    width={64}
-                    height={64}
-                    unoptimized
-                    alt=""
-                  />
-                  <span className="w-full truncate text-xs">{asset.name}</span>
-                </button>
-              ))}
-            </div>
-            {!catalogLoading && catalogMedia.length === 0 && (
-              <p className="catalog-message">
-                В библиотеке пока нет декора. Вы сможете добавить иконки и стикеры в админке.
-              </p>
-            )}
-            <div className="editor-section-heading">
+                  <div className="editor-section-heading">
               <span>Форма фотографий</span>
               <small>Для галереи, мудборда и команды</small>
             </div>

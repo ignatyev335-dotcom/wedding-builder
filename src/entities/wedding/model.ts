@@ -26,6 +26,9 @@ export type QuizDraft = {
   ceremonyTime: string;
   theme: ThemeCode;
   templateStyle: string;
+  designThemeId: string;
+  musicTrackId: string;
+  invitationTemplateId: string;
   audioUrl: string;
   modules: OptionalModule[];
   acceptedTerms: boolean;
@@ -50,8 +53,21 @@ export type DesignThemeOption = {
   backgroundColor: string;
   primaryColor: string;
   textColor: string;
+  gradientCss?: string | null;
   fontFamily: string;
   customFont?: CustomFontOption | null;
+};
+
+export type MonetizationPlan = "FREE" | "PREMIUM" | "VIP";
+
+export type MonetizationFeatureOption = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  plan: MonetizationPlan;
+  sortOrder: number;
+  isActive: boolean;
 };
 
 export type CustomFontOption = {
@@ -216,10 +232,17 @@ export type FaqItem = {
 export const photoMaskCodes = ["RECTANGLE", "ARCH", "OVAL"] as const;
 export type PhotoMaskCode = (typeof photoMaskCodes)[number];
 
-export const cardStyleCodes = ["PLAIN", "ARCH", "GLASS", "MONOGRAM"] as const;
+export const cardStyleCodes = [
+  "PLAIN",
+  "GLASS",
+  "LIQUID",
+  "EDITORIAL",
+  "SILK",
+  "MONOGRAM",
+] as const;
 export type CardStyleCode = (typeof cardStyleCodes)[number];
 
-export const languageCodes = ["RU", "EN"] as const;
+export const languageCodes = ["RU", "EN", "ZH"] as const;
 export type LanguageCode = (typeof languageCodes)[number];
 
 export type CrewTimingItem = {

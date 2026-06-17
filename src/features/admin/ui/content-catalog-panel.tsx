@@ -1,7 +1,7 @@
 "use client";
 
-import { Loader2, Music2, Plus, Trash2, Type, WandSparkles } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Music2, Plus, Trash2, Type } from "lucide-react";
+import { useRef, useState } from "react";
 
 import type {
   AudioTrackOption,
@@ -19,55 +19,73 @@ export function ContentCatalogPanel({
   const [templates, setTemplates] = useState(initialTemplates);
   const [trackTitle, setTrackTitle] = useState("");
   const [trackArtist, setTrackArtist] = useState("");
-  const [trackUrl, setTrackUrl] = useState("");
+  const [trackFile, setTrackFile] = useState<File | null>(null);
   const [templateTitle, setTemplateTitle] = useState("");
   const [templateContent, setTemplateContent] = useState("");
   const [isSavingTrack, setIsSavingTrack] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-  const [isSeedingTracks, setIsSeedingTracks] = useState(false);
-  const [isSeedingTemplates, setIsSeedingTemplates] = useState(false);
-  const [busyTrackId, setBusyTrackId] = useState<string | null>(null);
-  const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const trackFormRef = useRef<HTMLFormElement>(null);
 
   const fieldClass =
     "min-h-12 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 text-base outline-none transition focus:border-stone-500";
 
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("kind", "audio");
+    formData.append("file", file);
+
+    const response = await fetch("/api/admin/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const result = (await response.json()) as { error?: string; url?: string };
+    if (!response.ok || !result.url) {
+      throw new Error(result.error || "Не удалось загрузить MP3-файл.");
+    }
+    return result.url;
+  };
+
   const addTrack = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!trackFile) {
+      setMessage("Выберите MP3-файл с компьютера.");
+      return;
+    }
+
     setIsSavingTrack(true);
     setMessage("");
 
     try {
+      const fileUrl = await uploadFile(trackFile);
       const response = await fetch("/api/admin/catalog/tracks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: trackTitle,
           artist: trackArtist,
-          fileUrl: trackUrl,
+          fileUrl,
           isActive: true,
         }),
       });
-
       const result = (await response.json()) as {
         error?: string;
         track?: AudioTrackOption;
       };
-
       if (!response.ok || !result.track) {
         throw new Error(result.error || "Не удалось добавить трек.");
       }
 
-      const track = result.track;
-      setTracks((items) => [...items, track]);
+      setTracks((items) => [...items, result.track!]);
       setTrackTitle("");
       setTrackArtist("");
-      setTrackUrl("");
-      setMessage("Трек добавлен в библиотеку.");
-    } catch (requestError) {
+      setTrackFile(null);
+      trackFormRef.current?.reset();
+      setMessage("Трек добавлен. Он сразу появится в квизе и конструкторе.");
+    } catch (error) {
       setMessage(
-        requestError instanceof Error ? requestError.message : "Ошибка сохранения.",
+        error instanceof Error ? error.message : "Ошибка сохранения трека.",
       );
     } finally {
       setIsSavingTrack(false);
@@ -89,118 +107,66 @@ export function ContentCatalogPanel({
           isActive: true,
         }),
       });
-
       const result = (await response.json()) as {
         error?: string;
         template?: InvitationTemplateOption;
       };
-
       if (!response.ok || !result.template) {
         throw new Error(result.error || "Не удалось добавить шаблон.");
       }
 
-      const template = result.template;
-      setTemplates((items) => [...items, template]);
+      setTemplates((items) => [...items, result.template!]);
       setTemplateTitle("");
       setTemplateContent("");
-      setMessage("Шаблон добавлен в конструктор.");
-    } catch (requestError) {
+      setMessage("Шаблон добавлен. Он сразу появится в квизе и конструкторе.");
+    } catch (error) {
       setMessage(
-        requestError instanceof Error ? requestError.message : "Ошибка сохранения.",
+        error instanceof Error ? error.message : "Ошибка сохранения шаблона.",
       );
     } finally {
       setIsSavingTemplate(false);
     }
   };
 
-  const seedCatalog = async (type: "tracks" | "templates") => {
-    const isTracks = type === "tracks";
-
-    if (isTracks) {
-      setIsSeedingTracks(true);
-    } else {
-      setIsSeedingTemplates(true);
-    }
-
+  const loadDemoTemplates = async () => {
+    setBusyId("demo-templates");
     setMessage("");
 
     try {
-      const response = await fetch(`/api/admin/catalog/${type}/demo`, {
+      const response = await fetch("/api/admin/catalog/templates/demo", {
         method: "POST",
       });
-
       const result = (await response.json()) as {
         error?: string;
-        tracks?: AudioTrackOption[];
         templates?: InvitationTemplateOption[];
       };
-
       if (!response.ok) {
-        throw new Error(
-          result.error ||
-            (isTracks
-              ? "Не удалось загрузить демо-треки."
-              : "Не удалось загрузить демо-шаблоны."),
-        );
+        throw new Error(result.error || "Не удалось загрузить демо-данные.");
       }
-
-      if (isTracks && result.tracks) {
-        const demoTracks = result.tracks;
-        setTracks((items) => {
-          const merged = [...items];
-          for (const track of demoTracks) {
-            if (!merged.some((item) => item.id === track.id)) {
-              merged.push(track);
-            }
-          }
-          return merged;
-        });
-        setMessage("Демо-треки загружены.");
+      if (result.templates) {
+        setTemplates(result.templates);
       }
-
-      if (!isTracks && result.templates) {
-        const demoTemplates = result.templates;
-        setTemplates((items) => {
-          const merged = [...items];
-          for (const template of demoTemplates) {
-            if (!merged.some((item) => item.id === template.id)) {
-              merged.push(template);
-            }
-          }
-          return merged;
-        });
-        setMessage("Демо-шаблоны загружены.");
-      }
-    } catch (requestError) {
+      setMessage("Демо-данные добавлены в каталог.");
+    } catch (error) {
       setMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "Ошибка загрузки пресетов.",
+        error instanceof Error ? error.message : "Ошибка загрузки демо-данных.",
       );
     } finally {
-      if (isTracks) {
-        setIsSeedingTracks(false);
-      } else {
-        setIsSeedingTemplates(false);
-      }
+      setBusyId(null);
     }
   };
 
   const removeItem = async (type: "tracks" | "templates", id: string) => {
-    if (type === "tracks") {
-      setBusyTrackId(id);
-    } else {
-      setBusyTemplateId(id);
-    }
-
+    setBusyId(id);
     setMessage("");
 
     try {
       const response = await fetch(`/api/admin/catalog/${type}?id=${id}`, {
         method: "DELETE",
       });
-      const result = (await response.json().catch(() => ({}))) as { error?: string };
-
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
       if (!response.ok) {
         throw new Error(result.error || "Не удалось удалить запись.");
       }
@@ -210,49 +176,25 @@ export function ContentCatalogPanel({
       } else {
         setTemplates((items) => items.filter((item) => item.id !== id));
       }
-    } catch (requestError) {
+    } catch (error) {
       setMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "Не удалось удалить запись.",
+        error instanceof Error ? error.message : "Не удалось удалить запись.",
       );
     } finally {
-      if (type === "tracks") {
-        setBusyTrackId(null);
-      } else {
-        setBusyTemplateId(null);
-      }
+      setBusyId(null);
     }
   };
 
   return (
-    <section className="mx-auto mt-8 grid max-w-[1500px] gap-6 xl:grid-cols-2">
-      <article className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Music2 size={22} />
-            <div>
-              <span className="text-xs font-bold uppercase tracking-[0.18em] text-stone-400">
-                Динамический каталог
-              </span>
-              <h2 className="m-0 text-2xl font-semibold text-stone-900">Музыка</h2>
-            </div>
-          </div>
-          <button
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-200 px-4 text-sm text-stone-600 transition hover:border-stone-400 disabled:opacity-60"
-            type="button"
-            disabled={isSeedingTracks}
-            onClick={() => void seedCatalog("tracks")}
-          >
-            {isSeedingTracks ? (
-              <Loader2 className="animate-spin" size={15} />
-            ) : (
-              <WandSparkles size={15} />
-            )}
-            Загрузить демо-треки
-          </button>
-        </div>
-        <form className="grid gap-3" onSubmit={addTrack}>
+    <section className="admin-section-grid">
+      <article className="admin-card">
+        <PanelTitle
+          icon={<Music2 size={22} />}
+          eyebrow="Динамический каталог"
+          title="Музыка"
+          description="Добавляйте MP3 только с компьютера. Треки сразу становятся доступны в квизе и конструкторе."
+        />
+        <form className="grid gap-3" onSubmit={addTrack} ref={trackFormRef}>
           <input
             className={fieldClass}
             required
@@ -270,29 +212,22 @@ export function ContentCatalogPanel({
           <input
             className={fieldClass}
             required
-            type="url"
-            placeholder="https://.../track.mp3"
-            value={trackUrl}
-            onChange={(event) => setTrackUrl(event.target.value)}
+            accept="audio/mpeg,audio/mp3,.mp3"
+            type="file"
+            onChange={(event) => setTrackFile(event.target.files?.[0] ?? null)}
           />
-          <button
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 font-semibold text-white disabled:opacity-60"
-            disabled={isSavingTrack}
-          >
+          <button className="admin-primary-button" disabled={isSavingTrack}>
             {isSavingTrack ? (
               <Loader2 className="animate-spin" size={17} />
             ) : (
               <Plus size={17} />
             )}
-            {isSavingTrack ? "Сохраняем..." : "Добавить трек"}
+            {isSavingTrack ? "Загружаем..." : "Добавить трек"}
           </button>
         </form>
         <div className="mt-5 grid gap-2">
           {tracks.map((track) => (
-            <div
-              className="flex min-w-0 items-center gap-3 rounded-2xl bg-stone-50 p-3"
-              key={track.id}
-            >
+            <div className="admin-list-row" key={track.id}>
               <div className="min-w-0 flex-1">
                 <strong className="block truncate">{track.title}</strong>
                 <small className="block truncate text-stone-500">
@@ -306,13 +241,13 @@ export function ContentCatalogPanel({
                 src={track.fileUrl}
               />
               <button
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-700 disabled:opacity-60"
+                className="admin-danger-icon"
                 type="button"
                 aria-label={`Удалить ${track.title}`}
-                disabled={busyTrackId === track.id}
+                disabled={busyId === track.id}
                 onClick={() => void removeItem("tracks", track.id)}
               >
-                {busyTrackId === track.id ? (
+                {busyId === track.id ? (
                   <Loader2 className="animate-spin" size={16} />
                 ) : (
                   <Trash2 size={16} />
@@ -321,38 +256,18 @@ export function ContentCatalogPanel({
             </div>
           ))}
           {tracks.length === 0 && (
-            <p className="text-sm text-stone-500">Библиотека пока пуста.</p>
+            <p className="admin-muted">Библиотека музыки пока пустая.</p>
           )}
         </div>
       </article>
 
-      <article className="rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Type size={22} />
-            <div>
-              <span className="text-xs font-bold uppercase tracking-[0.18em] text-stone-400">
-                Динамический каталог
-              </span>
-              <h2 className="m-0 text-2xl font-semibold text-stone-900">
-                Тексты приглашений
-              </h2>
-            </div>
-          </div>
-          <button
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-200 px-4 text-sm text-stone-600 transition hover:border-stone-400 disabled:opacity-60"
-            type="button"
-            disabled={isSeedingTemplates}
-            onClick={() => void seedCatalog("templates")}
-          >
-            {isSeedingTemplates ? (
-              <Loader2 className="animate-spin" size={15} />
-            ) : (
-              <WandSparkles size={15} />
-            )}
-            Загрузить демо-шаблоны
-          </button>
-        </div>
+      <article className="admin-card">
+        <PanelTitle
+          icon={<Type size={22} />}
+          eyebrow="Динамический каталог"
+          title="Тексты приглашений"
+          description="Шаблоны берутся из базы и доступны пользователю в квизе и конструкторе."
+        />
         <form className="grid gap-3" onSubmit={addTemplate}>
           <input
             className={fieldClass}
@@ -368,10 +283,7 @@ export function ContentCatalogPanel({
             value={templateContent}
             onChange={(event) => setTemplateContent(event.target.value)}
           />
-          <button
-            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 font-semibold text-white disabled:opacity-60"
-            disabled={isSavingTemplate}
-          >
+          <button className="admin-primary-button" disabled={isSavingTemplate}>
             {isSavingTemplate ? (
               <Loader2 className="animate-spin" size={17} />
             ) : (
@@ -379,13 +291,20 @@ export function ContentCatalogPanel({
             )}
             {isSavingTemplate ? "Сохраняем..." : "Добавить шаблон"}
           </button>
+          <button
+            className="admin-secondary-button"
+            disabled={busyId === "demo-templates"}
+            onClick={() => void loadDemoTemplates()}
+            type="button"
+          >
+            {busyId === "demo-templates"
+              ? "Загружаем..."
+              : "Загрузить демо-шаблоны"}
+          </button>
         </form>
         <div className="mt-5 grid gap-2">
           {templates.map((template) => (
-            <div
-              className="flex min-w-0 items-start gap-3 rounded-2xl bg-stone-50 p-3"
-              key={template.id}
-            >
+            <div className="admin-list-row items-start" key={template.id}>
               <div className="min-w-0 flex-1">
                 <strong className="block">{template.title}</strong>
                 <p className="m-0 mt-1 line-clamp-3 text-sm text-stone-500">
@@ -393,13 +312,13 @@ export function ContentCatalogPanel({
                 </p>
               </div>
               <button
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-700 disabled:opacity-60"
+                className="admin-danger-icon"
                 type="button"
                 aria-label={`Удалить ${template.title}`}
-                disabled={busyTemplateId === template.id}
+                disabled={busyId === template.id}
                 onClick={() => void removeItem("templates", template.id)}
               >
-                {busyTemplateId === template.id ? (
+                {busyId === template.id ? (
                   <Loader2 className="animate-spin" size={16} />
                 ) : (
                   <Trash2 size={16} />
@@ -408,11 +327,34 @@ export function ContentCatalogPanel({
             </div>
           ))}
           {templates.length === 0 && (
-            <p className="text-sm text-stone-500">Шаблоны пока не добавлены.</p>
+            <p className="admin-muted">Шаблоны пока не добавлены.</p>
           )}
         </div>
         {message && <p className="mt-4 text-sm text-stone-600">{message}</p>}
       </article>
     </section>
+  );
+}
+
+function PanelTitle({
+  icon,
+  eyebrow,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <header className="admin-card-heading">
+      <span className="admin-card-icon">{icon}</span>
+      <div>
+        <small>{eyebrow}</small>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </header>
   );
 }

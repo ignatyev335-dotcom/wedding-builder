@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
-import { encryptSetting } from "@/lib/system-settings";
 import { prisma } from "@/lib/prisma";
+import { encryptSetting } from "@/lib/system-settings";
 
 const settingSchema = z.object({
   key: z.string().trim().regex(/^[A-Z][A-Z0-9_]{2,80}$/),
@@ -16,7 +16,7 @@ const settingSchema = z.object({
 export async function POST(request: Request) {
   const user = await getCurrentAdmin();
   if (!user) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   const parsed = settingSchema.safeParse(await request.json());
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const user = await getCurrentAdmin();
   if (!user) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   const key = new URL(request.url).searchParams.get("key");

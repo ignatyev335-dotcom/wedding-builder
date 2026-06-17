@@ -102,7 +102,7 @@ export function PublicInvitation({
         <small>{weddingDate}</small>
       </div>
       <div className="public-language-switch" aria-label="Language">
-        {(["RU", "EN"] as const).map((code) => (
+        {(["RU", "EN", "ZH"] as const).map((code) => (
           <button
             className={language === code ? "is-active" : ""}
             type="button"
