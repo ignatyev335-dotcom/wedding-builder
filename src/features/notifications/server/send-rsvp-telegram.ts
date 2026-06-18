@@ -1,4 +1,6 @@
-import type { Guest, TransportPreference, User, WeddingSite } from "@prisma/client";
+﻿import type { Guest, TransportPreference, User, WeddingSite } from "@prisma/client";
+
+import { getSystemSettingValue } from "@/lib/system-settings";
 
 type TelegramWeddingSite = Pick<WeddingSite, "telegramAlerts"> & {
   user: Pick<User, "telegramChatId">;
@@ -26,7 +28,7 @@ export async function sendRsvpTelegramNotification(
   site: TelegramWeddingSite,
   guest: TelegramGuest,
 ) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = await getSystemSettingValue("TELEGRAM_BOT_TOKEN");
   const chatId = site.user.telegramChatId;
 
   if (!site.telegramAlerts || !botToken || !chatId) return;

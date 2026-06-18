@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { KeyRound, Plus, Save, Trash2 } from "lucide-react";
+import { CheckCircle2, KeyRound, PlugZap, Plus, Save, Trash2, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type SettingRow = {
@@ -12,28 +12,51 @@ type SettingRow = {
   updatedAt: string;
 };
 
+type ConnectionTestKind =
+  | "email"
+  | "telegram-bot"
+  | "telegram-message"
+  | "yandex-auth"
+  | "maps"
+  | "payments";
+
+type ConnectionTestResult = {
+  ok: boolean;
+  title: string;
+  message: string;
+};
+
 const presets = [
-  { key: "YANDEX_CLIENT_ID", label: "Yandex ID: Client ID", category: "AUTH", isSecret: false },
-  { key: "YANDEX_CLIENT_SECRET", label: "Yandex ID: Client Secret", category: "AUTH", isSecret: true },
-  { key: "TELEGRAM_BOT_TOKEN", label: "Telegram bot token", category: "TELEGRAM", isSecret: true },
-  { key: "TELEGRAM_BOT_USERNAME", label: "Telegram bot username", category: "TELEGRAM", isSecret: false },
-  { key: "TELEGRAM_WEBHOOK_SECRET", label: "Telegram webhook secret", category: "TELEGRAM", isSecret: true },
-  { key: "SMTP_HOST", label: "Почта: SMTP host", category: "EMAIL", isSecret: false },
-  { key: "SMTP_PORT", label: "Почта: SMTP port", category: "EMAIL", isSecret: false },
-  { key: "SMTP_USER", label: "Почта: SMTP login", category: "EMAIL", isSecret: false },
-  { key: "SMTP_PASSWORD", label: "Почта: SMTP password", category: "EMAIL", isSecret: true },
-  { key: "SMTP_FROM", label: "Почта отправителя", category: "EMAIL", isSecret: false },
+  { key: "AUTH_YANDEX_ID", label: "Яндекс ID: Client ID", category: "AUTH", isSecret: false },
+  { key: "AUTH_YANDEX_SECRET", label: "Яндекс ID: Client Secret", category: "AUTH", isSecret: true },
+  { key: "TELEGRAM_BOT_TOKEN", label: "Telegram: токен бота", category: "TELEGRAM", isSecret: true },
+  { key: "NEXT_PUBLIC_TELEGRAM_BOT_USERNAME", label: "Telegram: username бота", category: "TELEGRAM", isSecret: false },
+  { key: "TELEGRAM_WEBHOOK_SECRET", label: "Telegram: секрет вебхука", category: "TELEGRAM", isSecret: true },
+  { key: "TELEGRAM_TEST_CHAT_ID", label: "Telegram: тестовый chat_id", category: "TELEGRAM", isSecret: false },
+  { key: "RESEND_API_KEY", label: "Почта: Resend API key", category: "EMAIL", isSecret: true },
+  { key: "EMAIL_FROM", label: "Почта: отправитель", category: "EMAIL", isSecret: false },
   { key: "SUPPORT_EMAIL", label: "Почта поддержки", category: "EMAIL", isSecret: false },
-  { key: "RESEND_API_KEY", label: "Resend API key", category: "EMAIL", isSecret: true },
+  { key: "SMS_API_KEY", label: "SMS: API key", category: "SMS", isSecret: true },
+  { key: "SMS_SENDER", label: "SMS: подпись отправителя", category: "SMS", isSecret: false },
+  { key: "YANDEX_GEOCODER_API_KEY", label: "Яндекс Геокодер: API key", category: "MAPS", isSecret: true },
   { key: "YANDEX_METRICA_ID", label: "Яндекс Метрика ID", category: "ANALYTICS", isSecret: false },
   { key: "VK_PIXEL_ID", label: "VK pixel ID", category: "ANALYTICS", isSecret: false },
-  { key: "YOOKASSA_SHOP_ID", label: "ЮKassa shopId", category: "PAYMENTS", isSecret: false },
-  { key: "YOOKASSA_SECRET_KEY", label: "ЮKassa secret key", category: "PAYMENTS", isSecret: true },
-  { key: "TBANK_TERMINAL_KEY", label: "Т-Банк terminal key", category: "PAYMENTS", isSecret: false },
-  { key: "TBANK_PASSWORD", label: "Т-Банк password", category: "PAYMENTS", isSecret: true },
+  { key: "YOOKASSA_SHOP_ID", label: "ЮKassa: shopId", category: "PAYMENTS", isSecret: false },
+  { key: "YOOKASSA_SECRET_KEY", label: "ЮKassa: secret key", category: "PAYMENTS", isSecret: true },
+  { key: "TBANK_TERMINAL_KEY", label: "Т-Банк: terminal key", category: "PAYMENTS", isSecret: false },
+  { key: "TBANK_PASSWORD", label: "Т-Банк: password", category: "PAYMENTS", isSecret: true },
 ] as const;
 
-const categories = ["AUTH", "TELEGRAM", "EMAIL", "ANALYTICS", "PAYMENTS", "OTHER"];
+const connectionTests: { kind: ConnectionTestKind; title: string; description: string }[] = [
+  { kind: "email", title: "Почта", description: "Отправить тестовое письмо через Resend" },
+  { kind: "telegram-bot", title: "Telegram-бот", description: "Проверить токен через getMe" },
+  { kind: "telegram-message", title: "Telegram-сообщение", description: "Отправить тест в TELEGRAM_TEST_CHAT_ID" },
+  { kind: "yandex-auth", title: "Яндекс ID", description: "Проверить наличие OAuth-ключей" },
+  { kind: "maps", title: "Карты", description: "Проверить Яндекс Геокодер" },
+  { kind: "payments", title: "Платежи", description: "Проверить заполненность ключей" },
+];
+
+const categories = ["AUTH", "TELEGRAM", "EMAIL", "SMS", "MAPS", "ANALYTICS", "PAYMENTS", "OTHER"];
 
 export function SystemSettingsPanel({
   initialSettings,
@@ -51,6 +74,9 @@ export function SystemSettingsPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [testTarget, setTestTarget] = useState("");
+  const [testingKind, setTestingKind] = useState<ConnectionTestKind | null>(null);
+  const [testResults, setTestResults] = useState<Partial<Record<ConnectionTestKind, ConnectionTestResult>>>({});
 
   const groupedSettings = useMemo(() => {
     return settings.reduce<Record<string, SettingRow[]>>((acc, setting) => {
@@ -107,13 +133,37 @@ export function SystemSettingsPanel({
         value: "",
         isSecret: true,
       });
-      setMessage("Настройка сохранена.");
+      setMessage("Настройка сохранена. Telegram, почта, карты и платежные проверки подхватят ее сразу.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Не удалось сохранить ключ.",
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const runTest = async (kind: ConnectionTestKind) => {
+    setTestingKind(kind);
+    try {
+      const response = await fetch("/api/admin/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, target: testTarget || undefined }),
+      });
+      const result = (await response.json()) as ConnectionTestResult;
+      setTestResults((current) => ({ ...current, [kind]: result }));
+    } catch {
+      setTestResults((current) => ({
+        ...current,
+        [kind]: {
+          ok: false,
+          title: "Проверка сорвалась",
+          message: "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.",
+        },
+      }));
+    } finally {
+      setTestingKind(null);
     }
   };
 
@@ -142,9 +192,60 @@ export function SystemSettingsPanel({
           <small>Инфраструктура</small>
           <h2>Системные ключи и почта сайта</h2>
           <p>
-            Управляйте авторизацией, Telegram, почтой, аналитикой и платежными
-            ключами из одного места. Секреты шифруются перед сохранением.
+            Управляйте Telegram, почтой, SMS, картами, аналитикой и платежами из одного места.
+            Секретные значения шифруются перед сохранением.
           </p>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-[28px] border border-stone-200 bg-white/70 p-4 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="m-0 text-xs font-bold uppercase tracking-[0.16em] text-stone-400">Диагностика подключений</p>
+            <h3 className="m-0 mt-1 text-xl font-semibold text-stone-900">Проверить, что сервисы реально работают</h3>
+          </div>
+          <label className="grid gap-1 text-sm font-semibold text-stone-600 lg:w-80">
+            Email или Telegram chat_id для теста
+            <input
+              className="min-h-11 rounded-2xl border border-stone-200 bg-white px-4 outline-none focus:border-stone-500"
+              value={testTarget}
+              placeholder="mail@example.ru или 123456789"
+              onChange={(event) => setTestTarget(event.target.value)}
+            />
+          </label>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {connectionTests.map((test) => {
+            const result = testResults[test.kind];
+            return (
+              <article className="rounded-2xl border border-stone-200 bg-stone-50 p-4" key={test.kind}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <strong className="block text-stone-900">{test.title}</strong>
+                    <small className="text-stone-500">{test.description}</small>
+                  </div>
+                  {result ? (
+                    result.ok ? <CheckCircle2 className="text-emerald-600" size={20} /> : <XCircle className="text-red-600" size={20} />
+                  ) : (
+                    <PlugZap className="text-stone-400" size={20} />
+                  )}
+                </div>
+                {result ? (
+                  <p className={`mt-3 text-sm leading-6 ${result.ok ? "text-emerald-800" : "text-red-700"}`}>
+                    <b>{result.title}.</b> {result.message}
+                  </p>
+                ) : null}
+                <button
+                  className="mt-3 min-h-10 w-full rounded-full bg-stone-900 px-4 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-50"
+                  type="button"
+                  disabled={testingKind === test.kind}
+                  onClick={() => void runTest(test.kind)}
+                >
+                  {testingKind === test.kind ? "Проверяем..." : "Проверить"}
+                </button>
+              </article>
+            );
+          })}
         </div>
       </div>
 
@@ -170,7 +271,7 @@ export function SystemSettingsPanel({
           <input
             required
             value={form.key}
-            placeholder="SMTP_PASSWORD"
+            placeholder="TELEGRAM_BOT_TOKEN"
             onChange={(event) =>
               setForm((current) => ({
                 ...current,
@@ -184,7 +285,7 @@ export function SystemSettingsPanel({
           <input
             required
             value={form.label}
-            placeholder="Пароль SMTP"
+            placeholder="Telegram: токен бота"
             onChange={(event) =>
               setForm((current) => ({ ...current, label: event.target.value }))
             }

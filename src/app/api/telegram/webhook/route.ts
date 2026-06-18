@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { getSystemSettingValue } from "@/lib/system-settings";
 
 type TelegramUpdate = {
   message?: {
@@ -11,7 +12,7 @@ type TelegramUpdate = {
 };
 
 export async function POST(request: Request) {
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  const webhookSecret = await getSystemSettingValue("TELEGRAM_WEBHOOK_SECRET");
   if (
     !webhookSecret ||
     request.headers.get("x-telegram-bot-api-secret-token") !== webhookSecret
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     }),
   ]);
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botToken = await getSystemSettingValue("TELEGRAM_BOT_TOKEN");
   if (botToken) {
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",

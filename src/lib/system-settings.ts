@@ -1,4 +1,4 @@
-import {
+﻿import {
   createCipheriv,
   createDecipheriv,
   createHash,
@@ -8,6 +8,14 @@ import {
 import { prisma } from "@/lib/prisma";
 
 const algorithm = "aes-256-gcm";
+
+const settingAliases: Record<string, string[]> = {
+  AUTH_YANDEX_ID: ["YANDEX_CLIENT_ID"],
+  AUTH_YANDEX_SECRET: ["YANDEX_CLIENT_SECRET"],
+  NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ["TELEGRAM_BOT_USERNAME"],
+  EMAIL_FROM: ["SMTP_FROM"],
+  SMTP_FROM: ["EMAIL_FROM"],
+};
 
 function encryptionKey() {
   const secret = process.env.SETTINGS_ENCRYPTION_KEY ?? process.env.AUTH_SECRET;
@@ -50,7 +58,7 @@ export function maskSetting(value: string) {
   return `${value.slice(0, 4)}••••••••${value.slice(-4)}`;
 }
 
-export async function getSystemSettingValue(key: string) {
+async function readStoredSetting(key: string) {
   const setting = await prisma.systemSetting.findUnique({
     where: { key },
     select: { value: true, isSecret: true },
@@ -63,4 +71,20 @@ export async function getSystemSettingValue(key: string) {
   } catch {
     return null;
   }
+}
+
+export async function getSystemSettingValue(key: string) {
+  const keys = [key, ...(settingAliases[key] ?? [])];
+
+  for (const candidate of keys) {
+    const storedValue = await readStoredSetting(candidate);
+    if (storedValue) return storedValue;
+  }
+
+  for (const candidate of keys) {
+    const envValue = process.env[candidate];
+    if (envValue) return envValue;
+  }
+
+  return null;
 }

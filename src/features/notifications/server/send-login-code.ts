@@ -1,4 +1,4 @@
-import { getSystemSettingValue } from "@/lib/system-settings";
+﻿import { getSystemSettingValue } from "@/lib/system-settings";
 
 type LoginCodeMessage = {
   email?: string;
@@ -7,12 +7,8 @@ type LoginCodeMessage = {
 };
 
 async function resolveMailSettings() {
-  const apiKey =
-    (await getSystemSettingValue("RESEND_API_KEY")) ?? process.env.RESEND_API_KEY;
-  const from =
-    (await getSystemSettingValue("SMTP_FROM")) ??
-    (await getSystemSettingValue("EMAIL_FROM")) ??
-    process.env.EMAIL_FROM;
+  const apiKey = await getSystemSettingValue("RESEND_API_KEY");
+  const from = await getSystemSettingValue("EMAIL_FROM");
 
   return { apiKey, from };
 }
