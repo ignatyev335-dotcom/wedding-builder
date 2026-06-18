@@ -182,7 +182,7 @@ export function ConstructorShell({
   };
 
   return (
-    <main className="constructor-shell min-w-0 pb-24 lg:pb-0">
+    <main className="constructor-shell min-w-0 pb-0">
       <header className="constructor-header">
         <div className="constructor-header-start">
           <Link href="/" className="icon-button" aria-label="На главную">
@@ -238,7 +238,7 @@ export function ConstructorShell({
           <ConstructorSidebar initialTab={initialTab} />
         </div>
 
-        <div className="block min-h-0 w-full pb-28 lg:hidden">
+        <div className="block min-h-0 w-full pb-8 lg:hidden">
           <MobileAssistant
             completion={completion}
             currentStep={currentMobileStep}
@@ -276,25 +276,6 @@ export function ConstructorShell({
         </section>
       </div>
 
-      <nav className="constructor-mobile-nav lg:hidden" aria-label="Разделы конструктора">
-        {mobileSteps.map((step) => {
-          const Icon = step.icon;
-          const isActive = mobileTab === step.tab;
-          const isDone = completedSteps[step.tab];
-
-          return (
-            <button
-              className={isActive ? "is-active" : ""}
-              type="button"
-              key={step.tab}
-              onClick={() => setMobileTab(step.tab)}
-            >
-              <span>{isDone ? <CheckCircle2 size={16} /> : <Icon size={17} />}</span>
-              <small>{step.shortLabel}</small>
-            </button>
-          );
-        })}
-      </nav>
     </main>
   );
 }
@@ -319,20 +300,40 @@ function MobileAssistant({
 
   return (
     <section className="mobile-assistant" aria-label="Свадебный ассистент">
-      <div className="mobile-assistant-top">
-        <div>
-          <span>
-            <WandSparkles size={14} /> Свадебный ассистент
-          </span>
-          <strong>Ваш сайт готов на {completion}%</strong>
+      <div className="mobile-assistant-sticky">
+        <div className="mobile-assistant-top">
+          <div>
+            <span>
+              <WandSparkles size={14} /> Свадебный ассистент
+            </span>
+            <strong>Ваш сайт готов на {completion}%</strong>
+          </div>
+          <b>
+            {currentIndex + 1}/{mobileSteps.length}
+          </b>
         </div>
-        <b>
-          {currentIndex + 1}/{mobileSteps.length}
-        </b>
-      </div>
 
-      <div className="mobile-assistant-progress" aria-hidden="true">
-        <i style={{ width: `${completion}%` }} />
+        <div className="mobile-assistant-progress" aria-hidden="true">
+          <i style={{ width: `${completion}%` }} />
+        </div>
+
+        <div className="mobile-assistant-steps" aria-label="Быстрый переход по шагам">
+          {mobileSteps.map((step, index) => {
+            const done = completedSteps[step.tab];
+
+            return (
+              <button
+                className={`${step.tab === currentStep.tab ? "is-active" : ""} ${done ? "is-done" : ""}`}
+                type="button"
+                key={step.tab}
+                onClick={() => onSelectTab(step.tab)}
+              >
+                {done ? <CheckCircle2 size={13} /> : index + 1}
+                <span>{step.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mobile-assistant-focus">
@@ -343,24 +344,6 @@ function MobileAssistant({
           <strong>{currentStep.title}</strong>
           <small>{currentStep.description}</small>
         </div>
-      </div>
-
-      <div className="mobile-assistant-steps" aria-label="Быстрый переход по шагам">
-        {mobileSteps.map((step, index) => {
-          const done = completedSteps[step.tab];
-
-          return (
-            <button
-              className={`${step.tab === currentStep.tab ? "is-active" : ""} ${done ? "is-done" : ""}`}
-              type="button"
-              key={step.tab}
-              onClick={() => onSelectTab(step.tab)}
-            >
-              {done ? <CheckCircle2 size={13} /> : index + 1}
-              <span>{step.label}</span>
-            </button>
-          );
-        })}
       </div>
 
       <button className="mobile-assistant-next" type="button" onClick={onNext}>

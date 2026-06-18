@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getWeddingBuilderData } from "@/features/constructor/server/get-wedding-builder-data";
@@ -15,9 +15,11 @@ export async function GET(
 ) {
   const { siteId } = await params;
   const user = await getCurrentUser();
+
   if (!user || !(await isSiteOwnerOrAdmin(user, siteId))) {
     return NextResponse.json({ error: "Недостаточно прав." }, { status: 403 });
   }
+
   const site = await getWeddingBuilderData(siteId);
 
   if (!site) {
@@ -33,13 +35,25 @@ export async function PATCH(
 ) {
   const { siteId } = await params;
   const user = await getCurrentUser();
+
   if (!user || !(await isSiteOwnerOrAdmin(user, siteId))) {
     return NextResponse.json({ error: "Недостаточно прав." }, { status: 403 });
   }
 
   const parsed = statusSchema.safeParse(await request.json());
+
   if (!parsed.success) {
     return NextResponse.json({ error: "Некорректный статус." }, { status: 400 });
+  }
+
+  if (parsed.data.status === "PUBLISHED" && user.provider === "ANONYMOUS") {
+    return NextResponse.json(
+      {
+        code: "AUTH_REQUIRED",
+        error: "Войдите по почте или телефону, чтобы сайт не потерялся.",
+      },
+      { status: 401 },
+    );
   }
 
   const site = await prisma.weddingSite.update({

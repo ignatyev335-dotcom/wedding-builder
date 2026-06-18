@@ -9,6 +9,7 @@
     "build": "node scripts/build.mjs",
     "start": "next start",
     "postinstall": "prisma generate",
+    "check:encoding": "node scripts/check-encoding.mjs",
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

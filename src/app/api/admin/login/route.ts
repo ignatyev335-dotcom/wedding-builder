@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+﻿import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -40,11 +40,7 @@ export async function POST(request: Request) {
     parsed.success &&
     allowedPasswords.some((password) => secureEquals(parsed.data.password, password));
 
-  if (
-    !parsed.success ||
-    !emailAllowed ||
-    !passwordAllowed
-  ) {
+  if (!parsed.success || !emailAllowed || !passwordAllowed) {
     return NextResponse.json(
       { error: "Неверный логин или пароль администратора." },
       { status: 401 },

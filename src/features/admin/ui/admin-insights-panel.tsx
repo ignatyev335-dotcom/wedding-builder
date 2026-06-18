@@ -25,13 +25,9 @@ export function AdminInsightsPanel({
   themesCount: number;
   premiumUsersCount: number;
 }) {
-  const publishRate = sitesCount
-    ? Math.round((publishedCount / sitesCount) * 100)
-    : 0;
+  const publishRate = sitesCount ? Math.round((publishedCount / sitesCount) * 100) : 0;
   const guestsPerSite = sitesCount ? Math.round(guestsCount / sitesCount) : 0;
-  const premiumRate = usersCount
-    ? Math.round((premiumUsersCount / usersCount) * 100)
-    : 0;
+  const premiumRate = usersCount ? Math.round((premiumUsersCount / usersCount) * 100) : 0;
 
   const alerts = [
     tracksCount === 0 ? "В каталоге музыки нет ни одного трека." : null,
@@ -40,7 +36,7 @@ export function AdminInsightsPanel({
   ].filter(Boolean);
 
   return (
-    <section className="admin-panel" id="overview">
+    <section className="admin-panel" id="overview-pulse">
       <header className="admin-card-heading">
         <span className="admin-card-icon">
           <BarChart3 size={21} />
@@ -49,8 +45,7 @@ export function AdminInsightsPanel({
           <small>Обзор продукта</small>
           <h2>Пульс Vowly</h2>
           <p>
-            Быстрые метрики, которые помогают понять: люди создают сайты,
-            публикуют их и пользуются RSVP.
+            Быстрые метрики, которые показывают, создают ли пользователи сайты, публикуют ли их и пользуются ли RSVP.
           </p>
         </div>
       </header>

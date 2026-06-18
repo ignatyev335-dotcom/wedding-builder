@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AdminLoginForm } from "@/features/admin/ui/admin-login-form";
@@ -22,8 +22,9 @@ export default async function AdminPage() {
           <span>Закрытый контур платформы</span>
           <h1>Вход для администратора Vowly</h1>
           <p>
-            Здесь вы управляете каталогом музыки и текстов, тарифами
-            пользователей, стилями и проектами платформы.
+            Это отдельная служебная дверь владельца платформы. Клиенты входят по коду
+            на странице <Link href="/login">/login</Link>, а здесь вы управляете
+            каталогами, тарифами, проектами и настройками сервиса.
           </p>
         </div>
         <AdminLoginForm />

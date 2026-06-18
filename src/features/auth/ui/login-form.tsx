@@ -1,14 +1,28 @@
 "use client";
 
-import { ArrowRight, KeyRound, Mail } from "lucide-react";
-import { getSession, signIn } from "next-auth/react";
+import { ArrowRight, Mail, RotateCcw, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
 
+type RequestCodeResponse = {
+  channel?: "email" | "phone";
+  displayValue?: string;
+  devCode?: string;
+  error?: string;
+};
+
+type VerifyCodeResponse = {
+  redirectTo?: string;
+  error?: string;
+};
+
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [identity, setIdentity] = useState("");
+  const [code, setCode] = useState("");
+  const [displayValue, setDisplayValue] = useState("");
+  const [devCode, setDevCode] = useState("");
+  const [step, setStep] = useState<"identity" | "code">("identity");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,30 +35,55 @@ export function LoginForm() {
     }
   }, []);
 
-  const finishLogin = async () => {
-    const session = await getSession();
-    window.location.assign(
-      session?.user?.role === "ADMIN" ? "/admin/dashboard" : "/dashboard",
-    );
-  };
-
-  const submitPassword = async (event: React.FormEvent) => {
+  const requestCode = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const result = await signIn("password", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity }),
       });
+      const payload = (await response.json()) as RequestCodeResponse;
 
-      if (result?.error) {
-        throw new Error("Не удалось войти. Проверьте почту и пароль.");
+      if (!response.ok) {
+        throw new Error(payload.error || "Не удалось отправить код.");
       }
 
-      await finishLogin();
+      setDisplayValue(payload.displayValue ?? identity);
+      setDevCode(payload.devCode ?? "");
+      setStep("code");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Не удалось отправить код. Попробуйте еще раз.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity, code }),
+      });
+      const payload = (await response.json()) as VerifyCodeResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Не удалось войти.");
+      }
+
+      window.location.assign(payload.redirectTo ?? "/dashboard");
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -58,47 +97,79 @@ export function LoginForm() {
 
   return (
     <div className="login-card">
-      <form onSubmit={submitPassword}>
-        <label>
-          <span>Почта</span>
-          <div>
-            <Mail size={17} />
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              placeholder="hello@example.ru"
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-        </label>
-        <label>
-          <span>Пароль</span>
-          <div>
-            <KeyRound size={17} />
-            <input
-              required
-              minLength={8}
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              placeholder="Минимум 8 символов"
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
-        </label>
-        <button className="login-submit" type="submit" disabled={isLoading}>
-          {isLoading ? "Входим..." : "Войти в личный кабинет"}
-          <ArrowRight size={17} />
-        </button>
-      </form>
+      {step === "identity" ? (
+        <form onSubmit={requestCode}>
+          <label>
+            <span>Почта или телефон</span>
+            <div>
+              <Mail size={17} />
+              <input
+                required
+                type="text"
+                autoComplete="email tel"
+                inputMode="email"
+                value={identity}
+                placeholder="hello@example.ru или +7 999 123-45-67"
+                onChange={(event) => setIdentity(event.target.value)}
+              />
+            </div>
+          </label>
+          <button className="login-submit" type="submit" disabled={isLoading}>
+            {isLoading ? "Отправляем код..." : "Получить код"}
+            <ArrowRight size={17} />
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={verifyCode}>
+          <label>
+            <span>Код подтверждения</span>
+            <div>
+              <ShieldCheck size={17} />
+              <input
+                required
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                placeholder="000000"
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+            </div>
+          </label>
+          <button className="login-submit" type="submit" disabled={isLoading || code.length !== 6}>
+            {isLoading ? "Проверяем..." : "Войти в личный кабинет"}
+            <ArrowRight size={17} />
+          </button>
+          <button
+            className="login-secondary-action"
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              setStep("identity");
+              setCode("");
+              setError("");
+            }}
+          >
+            <RotateCcw size={15} />
+            Изменить почту или телефон
+          </button>
+          <p className="login-development-code">
+            Код отправлен на <strong>{displayValue}</strong>.
+            {devCode ? (
+              <>
+                {" "}
+                Для локальной проверки: <strong>{devCode}</strong>
+              </>
+            ) : null}
+          </p>
+        </form>
+      )}
 
-      {error && <p className="login-error">{error}</p>}
+      {error ? <p className="login-error">{error}</p> : null}
       <AuthProviderButtons />
       <p className="login-legal">
-        Продолжая, вы принимаете Пользовательское соглашение и Политику
-        конфиденциальности.
+        Продолжая, вы принимаете Пользовательское соглашение и Политику конфиденциальности.
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ArrowRight, KeyRound, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
@@ -34,7 +34,7 @@ export function AdminLoginForm() {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Не удалось выполнить вход.",
+          : "Не удалось выполнить вход. Попробуйте еще раз.",
       );
     } finally {
       setIsLoading(false);
@@ -46,8 +46,13 @@ export function AdminLoginForm() {
       className="grid gap-5 rounded-[28px] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-900/5 sm:p-8"
       onSubmit={submit}
     >
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+        Админка открывается отдельно от клиентского входа по коду. Используйте пароль
+        владельца платформы.
+      </div>
+
       <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        Логин
+        Логин администратора
         <span className="flex items-center gap-3 rounded-2xl border border-stone-200 px-4">
           <Mail className="shrink-0 text-stone-400" size={18} />
           <input
@@ -70,6 +75,7 @@ export function AdminLoginForm() {
             minLength={8}
             type="password"
             autoComplete="current-password"
+            placeholder="Пароль администратора"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -88,7 +94,7 @@ export function AdminLoginForm() {
           </>
         ) : (
           <>
-            Войти в панель
+            Войти в админку
             <ArrowRight size={18} />
           </>
         )}

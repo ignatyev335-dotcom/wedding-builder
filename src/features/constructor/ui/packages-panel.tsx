@@ -1,13 +1,14 @@
-"use client";
+﻿"use client";
 
 import {
   Check,
   Crown,
-  Download,
   EyeOff,
   LockKeyhole,
   LoaderCircle,
   Send,
+  ShieldCheck,
+  Smartphone,
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
@@ -36,7 +37,7 @@ const packages: Array<{
     code: "INTERACTIVE",
     title: "Интерактив",
     price: 1990,
-    description: "Все важные smart-функции для сбора ответов и подготовки к празднику.",
+    description: "Smart-функции для сбора ответов и подготовки к празднику.",
     features: [
       "Скрытие подписи Vowly",
       "Умный RSVP-опрос гостей",
@@ -61,6 +62,21 @@ const packages: Array<{
 
 const currency = new Intl.NumberFormat("ru-RU");
 
+type RequestCodeResponse = {
+  displayValue?: string;
+  devCode?: string;
+  error?: string;
+};
+
+type VerifyCodeResponse = {
+  error?: string;
+};
+
+type PublishResponse = {
+  code?: string;
+  error?: string;
+};
+
 export function PackagesPanel() {
   const {
     siteId,
@@ -69,12 +85,6 @@ export function PackagesPanel() {
     removeBranding,
     selectedPackage,
     telegramProfile,
-    partnerOneName,
-    partnerTwoName,
-    weddingDate,
-    heroImageDesktop,
-    heroImageMobile,
-    coverPhoto,
     isPrivate,
     pinCode,
     setSelectedPackage,
@@ -82,24 +92,33 @@ export function PackagesPanel() {
     setPrivateSite,
     setPinCode,
   } = useWeddingStore();
+
   const [isConnecting, setIsConnecting] = useState(false);
   const [telegramError, setTelegramError] = useState("");
-  const [cardError, setCardError] = useState("");
   const [brandingError, setBrandingError] = useState("");
   const [publishError, setPublishError] = useState("");
   const [publishSuccess, setPublishSuccess] = useState("");
   const [publishedUrl, setPublishedUrl] = useState("");
   const [isSavingBranding, setIsSavingBranding] = useState(false);
-  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const selected =
-    packages.find((item) => item.code === selectedPackage) ?? packages[0];
+  const [authRequired, setAuthRequired] = useState(false);
+  const [authIdentity, setAuthIdentity] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [authDisplayValue, setAuthDisplayValue] = useState("");
+  const [authDevCode, setAuthDevCode] = useState("");
+  const [authStep, setAuthStep] = useState<"identity" | "code">("identity");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  const selected = packages.find((item) => item.code === selectedPackage) ?? packages[0];
 
   const saveSettings = () => {
     window.setTimeout(() => {
       void persistSiteExtras().catch(() => undefined);
     }, 0);
   };
+
+  const publicUrl = slug && typeof window !== "undefined" ? `${window.location.origin}/wedding/${slug}` : "";
 
   const connectTelegram = async () => {
     setIsConnecting(true);
@@ -111,6 +130,7 @@ export function PackagesPanel() {
       setIsConnecting(false);
       return;
     }
+
     if (!botUsername) {
       setTelegramError("Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME в настройках проекта.");
       setIsConnecting(false);
@@ -132,6 +152,61 @@ export function PackagesPanel() {
     setPublishSuccess("Ссылка скопирована. Можно отправлять гостям.");
   };
 
+  const requestAuthCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity: authIdentity }),
+      });
+      const payload = (await response.json()) as RequestCodeResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Не удалось отправить код.");
+      }
+
+      setAuthDisplayValue(payload.displayValue ?? authIdentity);
+      setAuthDevCode(payload.devCode ?? "");
+      setAuthStep("code");
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Не удалось отправить код.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const verifyAuthCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity: authIdentity, code: authCode }),
+      });
+      const payload = (await response.json()) as VerifyCodeResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Не удалось войти.");
+      }
+
+      setAuthRequired(false);
+      setAuthCode("");
+      setAuthStep("identity");
+      await publishSite();
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Не удалось войти.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const publishSite = async () => {
     if (!siteId || siteId === "quiz-draft") {
       setPublishError("Сначала создайте сайт из квиза, затем публикуйте.");
@@ -150,21 +225,22 @@ export function PackagesPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "PUBLISHED" }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as PublishResponse;
+
       if (!response.ok) {
+        if (response.status === 401 && payload.code === "AUTH_REQUIRED") {
+          setAuthRequired(true);
+          setPublishError("");
+          return;
+        }
+
         throw new Error(payload.error || "Не удалось опубликовать сайт.");
       }
 
-      const nextUrl =
-        slug && typeof window !== "undefined"
-          ? `${window.location.origin}/wedding/${slug}`
-          : "";
-      setPublishedUrl(nextUrl);
-      setPublishSuccess("Сайт опубликован. Можно копировать ссылку и отправлять гостям.");
+      setPublishedUrl(publicUrl);
+      setPublishSuccess("Сайт опубликован. Теперь можно копировать ссылку и отправлять гостям.");
     } catch (error) {
-      setPublishError(
-        error instanceof Error ? error.message : "Не удалось оживить сайт.",
-      );
+      setPublishError(error instanceof Error ? error.message : "Не удалось оживить сайт.");
     } finally {
       setIsPublishing(false);
     }
@@ -184,82 +260,13 @@ export function PackagesPanel() {
     });
     const data = (await response.json()) as { error?: string };
 
-    if (response.ok) setRemoveBranding(nextValue);
-    else setBrandingError(data.error || "Не удалось обновить подпись платформы.");
+    if (response.ok) {
+      setRemoveBranding(nextValue);
+    } else {
+      setBrandingError(data.error || "Не удалось обновить подпись платформы.");
+    }
+
     setIsSavingBranding(false);
-  };
-
-  const downloadSaveTheDate = async () => {
-    const source = heroImageMobile ?? heroImageDesktop ?? coverPhoto;
-    if (!source) {
-      setCardError("Сначала загрузите обложку в разделе «Медиа».");
-      return;
-    }
-
-    setIsGeneratingCard(true);
-    setCardError("");
-
-    try {
-      const image = await loadCanvasImage(source);
-      const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1350;
-      const context = canvas.getContext("2d");
-      if (!context) throw new Error("Canvas недоступен.");
-
-      const scale = Math.max(canvas.width / image.width, canvas.height / image.height);
-      const width = image.width * scale;
-      const height = image.height * scale;
-      context.drawImage(
-        image,
-        (canvas.width - width) / 2,
-        (canvas.height - height) / 2,
-        width,
-        height,
-      );
-
-      const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "rgba(16,18,15,.18)");
-      gradient.addColorStop(0.55, "rgba(16,18,15,.08)");
-      gradient.addColorStop(1, "rgba(16,18,15,.72)");
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      context.textAlign = "center";
-      context.fillStyle = "#ffffff";
-      context.font = "500 42px Georgia";
-      context.fillText("Сохраните эту дату", 540, 1030);
-      context.font = "italic 92px Georgia";
-      context.fillText(`${partnerOneName} & ${partnerTwoName}`, 540, 1145);
-      context.font = "500 43px Arial";
-      context.fillText(
-        new Intl.DateTimeFormat("ru-RU", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }).format(new Date(`${weddingDate}T12:00:00`)),
-        540,
-        1235,
-      );
-
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.94),
-      );
-      if (!blob) throw new Error("Не удалось подготовить изображение.");
-
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = "save-the-date.jpg";
-      anchor.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setCardError(
-        error instanceof Error ? error.message : "Не удалось скачать открытку.",
-      );
-    } finally {
-      setIsGeneratingCard(false);
-    }
   };
 
   return (
@@ -268,10 +275,75 @@ export function PackagesPanel() {
         <span>Публикация и тарифы</span>
         <h2>Оживить сайт и отправить гостям</h2>
         <p>
-          Выберите пакет, проверьте QR-код и запустите сайт. Изменения можно
-          вносить даже после публикации.
+          Перед запуском мы попросим войти по почте или телефону. Так сайт будет привязан к личному кабинету и не потеряется.
         </p>
       </header>
+
+      {authRequired ? (
+        <section className="publish-auth-card">
+          <div>
+            <span>
+              <ShieldCheck size={18} /> Безопасный запуск
+            </span>
+            <h3>Войдите, чтобы сохранить сайт за вами</h3>
+            <p>
+              Введите почту или номер телефона. Мы отправим одноразовый код, а после входа сразу опубликуем сайт.
+            </p>
+          </div>
+
+          {authStep === "identity" ? (
+            <form onSubmit={requestAuthCode}>
+              <label>
+                <span>Почта или телефон</span>
+                <input
+                  required
+                  value={authIdentity}
+                  placeholder="hello@example.ru или 89091234567"
+                  onChange={(event) => setAuthIdentity(event.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={authLoading}>
+                {authLoading ? "Отправляем код..." : "Получить код"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={verifyAuthCode}>
+              <label>
+                <span>Код из сообщения</span>
+                <input
+                  required
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={authCode}
+                  placeholder="000000"
+                  onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                />
+              </label>
+              <button type="submit" disabled={authLoading || authCode.length !== 6}>
+                {authLoading ? "Проверяем..." : "Войти и оживить сайт"}
+              </button>
+              <button
+                className="publish-auth-link"
+                type="button"
+                disabled={authLoading}
+                onClick={() => {
+                  setAuthStep("identity");
+                  setAuthCode("");
+                  setAuthError("");
+                }}
+              >
+                Изменить почту или телефон
+              </button>
+              <p>
+                Код отправлен на <strong>{authDisplayValue}</strong>.
+                {authDevCode ? <> Для локальной проверки: <strong>{authDevCode}</strong></> : null}
+              </p>
+            </form>
+          )}
+
+          {authError ? <p className="telegram-error">{authError}</p> : null}
+        </section>
+      ) : null}
 
       <div className="package-grid">
         {packages.map((item) => {
@@ -279,16 +351,12 @@ export function PackagesPanel() {
           return (
             <button
               key={item.code}
-              className={`package-card ${item.accent ? "is-accent" : ""} ${
-                isSelected ? "is-selected" : ""
-              }`}
+              className={`package-card ${item.accent ? "is-accent" : ""} ${isSelected ? "is-selected" : ""}`}
               type="button"
               aria-pressed={isSelected}
               onClick={() => setSelectedPackage(item.code)}
             >
-              <span className="package-choice">
-                {isSelected && <Check size={14} />}
-              </span>
+              <span className="package-choice">{isSelected ? <Check size={14} /> : null}</span>
               <span className="package-title">
                 {item.code === "PREMIUM" ? <Crown size={17} /> : <Sparkles size={17} />}
                 <strong>{item.title}</strong>
@@ -310,7 +378,7 @@ export function PackagesPanel() {
         })}
       </div>
 
-      {selectedPackage === "PREMIUM" && (
+      {selectedPackage === "PREMIUM" ? (
         <section className="package-telegram">
           <span>
             <Send size={18} />
@@ -323,22 +391,12 @@ export function PackagesPanel() {
                 : "Бот будет присылать уведомления об ответах гостей"}
             </small>
           </div>
-          <button
-            type="button"
-            disabled={isConnecting || Boolean(telegramProfile)}
-            onClick={connectTelegram}
-          >
-            {isConnecting ? (
-              <LoaderCircle className="spin" size={15} />
-            ) : telegramProfile ? (
-              "Подключено"
-            ) : (
-              "Войти через Telegram"
-            )}
+          <button type="button" disabled={isConnecting || Boolean(telegramProfile)} onClick={connectTelegram}>
+            {isConnecting ? <LoaderCircle className="spin" size={15} /> : telegramProfile ? "Подключено" : "Войти через Telegram"}
           </button>
         </section>
-      )}
-      {telegramError && <p className="telegram-error">{telegramError}</p>}
+      ) : null}
+      {telegramError ? <p className="telegram-error">{telegramError}</p> : null}
 
       <QrCodeCard />
 
@@ -364,7 +422,7 @@ export function PackagesPanel() {
             <i />
           </button>
         </div>
-        {brandingError && <p className="telegram-error">{brandingError}</p>}
+        {brandingError ? <p className="telegram-error">{brandingError}</p> : null}
 
         <div className="private-site-setting">
           <span>
@@ -387,7 +445,7 @@ export function PackagesPanel() {
             <i />
           </button>
         </div>
-        {isPrivate && (
+        {isPrivate ? (
           <label className="private-pin-field">
             <span>PIN-код для входа на сайт</span>
             <input
@@ -395,26 +453,13 @@ export function PackagesPanel() {
               maxLength={4}
               value={pinCode}
               placeholder="2026"
-              onChange={(event) =>
-                setPinCode(event.target.value.replace(/\D/g, "").slice(0, 4))
-              }
+              onChange={(event) => setPinCode(event.target.value.replace(/\D/g, "").slice(0, 4))}
               onBlur={() => {
                 if (pinCode.length === 4) saveSettings();
               }}
             />
           </label>
-        )}
-
-        <button
-          className="save-date-download"
-          type="button"
-          disabled={isGeneratingCard}
-          onClick={() => void downloadSaveTheDate()}
-        >
-          <Download size={17} />
-          {isGeneratingCard ? "Готовим открытку..." : "Скачать Save the Date"}
-        </button>
-        {cardError && <p className="telegram-error">{cardError}</p>}
+        ) : null}
       </section>
 
       <section className="package-checkout">
@@ -429,11 +474,11 @@ export function PackagesPanel() {
             : selected.price === 0
               ? "Оживить сайт и отправить гостям"
               : "Оплатить и оживить сайт"}
-          {selected.price > 0 && <small>СБП</small>}
+          {selected.price > 0 ? <small>СБП</small> : null}
         </button>
-        {publishSuccess && <p className="publish-feedback is-success">{publishSuccess}</p>}
-        {publishError && <p className="telegram-error">{publishError}</p>}
-        {publishedUrl && (
+        {publishSuccess ? <p className="publish-feedback is-success">{publishSuccess}</p> : null}
+        {publishError ? <p className="telegram-error">{publishError}</p> : null}
+        {publishedUrl ? (
           <div className="publish-result">
             <a href={publishedUrl} target="_blank" rel="noreferrer">
               {publishedUrl}
@@ -447,21 +492,11 @@ export function PackagesPanel() {
               </a>
             </div>
           </div>
-        )}
+        ) : null}
         <p>
-          Не переживайте, вы сможете вносить изменения даже после публикации,
-          вплоть до самого дня свадьбы.
+          Не переживайте, вы сможете вносить изменения даже после публикации, вплоть до самого дня свадьбы.
         </p>
       </section>
     </>
   );
-}
-
-function loadCanvasImage(source: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Не удалось загрузить обложку."));
-    image.src = source;
-  });
 }
