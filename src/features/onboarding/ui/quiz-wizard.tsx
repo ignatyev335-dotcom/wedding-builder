@@ -1,101 +1,97 @@
-"use client";
+﻿"use client";
 
 import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
   Check,
-  MapPin,
-  Music2,
-  Palette,
+  Globe2,
+  KeyRound,
+  Languages,
+  Link2,
   Route,
   Shirt,
   Sparkles,
-  Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type {
-  AudioTrackOption,
-  DesignThemeOption,
-  InvitationTemplateOption,
-  OptionalModule,
-} from "@/entities/wedding/model";
+import type { DesignThemeOption } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
-const modules: Array<{
-  code: OptionalModule;
+type Catalog = {
+  designThemes: DesignThemeOption[];
+};
+
+type FeatureKey =
+  | "needsTransfer"
+  | "strictDressCode"
+  | "privateWedding"
+  | "multilingualInvitation"
+  | "postWeddingAutoEnabled"
+  | "personalLinks";
+
+const featureOptions: Array<{
+  key: FeatureKey;
   title: string;
   description: string;
-  icon: typeof Users;
+  icon: LucideIcon;
 }> = [
   {
-    code: "RSVP",
-    title: "Умный опрос гостей",
-    description: "Подтверждение участия, меню и пожелания",
-    icon: Users,
-  },
-  {
-    code: "DRESS_CODE",
-    title: "Пожелания по стилю",
-    description: "Палитра и деликатные подсказки по образам",
-    icon: Shirt,
-  },
-  {
-    code: "TIMELINE",
-    title: "План дня",
-    description: "Красивое расписание свадьбы",
+    key: "needsTransfer",
+    title: "Будет трансфер",
+    description: "Добавим блок про дорогу и место сбора гостей.",
     icon: Route,
   },
   {
-    code: "TRANSFER",
-    title: "Забота о дороге",
-    description: "Заявки на трансфер и место сбора",
-    icon: CalendarDays,
+    key: "strictDressCode",
+    title: "Есть пожелания по стилю",
+    description: "Сразу подготовим блок с палитрой и рекомендациями по образам.",
+    icon: Shirt,
   },
   {
-    code: "MAP",
-    title: "Место встречи",
-    description: "Адрес, карта и удобный маршрут",
-    icon: MapPin,
+    key: "privateWedding",
+    title: "Закрытая свадьба",
+    description: "В конструкторе предложим включить PIN-код для гостей.",
+    icon: KeyRound,
   },
   {
-    code: "COUNTDOWN",
-    title: "Таймер до свадьбы",
-    description: "Дни, часы и минуты до вашего события",
-    icon: CalendarDays,
+    key: "multilingualInvitation",
+    title: "Гости говорят на разных языках",
+    description: "Подготовим место для русской, английской и китайской версии.",
+    icon: Languages,
+  },
+  {
+    key: "postWeddingAutoEnabled",
+    title: "Нужен режим после свадьбы",
+    description: "После даты свадьбы сайт сможет стать страницей благодарности и фото.",
+    icon: Sparkles,
+  },
+  {
+    key: "personalLinks",
+    title: "Персональные ссылки гостям",
+    description: "Каждого гостя можно будет встретить по имени.",
+    icon: Link2,
   },
 ];
-
-type Catalog = {
-  tracks: AudioTrackOption[];
-  templates: InvitationTemplateOption[];
-  designThemes: DesignThemeOption[];
-};
 
 export function QuizWizard() {
   const router = useRouter();
   const store = useQuizStore();
-  const { ceremonyTime, setCeremonyTime } = store;
-  const [catalog, setCatalog] = useState<Catalog>({
-    tracks: [],
-    templates: [],
-    designThemes: [],
-  });
+  const [catalog, setCatalog] = useState<Catalog>({ designThemes: [] });
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!ceremonyTime) {
-      setCeremonyTime("17:00");
+    if (!store.ceremonyTime) {
+      store.setCeremonyTime("17:00");
     }
-  }, [ceremonyTime, setCeremonyTime]);
+  }, [store]);
 
   useEffect(() => {
     let active = true;
@@ -107,15 +103,11 @@ export function QuizWizard() {
       })
       .then((data) => {
         if (!active) return;
-        setCatalog({
-          tracks: data.tracks ?? [],
-          templates: data.templates ?? [],
-          designThemes: data.designThemes ?? [],
-        });
+        setCatalog({ designThemes: data.designThemes ?? [] });
       })
       .catch(() => {
         if (active) {
-          setError("Каталог админки временно недоступен.");
+          setError("Каталог стилей временно недоступен. Можно продолжить и выбрать стиль позже.");
         }
       })
       .finally(() => {
@@ -133,13 +125,18 @@ export function QuizWizard() {
     }
   }, [store]);
 
+  const selectedFeatures = useMemo(
+    () => featureOptions.filter((feature) => Boolean(store[feature.key])),
+    [store],
+  );
+
   const validateCurrentStep = () => {
     if (store.step === 1) {
       if (
         store.partnerOneName.trim().length < 2 ||
         store.partnerTwoName.trim().length < 2
       ) {
-        setError("Пожалуйста, укажите имена жениха и невесты.");
+        setError("Укажите имена жениха и невесты.");
         return false;
       }
       if (!store.weddingDate) {
@@ -147,16 +144,14 @@ export function QuizWizard() {
         return false;
       }
       if (!store.ceremonyTime) {
-        setError("Укажите точное время начала мероприятия.");
+        setError("Укажите время начала. По умолчанию можно оставить 17:00.");
         return false;
       }
     }
 
-    if (store.step === 2 && catalog.designThemes.length > 0) {
-      if (!store.designThemeId) {
-        setError("Выберите тему оформления из каталога.");
-        return false;
-      }
+    if (store.step === 2 && catalog.designThemes.length > 0 && !store.designThemeId) {
+      setError("Выберите стиль. Его потом можно будет заменить в конструкторе.");
+      return false;
     }
 
     setError("");
@@ -182,6 +177,12 @@ export function QuizWizard() {
       invitationTemplateId: store.invitationTemplateId,
       audioUrl: store.audioUrl,
       modules: store.modules,
+      needsTransfer: store.needsTransfer,
+      strictDressCode: store.strictDressCode,
+      privateWedding: store.privateWedding,
+      multilingualInvitation: store.multilingualInvitation,
+      postWeddingAutoEnabled: store.postWeddingAutoEnabled,
+      personalLinks: store.personalLinks,
       acceptedTerms: store.acceptedTerms,
     };
     const parsed = quizSchema.safeParse(payload);
@@ -226,17 +227,7 @@ export function QuizWizard() {
   const selectTheme = (theme: DesignThemeOption) => {
     store.setTheme("MINIMAL");
     store.setDesignThemeId(theme.id);
-    store.setInvitationTemplateId(store.invitationTemplateId);
-  };
-
-  const selectTemplate = (template: InvitationTemplateOption) => {
-    store.setInvitationTemplateId(template.id);
-  };
-
-  const selectTrack = (track: AudioTrackOption) => {
-    const nextSelected = store.musicTrackId === track.id ? "" : track.id;
-    store.setMusicTrackId(nextSelected);
-    store.setAudioUrl(nextSelected ? track.fileUrl : "");
+    store.setInvitationTemplateId("");
   };
 
   return (
@@ -266,12 +257,12 @@ export function QuizWizard() {
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">Начнем с главного</p>
+            <p className="eyebrow">Свадебный ассистент</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Как вас зовут?
+              Начнем с основы
             </h1>
             <p className="step-description">
-              Эти имена станут первой красивой деталью вашего приглашения.
+              Мне нужны только имена, дата и время. Остальное спокойно настроим потом.
             </p>
             <div className="field-grid">
               <label className="field">
@@ -316,7 +307,7 @@ export function QuizWizard() {
               </div>
             </label>
             <label className="field">
-              <span>Точное время начала</span>
+              <span>Время начала</span>
               <div className="input-with-icon">
                 <CalendarDays size={18} />
                 <input
@@ -333,20 +324,20 @@ export function QuizWizard() {
         {store.step === 2 && (
           <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
             <span className="step-icon">
-              <Palette size={22} />
+              <Sparkles size={22} />
             </span>
-            <p className="eyebrow">Визуальная основа</p>
+            <p className="eyebrow">Стиль приглашения</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Выберите тему
+              Какой стиль ближе?
             </h1>
             <p className="step-description">
-              Здесь показываются только темы, которые добавлены в админке.
+              Здесь показываются стили из админки. Вы сможете добавлять новые и менять их без кода.
             </p>
 
-            {catalogLoading && <p className="step-description">Загружаем каталог...</p>}
+            {catalogLoading && <p className="step-description">Загружаем стили...</p>}
             {!catalogLoading && catalog.designThemes.length === 0 && (
               <p className="form-error">
-                В админке пока нет тем. Добавьте первую тему, и она появится в квизе.
+                В админке пока нет стилей. Можно продолжить и добавить стиль позже.
               </p>
             )}
 
@@ -364,7 +355,7 @@ export function QuizWizard() {
                     borderColor: theme.primaryColor,
                     fontFamily: theme.customFont
                       ? `"${theme.customFont.family}", serif`
-                      : "serif",
+                      : theme.fontFamily,
                   }}
                   type="button"
                   onClick={() => selectTheme(theme)}
@@ -372,128 +363,101 @@ export function QuizWizard() {
                   <span className="theme-check">
                     <Check size={15} />
                   </span>
-                  <span className="theme-monogram">A &amp; A</span>
+                  <span className="theme-monogram">A &amp; B</span>
                   <strong>{theme.name}</strong>
                   <small>{theme.customFont?.name ?? theme.fontFamily}</small>
                 </button>
               ))}
             </div>
-
-            {catalog.templates.length > 0 && (
-              <>
-                <p className="eyebrow mt-8">Текст приглашения</p>
-                <div className="module-list">
-                  {catalog.templates.map((template) => (
-                    <button
-                      key={template.id}
-                      className={`module-option transition-all duration-200 ${
-                        store.invitationTemplateId === template.id
-                          ? "is-selected"
-                          : ""
-                      }`}
-                      type="button"
-                      onClick={() => selectTemplate(template)}
-                    >
-                      <span>
-                        <strong>{template.title}</strong>
-                        <small>{template.content}</small>
-                      </span>
-                      <span className="checkbox">
-                        {store.invitationTemplateId === template.id && (
-                          <Check size={15} />
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         )}
 
         {store.step === 3 && (
           <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
             <span className="step-icon">
-              <Sparkles size={22} />
+              <Globe2 size={22} />
             </span>
-            <p className="eyebrow">Последний штрих</p>
+            <p className="eyebrow">Особенности</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Что добавить на сайт?
+              Есть что-то особенное?
             </h1>
             <p className="step-description">
-              Выберите блоки и музыку. Все это можно будет изменить в конструкторе.
+              Отметьте только то, что действительно влияет на сценарий. Если сомневаетесь — просто идем дальше.
             </p>
             <div className="module-list">
-              {modules.map((module) => {
-                const Icon = module.icon;
-                const selected = store.modules.includes(module.code);
+              {featureOptions.map((feature) => {
+                const Icon = feature.icon;
+                const selected = Boolean(store[feature.key]);
 
                 return (
                   <button
-                    key={module.code}
+                    key={feature.key}
                     className={`module-option transition-all duration-200 ${
                       selected ? "is-selected" : ""
                     }`}
                     type="button"
-                    onClick={() => store.toggleModule(module.code)}
+                    onClick={() => store.setFeature(feature.key, !selected)}
                   >
                     <span className="module-icon">
                       <Icon size={20} />
                     </span>
                     <span>
-                      <strong>{module.title}</strong>
-                      <small>{module.description}</small>
+                      <strong>{feature.title}</strong>
+                      <small>{feature.description}</small>
                     </span>
-                    <span className="checkbox">
-                      {selected && <Check size={15} />}
-                    </span>
+                    <span className="checkbox">{selected && <Check size={15} />}</span>
                   </button>
                 );
               })}
             </div>
+          </div>
+        )}
 
-            {catalog.tracks.length > 0 && (
-              <>
-                <p className="eyebrow mt-8">Музыка из админки</p>
-                <div className="w-full flex flex-col gap-2">
-                  {catalog.tracks.map((track) => (
-                    <article
-                      className={`w-full flex items-center justify-between p-3 bg-stone-50 rounded-xl border transition-all duration-200 ${
-                        store.musicTrackId === track.id
-                          ? "border-stone-900"
-                          : "border-stone-200"
-                      }`}
-                      key={track.id}
-                    >
-                      <button
-                        className="h-11 w-11 flex items-center justify-center bg-white border rounded-full text-stone-700 shadow-sm active:scale-95 transition-transform"
-                        type="button"
-                        onClick={() =>
-                          setPlayingTrackId(
-                            playingTrackId === track.id ? null : track.id,
-                          )
-                        }
-                      >
-                        {playingTrackId === track.id ? "Ⅱ" : "▶"}
-                      </button>
-                      <span className="flex-1 ml-4 text-sm font-medium text-stone-900 truncate">
-                        {track.title} · {track.artist}
-                      </span>
-                      <button
-                        className="secondary-button flex-shrink-0 whitespace-nowrap"
-                        type="button"
-                        onClick={() => selectTrack(track)}
-                      >
-                        {store.musicTrackId === track.id ? "Выбрано" : "Выбрать"}
-                      </button>
-                      {playingTrackId === track.id && (
-                        <audio autoPlay src={track.fileUrl} />
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </>
-            )}
+        {store.step === 4 && (
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+            <span className="step-icon">
+              <Sparkles size={22} />
+            </span>
+            <p className="eyebrow">Почти готово</p>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+              Собираю ваш сайт
+            </h1>
+            <p className="step-description">
+              Основа готова. В конструкторе вы сможете добавить фото, музыку, гостей, карту и тексты.
+            </p>
+
+            <div className="module-list">
+              <article className="module-option is-selected">
+                <span>
+                  <strong>{store.partnerOneName || "Жених"} &amp; {store.partnerTwoName || "Невеста"}</strong>
+                  <small>
+                    {store.weddingDate || "Дата не выбрана"} · {store.ceremonyTime || "17:00"}
+                  </small>
+                </span>
+                <span className="checkbox"><Check size={15} /></span>
+              </article>
+              <article className="module-option is-selected">
+                <span>
+                  <strong>Стиль</strong>
+                  <small>
+                    {catalog.designThemes.find((theme) => theme.id === store.designThemeId)?.name ??
+                      "Выберем в конструкторе"}
+                  </small>
+                </span>
+                <span className="checkbox"><Check size={15} /></span>
+              </article>
+              <article className="module-option is-selected">
+                <span>
+                  <strong>Особенности</strong>
+                  <small>
+                    {selectedFeatures.length > 0
+                      ? selectedFeatures.map((feature) => feature.title).join(", ")
+                      : "Без дополнительных сложностей"}
+                  </small>
+                </span>
+                <span className="checkbox"><Check size={15} /></span>
+              </article>
+            </div>
 
             <label className="legal-consent">
               <input
@@ -504,8 +468,8 @@ export function QuizWizard() {
                 }
               />
               <span>
-                Я даю согласие на обработку персональных данных и принимаю
-                условия <a href="#">Пользовательского соглашения</a>.
+                Я даю согласие на обработку персональных данных и принимаю условия
+                <a href="#"> Пользовательского соглашения</a>.
               </span>
             </label>
           </div>
@@ -533,7 +497,7 @@ export function QuizWizard() {
               type="button"
               onClick={handleNext}
             >
-              Продолжить <ArrowRight size={18} />
+              Дальше <ArrowRight size={18} />
             </button>
           ) : (
             <button
@@ -542,14 +506,13 @@ export function QuizWizard() {
               disabled={isSubmitting || !store.acceptedTerms}
               onClick={handleSubmit}
             >
-              {isSubmitting ? "Создаем..." : "Создать мой сайт"}
-              {!isSubmitting && <Sparkles size={18} />}
+              {isSubmitting ? "Создаем..." : "Создать сайт бесплатно ✨"}
             </button>
           )}
         </footer>
       </section>
       <p className="autosave-note">
-        Ваши ответы сохраняются автоматически на этом устройстве
+        Не переживайте, все можно изменить позже в конструкторе.
       </p>
     </main>
   );

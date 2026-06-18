@@ -276,15 +276,6 @@ export function ConstructorSidebar({
     setPostWeddingPhotoUrl,
     setPostWeddingThankYouText,
   } = useWeddingStore();
-  const completion =
-    (partnerOneName.trim() && partnerTwoName.trim() && weddingDate ? 20 : 0) +
-    (heroImageDesktop || heroImageMobile || coverPhoto ? 20 : 0) +
-    (timelineEvents.length > 0 && timelineEvents.every((event) => event.time && event.title.trim())
-      ? 20
-      : 0) +
-    (moduleVisibility.RSVP ? 20 : 0) +
-    (customMusicDataUrl || musicTrack ? 20 : 0);
-
   const applyInvitationTemplate = (template: InvitationTemplateOption) => {
     const firstName = partnerOneName.trim();
     const secondName = partnerTwoName.trim();
@@ -414,22 +405,6 @@ export function ConstructorSidebar({
       </nav>
 
       <div className="constructor-editor">
-        <section className="constructor-progress">
-          <div>
-            <span>Р’Р°С€ СЃР°Р№С‚ РїРѕС‡С‚Рё РіРѕС‚РѕРІ</span>
-            <strong>{completion}%</strong>
-          </div>
-          <div className="constructor-progress-track">
-            <i style={{ width: `${completion}%` }} />
-          </div>
-          <p>
-            Р’Р°С€ СЃР°Р№С‚ РіРѕС‚РѕРІ РЅР° {completion}%.{" "}
-            {completion === 100
-              ? "РњРѕР¶РЅРѕ РѕР¶РёРІРёС‚СЊ СЃР°Р№С‚ Рё РѕС‚РїСЂР°РІР»СЏС‚СЊ."
-              : "РћСЃС‚Р°Р»РѕСЃСЊ СЃРѕРІСЃРµРј РЅРµРјРЅРѕРіРѕ."}
-          </p>
-        </section>
-
         {activeTab === "content" && (
           <>
             <EditorHeading

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -16,6 +16,16 @@ type QuizStore = QuizDraft & {
   setInvitationTemplateId: (invitationTemplateId: string) => void;
   setAudioUrl: (audioUrl: string) => void;
   toggleModule: (module: OptionalModule) => void;
+  setFeature: (
+    key:
+      | "needsTransfer"
+      | "strictDressCode"
+      | "privateWedding"
+      | "multilingualInvitation"
+      | "postWeddingAutoEnabled"
+      | "personalLinks",
+    value: boolean,
+  ) => void;
   setAcceptedTerms: (acceptedTerms: boolean) => void;
   next: () => void;
   back: () => void;
@@ -35,6 +45,12 @@ const initialState: QuizDraft & { step: number } = {
   invitationTemplateId: "",
   audioUrl: "",
   modules: ["RSVP", "DRESS_CODE", "TIMELINE", "MAP", "COUNTDOWN"],
+  needsTransfer: false,
+  strictDressCode: false,
+  privateWedding: false,
+  multilingualInvitation: false,
+  postWeddingAutoEnabled: false,
+  personalLinks: false,
   acceptedTerms: false,
 };
 
@@ -57,6 +73,18 @@ export const useQuizStore = create<QuizStore>()(
           modules: state.modules.includes(module)
             ? state.modules.filter((item) => item !== module)
             : [...state.modules, module],
+        })),
+      setFeature: (key, value) =>
+        set((state) => ({
+          [key]: value,
+          modules:
+            key === "needsTransfer"
+              ? value
+                ? Array.from(new Set([...state.modules, "TRANSFER" as const]))
+                : state.modules.filter((module) => module !== "TRANSFER")
+              : key === "strictDressCode" && value
+                ? Array.from(new Set([...state.modules, "DRESS_CODE" as const]))
+                : state.modules,
         })),
       setAcceptedTerms: (acceptedTerms) => set({ acceptedTerms }),
       next: () => set((state) => ({ step: Math.min(4, state.step + 1) })),

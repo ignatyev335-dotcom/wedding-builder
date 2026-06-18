@@ -1,4 +1,4 @@
-import { ModuleType, Prisma } from "@prisma/client";
+﻿import { ModuleType, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
@@ -9,19 +9,26 @@ import {
 } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
-const baseModules: ModuleType[] = [ModuleType.HERO];
+const baseModules: ModuleType[] = [
+  ModuleType.HERO,
+  ModuleType.RSVP,
+  ModuleType.DRESS_CODE,
+  ModuleType.TIMELINE,
+  ModuleType.MAP,
+  ModuleType.COUNTDOWN,
+];
 
 function slugPart(value: string) {
   const transliteration: Record<string, string> = {
-    "\u0430": "a", "\u0431": "b", "\u0432": "v", "\u0433": "g",
-    "\u0434": "d", "\u0435": "e", "\u0451": "e", "\u0436": "zh",
-    "\u0437": "z", "\u0438": "i", "\u0439": "y", "\u043a": "k",
-    "\u043b": "l", "\u043c": "m", "\u043d": "n", "\u043e": "o",
-    "\u043f": "p", "\u0440": "r", "\u0441": "s", "\u0442": "t",
-    "\u0443": "u", "\u0444": "f", "\u0445": "h", "\u0446": "c",
-    "\u0447": "ch", "\u0448": "sh", "\u0449": "sch", "\u044a": "",
-    "\u044b": "y", "\u044c": "", "\u044d": "e", "\u044e": "yu",
-    "\u044f": "ya",
+    "а": "a", "б": "b", "в": "v", "г": "g",
+    "д": "d", "е": "e", "ё": "e", "ж": "zh",
+    "з": "z", "и": "i", "й": "y", "к": "k",
+    "л": "l", "м": "m", "н": "n", "о": "o",
+    "п": "p", "р": "r", "с": "s", "т": "t",
+    "у": "u", "ф": "f", "х": "h", "ц": "c",
+    "ч": "ch", "ш": "sh", "щ": "sch", "ъ": "",
+    "ы": "y", "ь": "", "э": "e", "ю": "yu",
+    "я": "ya",
   };
 
   return value
@@ -49,7 +56,13 @@ export async function POST(request: Request) {
       .replace(/^-+|-+$/g, "");
     const baseSlug = nameSlug || "wedding";
     const slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
-    const selectedModules = [...baseModules, ...data.modules] as ModuleType[];
+    const selectedModules = Array.from(
+      new Set([
+        ...baseModules,
+        ...data.modules,
+        ...(data.needsTransfer ? [ModuleType.TRANSFER] : []),
+      ]),
+    ) as ModuleType[];
     const selectedTemplate = data.invitationTemplateId
       ? await prisma.invitationTemplate.findFirst({
           where: { id: data.invitationTemplateId, isActive: true },
@@ -61,7 +74,7 @@ export async function POST(request: Request) {
         ?.replaceAll("{names}", `${data.partnerOneName} и ${data.partnerTwoName}`)
         .replaceAll("{partnerOne}", data.partnerOneName)
         .replaceAll("{partnerTwo}", data.partnerTwoName) ??
-      "Будем счастливы разделить этот день с вами.";
+      `${data.partnerOneName} и ${data.partnerTwoName} приглашают вас разделить этот особенный день. Мы очень хотим, чтобы рядом были самые близкие люди.`;
     const session = getRequestSession(request);
     const sessionUser = session
       ? await prisma.user.findUnique({
@@ -93,6 +106,10 @@ export async function POST(request: Request) {
           musicTrackId: data.musicTrackId || null,
           designThemeId: data.designThemeId || null,
           audioUrl: data.audioUrl || null,
+          pinCode: data.privateWedding ? "2026" : null,
+          rsvpEnabled: true,
+          personalLinks: data.personalLinks,
+          defaultLanguage: "RU",
           data: {
             create: {
               partnerOneName: data.partnerOneName.trim(),
@@ -100,11 +117,21 @@ export async function POST(request: Request) {
               weddingDate: new Date(`${data.weddingDate}T12:00:00.000Z`),
               ceremonyTime: data.ceremonyTime,
               welcomeText,
+              dressCodeText: data.strictDressCode
+                ? "Мы будем рады, если вы поддержите стиль свадьбы в спокойных и элегантных оттенках. Палитру можно уточнить в конструкторе."
+                : null,
               timeline: JSON.stringify([
                 { id: "arrival", time: "16:00", title: "Сбор гостей" },
-                { id: "ceremony", time: "16:30", title: "Церемония" },
+                { id: "ceremony", time: data.ceremonyTime, title: "Церемония" },
                 { id: "dinner", time: "18:00", title: "Ужин и танцы" },
               ]),
+              transfer: data.needsTransfer
+                ? JSON.stringify({
+                    description: "Мы подготовим информацию о трансфере чуть позже.",
+                    time: "",
+                    meetingPoint: "",
+                  })
+                : null,
               colorPalette: JSON.stringify([
                 "#E9E1D4",
                 "#CDBBA7",
@@ -112,6 +139,15 @@ export async function POST(request: Request) {
                 "#62675C",
                 "#F7F3EA",
               ]),
+              customContent: JSON.stringify({
+                quizFeatures: {
+                  privateWedding: data.privateWedding,
+                  multilingualInvitation: data.multilingualInvitation,
+                  postWeddingAutoEnabled: data.postWeddingAutoEnabled,
+                  personalLinks: data.personalLinks,
+                },
+                postWeddingAutoEnabled: data.postWeddingAutoEnabled,
+              }),
             },
           },
           modules: {

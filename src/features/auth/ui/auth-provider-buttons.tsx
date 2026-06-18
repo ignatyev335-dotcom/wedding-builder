@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Send } from "lucide-react";
 import { signIn } from "next-auth/react";
@@ -47,7 +47,7 @@ export function AuthProviderButtons() {
     try {
       await signIn("yandex", { redirectTo: "/dashboard" });
     } catch {
-      setError("Яндекс ID пока не настроен. Проверьте ключи в Vercel.");
+      setError("Яндекс ID пока не настроен. Проверьте AUTH_YANDEX_ID и AUTH_YANDEX_SECRET в Vercel.");
     }
   };
 
@@ -85,7 +85,7 @@ export function AuthProviderButtons() {
       </div>
       {!botUsername && (
         <small className="telegram-login-note">
-          Telegram включится после подключения бота.
+          Telegram включится после подключения бота в настройках проекта.
         </small>
       )}
       {error && <p className="login-error">{error}</p>}

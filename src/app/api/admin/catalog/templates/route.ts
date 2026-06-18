@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
@@ -15,7 +15,7 @@ const templateSchema = z.object({
 
 export async function POST(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {

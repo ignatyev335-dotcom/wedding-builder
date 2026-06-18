@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 import { optionalModules, themeCodes } from "@/entities/wedding/model";
 
@@ -22,9 +22,14 @@ export const quizSchema = z.object({
   invitationTemplateId: z.string().trim().max(100).default(""),
   audioUrl: z.string().trim().max(2000).default(""),
   modules: z.array(z.enum(optionalModules)).max(optionalModules.length),
+  needsTransfer: z.boolean().default(false),
+  strictDressCode: z.boolean().default(false),
+  privateWedding: z.boolean().default(false),
+  multilingualInvitation: z.boolean().default(false),
+  postWeddingAutoEnabled: z.boolean().default(false),
+  personalLinks: z.boolean().default(false),
   acceptedTerms: z.literal(true, {
-    error:
-      "Необходимо принять условия обработки персональных данных",
+    error: "Необходимо принять условия обработки персональных данных",
   }),
 });
 

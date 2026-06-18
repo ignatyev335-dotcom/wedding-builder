@@ -31,6 +31,12 @@ export type QuizDraft = {
   invitationTemplateId: string;
   audioUrl: string;
   modules: OptionalModule[];
+  needsTransfer: boolean;
+  strictDressCode: boolean;
+  privateWedding: boolean;
+  multilingualInvitation: boolean;
+  postWeddingAutoEnabled: boolean;
+  personalLinks: boolean;
   acceptedTerms: boolean;
 };
 
