@@ -108,6 +108,13 @@ export function ConstructorFromQuiz() {
     postWeddingPhotoUrl: "",
     postWeddingThankYouText:
       "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
+    rsvpQuestionSettings: {
+      plusOne: true,
+      food: true,
+      alcohol: true,
+      transport: true,
+      music: true,
+    },
     customQuestions: [],
   };
 

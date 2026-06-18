@@ -47,6 +47,9 @@ export function RsvpQuestionnaire({
   const giftQrCode = useWeddingStore((state) => state.giftQrCode);
   const language = useWeddingStore((state) => state.language);
   const customQuestions = useWeddingStore((state) => state.customQuestions);
+  const rsvpQuestionSettings = useWeddingStore(
+    (state) => state.rsvpQuestionSettings,
+  );
   const t = weddingCopy[language];
   const [step, setStep] = useState(1);
   const [guestName, setGuestName] = useState(personalizedGuest?.name ?? "");
@@ -82,11 +85,32 @@ export function RsvpQuestionnaire({
     });
   };
 
+  const hasMenuStep = rsvpQuestionSettings.food || rsvpQuestionSettings.alcohol;
+  const hasDetailsStep =
+    rsvpQuestionSettings.transport ||
+    rsvpQuestionSettings.music ||
+    customQuestions.length > 0;
+  const visibleSteps = [
+    1,
+    ...(hasMenuStep ? [2] : []),
+    ...(hasDetailsStep ? [3] : []),
+  ];
+  const currentStepIndex = Math.max(0, visibleSteps.indexOf(step));
+  const isLastStep = currentStepIndex === visibleSteps.length - 1;
+  const goNext = () => {
+    setStep(visibleSteps[Math.min(currentStepIndex + 1, visibleSteps.length - 1)]);
+  };
+  const goBack = () => {
+    setStep(visibleSteps[Math.max(currentStepIndex - 1, 0)]);
+  };
+
   const canContinue =
     step !== 1 ||
     ((personalizedGuest?.isCouple ||
       guestName.trim().length >= 2) &&
-      (!hasPlusOne || plusOneName.trim().length >= 2));
+      (!rsvpQuestionSettings.plusOne ||
+        !hasPlusOne ||
+        plusOneName.trim().length >= 2));
   const isDeclined =
     status === "DECLINED" ||
     (personalizedGuest?.isCouple && attendanceChoice === "NONE");
@@ -104,27 +128,34 @@ export function RsvpQuestionnaire({
         personalizedGuest?.isCouple && attendanceChoice === "NONE"
           ? "DECLINED" as const
           : status,
-      dietaryRestrictions: allergies.trim(),
+      dietaryRestrictions: rsvpQuestionSettings.food ? allergies.trim() : "",
       foodPreference:
-        personalizedGuest?.isCouple && attendanceChoice === "PARTNER"
+        !rsvpQuestionSettings.food ||
+        (personalizedGuest?.isCouple && attendanceChoice === "PARTNER")
           ? ""
           : foodPreference,
       partnerFoodPreference:
+        rsvpQuestionSettings.food &&
         personalizedGuest?.isCouple &&
         (attendanceChoice === "BOTH" || attendanceChoice === "PARTNER")
           ? partnerFoodPreference
           : undefined,
-      allergies: allergies.trim(),
+      allergies: rsvpQuestionSettings.food ? allergies.trim() : "",
       partnerAllergies:
+        rsvpQuestionSettings.food &&
         personalizedGuest?.isCouple &&
         (attendanceChoice === "BOTH" || attendanceChoice === "PARTNER")
           ? partnerAllergies.trim()
           : undefined,
-      alcoholPreferences,
-      transportPreference,
-      hasPlusOne: personalizedGuest?.isCouple ? false : hasPlusOne,
-      plusOneName: hasPlusOne ? plusOneName.trim() : "",
-      musicRequest: musicRequest.trim(),
+      alcoholPreferences: rsvpQuestionSettings.alcohol ? alcoholPreferences : [],
+      transportPreference: rsvpQuestionSettings.transport ? transportPreference : "SELF",
+      hasPlusOne:
+        personalizedGuest?.isCouple || !rsvpQuestionSettings.plusOne
+          ? false
+          : hasPlusOne,
+      plusOneName:
+        rsvpQuestionSettings.plusOne && hasPlusOne ? plusOneName.trim() : "",
+      musicRequest: rsvpQuestionSettings.music ? musicRequest.trim() : "",
       attendanceChoice: personalizedGuest?.isCouple ? attendanceChoice : null,
       customAnswers,
     };
@@ -153,18 +184,26 @@ export function RsvpQuestionnaire({
         addGuest({
           name: guestName.trim(),
           status,
-          dietaryRestrictions: allergies.trim(),
-          foodPreference,
+          dietaryRestrictions: rsvpQuestionSettings.food ? allergies.trim() : "",
+          foodPreference: rsvpQuestionSettings.food ? foodPreference : "",
           partnerFoodPreference: "",
-          allergies: allergies.trim(),
+          allergies: rsvpQuestionSettings.food ? allergies.trim() : "",
           partnerAllergies: "",
-          drinks: alcoholPreferences.map((item) => alcoholLabels[item]).join(", "),
-          alcoholPreferences,
-          needsTransport: transportPreference === "TRANSFER",
-          transportPreference,
-          hasPlusOne,
-          plusOneName: hasPlusOne ? plusOneName.trim() : "",
-          musicRequest: musicRequest.trim(),
+          drinks: rsvpQuestionSettings.alcohol
+            ? alcoholPreferences.map((item) => alcoholLabels[item]).join(", ")
+            : "",
+          alcoholPreferences: rsvpQuestionSettings.alcohol
+            ? alcoholPreferences
+            : [],
+          needsTransport:
+            rsvpQuestionSettings.transport && transportPreference === "TRANSFER",
+          transportPreference: rsvpQuestionSettings.transport
+            ? transportPreference
+            : null,
+          hasPlusOne: rsvpQuestionSettings.plusOne && hasPlusOne,
+          plusOneName:
+            rsvpQuestionSettings.plusOne && hasPlusOne ? plusOneName.trim() : "",
+          musicRequest: rsvpQuestionSettings.music ? musicRequest.trim() : "",
           isCouple: false,
           partnerName: "",
           attendanceChoice: null,
@@ -187,9 +226,12 @@ export function RsvpQuestionnaire({
 
   return (
     <div className="rsvp-form rsvp-questionnaire" onClick={(event) => event.stopPropagation()}>
-      <div className="rsvp-progress" aria-label={`Шаг ${step} из 3`}>
-        {[1, 2, 3].map((item) => (
-          <i key={item} className={item <= step ? "is-active" : ""} />
+      <div
+        className="rsvp-progress"
+        aria-label={`Шаг ${currentStepIndex + 1} из ${visibleSteps.length}`}
+      >
+        {visibleSteps.map((item, index) => (
+          <i key={item} className={index <= currentStepIndex ? "is-active" : ""} />
         ))}
       </div>
 
@@ -281,7 +323,9 @@ export function RsvpQuestionnaire({
               )}
             </div>
           )}
-          {status === "ACCEPTED" && !personalizedGuest?.isCouple && (
+          {status === "ACCEPTED" &&
+            rsvpQuestionSettings.plusOne &&
+            !personalizedGuest?.isCouple && (
             <>
               <p className="rsvp-question">Вы будете один или с парой?</p>
               <div className="rsvp-status">
@@ -317,7 +361,7 @@ export function RsvpQuestionnaire({
 
       {step === 2 && (
         <div className="rsvp-step">
-          {(!personalizedGuest?.isCouple ||
+          {rsvpQuestionSettings.food && (!personalizedGuest?.isCouple ||
             attendanceChoice === "BOTH" ||
             attendanceChoice === "PRIMARY") && <label>
             <span>Предпочтение в еде</span>
@@ -330,7 +374,7 @@ export function RsvpQuestionnaire({
               <option value="Веган">Веган</option>
             </select>
           </label>}
-          {(!personalizedGuest?.isCouple ||
+          {rsvpQuestionSettings.food && (!personalizedGuest?.isCouple ||
             attendanceChoice === "BOTH" ||
             attendanceChoice === "PRIMARY") && <label>
             <span>Аллергии и важные ограничения</span>
@@ -340,7 +384,8 @@ export function RsvpQuestionnaire({
               onChange={(event) => setAllergies(event.target.value)}
             />
           </label>}
-          {personalizedGuest?.isCouple &&
+          {rsvpQuestionSettings.food &&
+            personalizedGuest?.isCouple &&
             (attendanceChoice === "BOTH" ||
               attendanceChoice === "PARTNER") && (
               <div className="rsvp-partner-menu">
@@ -370,49 +415,55 @@ export function RsvpQuestionnaire({
                 </label>
               </div>
             )}
-          <fieldset className="rsvp-options">
-            <legend>Что из напитков вам нравится?</legend>
-            {alcoholPreferenceCodes.map((value) => (
-              <button
-                key={value}
-                className={alcoholPreferences.includes(value) ? "is-selected" : ""}
-                type="button"
-                onClick={() => toggleAlcohol(value)}
-              >
-                <Check size={12} />
-                {alcoholLabels[value]}
-              </button>
-            ))}
-          </fieldset>
+          {rsvpQuestionSettings.alcohol && (
+            <fieldset className="rsvp-options">
+              <legend>Что из напитков вам нравится?</legend>
+              {alcoholPreferenceCodes.map((value) => (
+                <button
+                  key={value}
+                  className={alcoholPreferences.includes(value) ? "is-selected" : ""}
+                  type="button"
+                  onClick={() => toggleAlcohol(value)}
+                >
+                  <Check size={12} />
+                  {alcoholLabels[value]}
+                </button>
+              ))}
+            </fieldset>
+          )}
         </div>
       )}
 
       {step === 3 && (
         <div className="rsvp-step">
-          <fieldset className="rsvp-options rsvp-transport">
-            <legend>Как вы планируете добраться?</legend>
-            {transportOptions.map((option) => (
-              <button
-                key={option.value}
-                className={
-                  transportPreference === option.value ? "is-selected" : ""
-                }
-                type="button"
-                onClick={() => setTransportPreference(option.value)}
-              >
-                <Check size={12} />
-                {option.label}
-              </button>
-            ))}
-          </fieldset>
-          <label>
-            <span>Под какой трек вы точно пойдете танцевать?</span>
-            <input
-              value={musicRequest}
-              placeholder={t.trackPlaceholder}
-              onChange={(event) => setMusicRequest(event.target.value)}
-            />
-          </label>
+          {rsvpQuestionSettings.transport && (
+            <fieldset className="rsvp-options rsvp-transport">
+              <legend>Как вы планируете добраться?</legend>
+              {transportOptions.map((option) => (
+                <button
+                  key={option.value}
+                  className={
+                    transportPreference === option.value ? "is-selected" : ""
+                  }
+                  type="button"
+                  onClick={() => setTransportPreference(option.value)}
+                >
+                  <Check size={12} />
+                  {option.label}
+                </button>
+              ))}
+            </fieldset>
+          )}
+          {rsvpQuestionSettings.music && (
+            <label>
+              <span>Под какой трек вы точно пойдете танцевать?</span>
+              <input
+                value={musicRequest}
+                placeholder={t.trackPlaceholder}
+                onChange={(event) => setMusicRequest(event.target.value)}
+              />
+            </label>
+          )}
           {customQuestions.map((question) => (
             <label key={question.id}>
               <span>{question.title || "Дополнительный вопрос"}</span>
@@ -449,17 +500,17 @@ export function RsvpQuestionnaire({
       )}
 
       <div className="rsvp-navigation">
-        {step > 1 && (
-          <button type="button" onClick={() => setStep((current) => current - 1)}>
+        {currentStepIndex > 0 && (
+          <button type="button" onClick={goBack}>
             <ChevronLeft size={14} /> {t.back}
           </button>
         )}
-        {step < 3 ? (
+        {!isLastStep ? (
           <button
             type="button"
             disabled={!canContinue}
             onClick={() =>
-              isDeclined ? void submit() : setStep((current) => current + 1)
+              isDeclined ? void submit() : goNext()
             }
           >
             {isDeclined ? t.submit : t.continue}

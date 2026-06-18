@@ -18,6 +18,7 @@ import type {
   LanguageCode,
   MediaAssetOption,
   PremiumFeatureCode,
+  RsvpQuestionKey,
   TelegramProfile,
   ThemeCode,
   WeddingBuilderData,
@@ -139,6 +140,7 @@ type WeddingStore = WeddingBuilderData & {
   setPostWeddingHeroImage: (postWeddingHeroImage: string | null) => void;
   setPostWeddingPhotoUrl: (postWeddingPhotoUrl: string) => void;
   setPostWeddingThankYouText: (value: string) => void;
+  setRsvpQuestionSetting: (key: RsvpQuestionKey, value: boolean) => void;
   setCustomQuestions: (questions: WeddingBuilderData["customQuestions"]) => void;
 };
 
@@ -238,6 +240,13 @@ const initialState: WeddingBuilderData = {
   postWeddingPhotoUrl: "",
   postWeddingThankYouText:
     "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
+  rsvpQuestionSettings: {
+    plusOne: true,
+    food: true,
+    alcohol: true,
+    transport: true,
+    music: true,
+  },
   customQuestions: [],
 };
 
@@ -526,6 +535,13 @@ export const useWeddingStore = create<WeddingStore>()(
         set({ postWeddingPhotoUrl }),
       setPostWeddingThankYouText: (postWeddingThankYouText) =>
         set({ postWeddingThankYouText }),
+      setRsvpQuestionSetting: (key, value) =>
+        set((state) => ({
+          rsvpQuestionSettings: {
+            ...state.rsvpQuestionSettings,
+            [key]: value,
+          },
+        })),
       setCustomQuestions: (customQuestions) => set({ customQuestions }),
     }),
     {
@@ -594,6 +610,7 @@ export const useWeddingStore = create<WeddingStore>()(
         postWeddingHeroImage: state.postWeddingHeroImage,
         postWeddingPhotoUrl: state.postWeddingPhotoUrl,
         postWeddingThankYouText: state.postWeddingThankYouText,
+        rsvpQuestionSettings: state.rsvpQuestionSettings,
         customQuestions: state.customQuestions,
         initializedSiteId: state.initializedSiteId,
       }),

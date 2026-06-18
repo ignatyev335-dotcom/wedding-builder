@@ -189,6 +189,13 @@ export type CustomQuestion = {
   options: string[];
 };
 
+export type RsvpQuestionKey =
+  | "plusOne"
+  | "food"
+  | "alcohol"
+  | "transport"
+  | "music";
+
 export type GuestResponse = {
   id: string;
   name: string;
@@ -329,5 +336,6 @@ export type WeddingBuilderData = {
   postWeddingHeroImage: string | null;
   postWeddingPhotoUrl: string;
   postWeddingThankYouText: string;
+  rsvpQuestionSettings: Record<RsvpQuestionKey, boolean>;
   customQuestions: CustomQuestion[];
 };

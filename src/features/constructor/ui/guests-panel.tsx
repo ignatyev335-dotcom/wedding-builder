@@ -31,6 +31,7 @@ import {
   type GuestResponse,
   type GuestTagCode,
   type LanguageCode,
+  type RsvpQuestionKey,
   type TransportPreferenceCode,
 } from "@/entities/wedding/model";
 import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
@@ -83,19 +84,43 @@ const foodLabels: Record<FoodKey, string> = {
   unknown: "Не выбрали",
 };
 
-const builtInQuestions = [
-  "Присутствие и формат прихода",
-  "Меню и аллергии",
-  "Алкогольные предпочтения",
-  "Трансфер до площадки",
-  "Любимый трек для танцев",
-];
-
 const questionPresets: Array<Pick<CustomQuestion, "title" | "type" | "options">> = [
   { title: "Будете ли вы с детьми?", type: "OPTIONS", options: ["Да", "Нет"] },
   { title: "Нужен ли детский стул?", type: "OPTIONS", options: ["Да", "Нет", "Пока не знаю"] },
   { title: "Нужен ли трансфер обратно после банкета?", type: "OPTIONS", options: ["Да", "Нет"] },
   { title: "Есть ли важные пожелания организатору?", type: "TEXT", options: [] },
+];
+
+const rsvpQuestionOptions: Array<{
+  key: RsvpQuestionKey;
+  title: string;
+  description: string;
+}> = [
+  {
+    key: "plusOne",
+    title: "+1 и спутники",
+    description: "Гость сможет указать, придет ли он один или с парой.",
+  },
+  {
+    key: "food",
+    title: "Меню и аллергии",
+    description: "Мясо, рыба, веган и важные ограничения по еде.",
+  },
+  {
+    key: "alcohol",
+    title: "Бар",
+    description: "Вино, шампанское, крепкий алкоголь или «не пью».",
+  },
+  {
+    key: "transport",
+    title: "Трансфер",
+    description: "Нужен автобус, своя машина или доберутся сами.",
+  },
+  {
+    key: "music",
+    title: "Трек для танцев",
+    description: "Гости смогут предложить песню для вечеринки.",
+  },
 ];
 
 function normalizeFood(value?: string | null): FoodKey {
@@ -166,7 +191,13 @@ function PreferenceLine({ label, value }: { label: string; value: string | numbe
 }
 
 export function GuestsPanel() {
-  const { siteId, customQuestions, setCustomQuestions } = useWeddingStore();
+  const {
+    siteId,
+    customQuestions,
+    rsvpQuestionSettings,
+    setCustomQuestions,
+    setRsvpQuestionSetting,
+  } = useWeddingStore();
 
   const [guests, setGuests] = useState<GuestResponse[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
@@ -408,6 +439,18 @@ export function GuestsPanel() {
     }
   }
 
+  async function updateRsvpQuestionSetting(key: RsvpQuestionKey, value: boolean) {
+    setRsvpQuestionSetting(key, value);
+    setQuestionMessage("Сохраняем настройки RSVP...");
+    try {
+      await persistSiteExtras();
+      setQuestionMessage("Настройки RSVP обновлены.");
+    } catch {
+      setRsvpQuestionSetting(key, !value);
+      setQuestionMessage("Не удалось сохранить настройки RSVP. Попробуйте еще раз.");
+    }
+  }
+
   function addQuestion(preset?: Pick<CustomQuestion, "title" | "type" | "options">) {
     if (customQuestions.length >= 5) {
       setQuestionMessage("Можно добавить до 5 дополнительных вопросов.");
@@ -457,6 +500,29 @@ export function GuestsPanel() {
         <StatCard icon={XCircle} label="Отказались" value={guestStats.declined} tone="rose" />
       </div>
 
+      <button
+        className="group flex w-full flex-col gap-3 rounded-[28px] border border-stone-200 bg-gradient-to-br from-white to-stone-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-md md:flex-row md:items-center md:justify-between"
+        type="button"
+        onClick={() => setDetailsOpen(true)}
+      >
+        <span className="flex items-start gap-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-stone-900 text-white">
+            <BarChart3 className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-base font-semibold text-stone-950">
+              Открыть подробную сводку
+            </span>
+            <span className="mt-1 block text-sm leading-6 text-stone-500">
+              Меню, бар, трансфер, аллергии и ответы на ваши вопросы в одном отчете.
+            </span>
+          </span>
+        </span>
+        <span className="inline-flex min-h-10 items-center justify-center rounded-full bg-stone-100 px-4 text-sm font-semibold text-stone-700 transition group-hover:bg-stone-900 group-hover:text-white">
+          Смотреть отчет
+        </span>
+      </button>
+
       <section className="rounded-[30px] border border-stone-200 bg-white/80 p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -464,10 +530,6 @@ export function GuestsPanel() {
             <h3 className="font-serif text-3xl leading-tight text-stone-950">Добавить гостя</h3>
             <p className="mt-2 text-sm leading-6 text-stone-500">После добавления Vowly сразу создаст личную ссылку для приглашения.</p>
           </div>
-          <button className="secondary-action justify-center" type="button" onClick={() => setDetailsOpen(true)}>
-            <BarChart3 className="h-4 w-4" />
-            Подробная сводка
-          </button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -609,17 +671,34 @@ export function GuestsPanel() {
           <div>
             <p className="section-kicker">Умный опрос гостей</p>
             <h3 className="font-serif text-3xl text-stone-950">Вопросы RSVP</h3>
-            <p className="mt-2 text-sm leading-6 text-stone-500">Основные вопросы уже включены. Ниже можно добавить свои уточнения.</p>
+            <p className="mt-2 text-sm leading-6 text-stone-500">Оставьте только те вопросы, которые правда нужны вашей свадьбе. Остальное гость не увидит.</p>
           </div>
           <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">{customQuestions.length}/5 вопросов</span>
         </div>
 
-        <div className="mt-5 grid gap-2 md:grid-cols-2">
-          {builtInQuestions.map((question) => (
-            <div className="flex items-center gap-2 rounded-2xl bg-stone-50 px-3 py-2 text-sm text-stone-600" key={question}>
-              <Check className="h-4 w-4 text-emerald-600" />
-              {question}
-            </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          {rsvpQuestionOptions.map((option) => (
+            <label
+              className="flex min-h-24 items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-4"
+              key={option.key}
+            >
+              <span>
+                <span className="block text-sm font-semibold text-stone-900">
+                  {option.title}
+                </span>
+                <span className="mt-1 block text-sm leading-5 text-stone-500">
+                  {option.description}
+                </span>
+              </span>
+              <input
+                checked={rsvpQuestionSettings[option.key]}
+                className="h-6 w-11 shrink-0 accent-stone-900"
+                type="checkbox"
+                onChange={(event) =>
+                  void updateRsvpQuestionSetting(option.key, event.target.checked)
+                }
+              />
+            </label>
           ))}
         </div>
 

@@ -59,6 +59,13 @@ const contentSchema = z.object({
       }),
     )
     .max(5),
+  rsvpQuestionSettings: z.object({
+    plusOne: z.boolean(),
+    food: z.boolean(),
+    alcohol: z.boolean(),
+    transport: z.boolean(),
+    music: z.boolean(),
+  }),
   fontCode: z.enum(fontCodes),
   blockOrder: z.array(z.enum(contentBlockCodes)).length(contentBlockCodes.length),
   ceremonyTime: z.string().regex(/^\d{2}:\d{2}$/),

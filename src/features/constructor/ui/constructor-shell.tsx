@@ -158,10 +158,6 @@ export function ConstructorShell({
     ],
   );
 
-  const completion = Math.round(
-    (Object.values(completedSteps).filter(Boolean).length / mobileSteps.length) * 100,
-  );
-
   const scrollPreview = (event: React.WheelEvent<HTMLElement>) => {
     const screen = previewScreenRef.current;
     if (!screen) {
@@ -240,7 +236,6 @@ export function ConstructorShell({
 
         <div className="block min-h-0 w-full pb-8 lg:hidden">
           <MobileAssistant
-            completion={completion}
             currentStep={currentMobileStep}
             completedSteps={completedSteps}
             currentIndex={mobileStepIndex}
@@ -281,14 +276,12 @@ export function ConstructorShell({
 }
 
 function MobileAssistant({
-  completion,
   currentStep,
   completedSteps,
   currentIndex,
   onSelectTab,
   onNext,
 }: {
-  completion: number;
   currentStep: MobileStep;
   completedSteps: CompletionMap;
   currentIndex: number;
@@ -306,15 +299,11 @@ function MobileAssistant({
             <span>
               <WandSparkles size={14} /> Свадебный ассистент
             </span>
-            <strong>Ваш сайт готов на {completion}%</strong>
+            <strong>{currentStep.title}</strong>
           </div>
           <b>
             {currentIndex + 1}/{mobileSteps.length}
           </b>
-        </div>
-
-        <div className="mobile-assistant-progress" aria-hidden="true">
-          <i style={{ width: `${completion}%` }} />
         </div>
 
         <div className="mobile-assistant-steps" aria-label="Быстрый переход по шагам">

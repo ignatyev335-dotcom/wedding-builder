@@ -45,6 +45,7 @@ export async function persistSiteExtras() {
       postWeddingHeroImage: state.postWeddingHeroImage,
       postWeddingPhotoUrl: state.postWeddingPhotoUrl,
       postWeddingThankYouText: state.postWeddingThankYouText,
+      rsvpQuestionSettings: state.rsvpQuestionSettings,
       customQuestions: state.customQuestions,
       fontCode: state.fontCode,
       blockOrder: state.blockOrder,

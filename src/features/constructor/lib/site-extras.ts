@@ -9,8 +9,17 @@ import {
   type CustomQuestion,
   type FontCode,
   type FaqItem,
+  type RsvpQuestionKey,
   type WishlistItem,
 } from "@/entities/wedding/model";
+
+const defaultRsvpQuestionSettings: Record<RsvpQuestionKey, boolean> = {
+  plusOne: true,
+  food: true,
+  alcohol: true,
+  transport: true,
+  music: true,
+};
 
 export type SiteExtras = {
   coverPhoto: string | null;
@@ -35,6 +44,7 @@ export type SiteExtras = {
   countdownTitle: string;
   countdownStyle: CountdownStyleCode;
   cardStyle: CardStyleCode;
+  rsvpQuestionSettings: Record<RsvpQuestionKey, boolean>;
 };
 
 export const defaultSiteExtras: SiteExtras = {
@@ -63,6 +73,7 @@ export const defaultSiteExtras: SiteExtras = {
   countdownTitle: "До свадьбы осталось",
   countdownStyle: "MINIMAL",
   cardStyle: "PLAIN",
+  rsvpQuestionSettings: defaultRsvpQuestionSettings,
 };
 
 export function parseFaqItems(value: string | null | undefined): FaqItem[] {
@@ -209,6 +220,13 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
       cardStyle: cardStyleCodes.includes(parsed.cardStyle as CardStyleCode)
         ? (parsed.cardStyle as CardStyleCode)
         : "PLAIN",
+      rsvpQuestionSettings: {
+        ...defaultRsvpQuestionSettings,
+        ...(typeof parsed.rsvpQuestionSettings === "object" &&
+        parsed.rsvpQuestionSettings !== null
+          ? parsed.rsvpQuestionSettings
+          : {}),
+      },
     };
   } catch {
     return defaultSiteExtras;
