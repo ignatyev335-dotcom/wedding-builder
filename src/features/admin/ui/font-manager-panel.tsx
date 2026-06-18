@@ -1,14 +1,15 @@
 "use client";
 
-import { FileType2, Loader2, Plus, Trash2 } from "lucide-react";
+import { FileType2, Link2, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type { CustomFontOption } from "@/entities/wedding/model";
 
 type FontFormat = "woff2" | "woff" | "truetype" | "opentype";
+type FontSource = "file" | "url";
 
-function detectFontFormat(fileName: string): FontFormat {
-  const lower = fileName.toLowerCase();
+function detectFontFormat(value: string): FontFormat {
+  const lower = value.toLowerCase();
   if (lower.endsWith(".woff")) return "woff";
   if (lower.endsWith(".ttf")) return "truetype";
   if (lower.endsWith(".otf")) return "opentype";
@@ -21,8 +22,10 @@ export function FontManagerPanel({
   initialFonts: CustomFontOption[];
 }) {
   const [fonts, setFonts] = useState(initialFonts);
+  const [source, setSource] = useState<FontSource>("file");
   const [name, setName] = useState("");
   const [family, setFamily] = useState("");
+  const [fontUrl, setFontUrl] = useState("");
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -47,16 +50,25 @@ export function FontManagerPanel({
 
   const addFont = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!fontFile) {
-      setMessage("Выберите файл шрифта с компьютера.");
-      return;
-    }
-
     setIsSaving(true);
     setMessage("");
 
     try {
-      const fileUrl = await uploadFont(fontFile);
+      const fileUrl =
+        source === "file"
+          ? fontFile
+            ? await uploadFont(fontFile)
+            : ""
+          : fontUrl.trim();
+
+      if (!fileUrl) {
+        throw new Error(
+          source === "file"
+            ? "Выберите файл шрифта с компьютера."
+            : "Вставьте ссылку на файл шрифта.",
+        );
+      }
+
       const response = await fetch("/api/admin/fonts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,7 +76,7 @@ export function FontManagerPanel({
           name,
           family,
           fileUrl,
-          format: detectFontFormat(fontFile.name),
+          format: detectFontFormat(source === "file" ? fontFile?.name ?? fileUrl : fileUrl),
         }),
       });
       const result = (await response.json()) as {
@@ -83,13 +95,12 @@ export function FontManagerPanel({
       );
       setName("");
       setFamily("");
+      setFontUrl("");
       setFontFile(null);
       formRef.current?.reset();
-      setMessage("Шрифт добавлен и доступен при создании тем.");
+      setMessage("Шрифт добавлен и доступен в конструкторе тем.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Не удалось добавить шрифт.",
-      );
+      setMessage(error instanceof Error ? error.message : "Не удалось добавить шрифт.");
     } finally {
       setIsSaving(false);
     }
@@ -110,14 +121,10 @@ export function FontManagerPanel({
         throw new Error(result.error || "Не удалось удалить шрифт.");
       }
       setFonts((items) => items.filter((font) => font.id !== id));
-      window.dispatchEvent(
-        new CustomEvent<string>("vowly:font-removed", { detail: id }),
-      );
+      window.dispatchEvent(new CustomEvent<string>("vowly:font-removed", { detail: id }));
       setMessage("Шрифт удален.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Не удалось удалить шрифт.",
-      );
+      setMessage(error instanceof Error ? error.message : "Не удалось удалить шрифт.");
     } finally {
       setDeletingId(null);
     }
@@ -143,14 +150,13 @@ export function FontManagerPanel({
           <small>Типографика</small>
           <h2>Пользовательские шрифты</h2>
           <p>
-            Загружайте WOFF2, WOFF, TTF или OTF с компьютера. После сохранения
-            шрифт сразу можно выбрать в конструкторе тем.
+            Добавляйте шрифты файлом с компьютера или ссылкой. После сохранения их можно выбрать в темах.
           </p>
         </div>
       </header>
 
       <form
-        className="grid gap-3 rounded-3xl bg-stone-50 p-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.3fr_auto]"
+        className="grid gap-3 rounded-3xl bg-stone-50 p-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_170px_1.4fr_auto]"
         onSubmit={addFont}
         ref={formRef}
       >
@@ -168,19 +174,32 @@ export function FontManagerPanel({
           value={family}
           onChange={(event) => setFamily(event.target.value)}
         />
-        <input
+        <select
           className="admin-input"
-          required
-          accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff"
-          type="file"
-          onChange={(event) => setFontFile(event.target.files?.[0] ?? null)}
-        />
+          value={source}
+          onChange={(event) => setSource(event.target.value as FontSource)}
+        >
+          <option value="file">Файл</option>
+          <option value="url">Ссылка</option>
+        </select>
+        {source === "file" ? (
+          <input
+            className="admin-input"
+            accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff"
+            type="file"
+            onChange={(event) => setFontFile(event.target.files?.[0] ?? null)}
+          />
+        ) : (
+          <input
+            className="admin-input"
+            type="url"
+            placeholder="https://cdn.site/font.woff2"
+            value={fontUrl}
+            onChange={(event) => setFontUrl(event.target.value)}
+          />
+        )}
         <button className="admin-primary-button" disabled={isSaving}>
-          {isSaving ? (
-            <Loader2 className="animate-spin" size={17} />
-          ) : (
-            <Plus size={17} />
-          )}
+          {isSaving ? <Loader2 className="animate-spin" size={17} /> : source === "file" ? <Upload size={17} /> : <Link2 size={17} />}
           Добавить
         </button>
       </form>
@@ -193,10 +212,7 @@ export function FontManagerPanel({
           >
             <div className="min-w-0 flex-1">
               <strong className="block truncate">{font.name}</strong>
-              <span
-                className="mt-1 block truncate text-xl"
-                style={{ fontFamily: `"${font.family}", serif` }}
-              >
+              <span className="mt-1 block truncate text-xl" style={{ fontFamily: `"${font.family}", serif` }}>
                 Александр & Валентина
               </span>
               <small className="block truncate text-stone-500">
@@ -210,18 +226,13 @@ export function FontManagerPanel({
               disabled={deletingId === font.id}
               onClick={() => void removeFont(font.id)}
             >
-              {deletingId === font.id ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                <Trash2 size={16} />
-              )}
+              {deletingId === font.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
             </button>
           </article>
         ))}
         {fonts.length === 0 && (
           <p className="admin-muted">
-            Пользовательских шрифтов пока нет. Добавьте первый файл, и он
-            появится в темах.
+            Пользовательских шрифтов пока нет. Добавьте первый файл или ссылку.
           </p>
         )}
       </div>

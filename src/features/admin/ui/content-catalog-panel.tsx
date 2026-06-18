@@ -1,12 +1,20 @@
 "use client";
 
-import { Loader2, Music2, Plus, Trash2, Type } from "lucide-react";
+import { Loader2, Music2, Plus, Tag, Trash2, Type } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type {
   AudioTrackOption,
   InvitationTemplateOption,
 } from "@/entities/wedding/model";
+
+const templateCategories = [
+  { value: "classic", label: "Классические" },
+  { value: "warm", label: "Теплые" },
+  { value: "modern", label: "Современные" },
+  { value: "funny", label: "С юмором" },
+  { value: "minimal", label: "Минимализм" },
+] as const;
 
 export function ContentCatalogPanel({
   initialTracks,
@@ -21,6 +29,7 @@ export function ContentCatalogPanel({
   const [trackArtist, setTrackArtist] = useState("");
   const [trackFile, setTrackFile] = useState<File | null>(null);
   const [templateTitle, setTemplateTitle] = useState("");
+  const [templateCategory, setTemplateCategory] = useState("classic");
   const [templateContent, setTemplateContent] = useState("");
   const [isSavingTrack, setIsSavingTrack] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
@@ -74,19 +83,17 @@ export function ContentCatalogPanel({
         track?: AudioTrackOption;
       };
       if (!response.ok || !result.track) {
-        throw new Error(result.error || "Не удалось добавить трек.");
+        throw new Error(result.error || "Не удалось добавить трек в базу.");
       }
 
-      setTracks((items) => [...items, result.track!]);
+      setTracks((items) => [result.track!, ...items]);
       setTrackTitle("");
       setTrackArtist("");
       setTrackFile(null);
       trackFormRef.current?.reset();
-      setMessage("Трек добавлен. Он сразу появится в квизе и конструкторе.");
+      setMessage("Трек добавлен в базу и сразу появится в конструкторе.");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Ошибка сохранения трека.",
-      );
+      setMessage(error instanceof Error ? error.message : "Ошибка сохранения трека.");
     } finally {
       setIsSavingTrack(false);
     }
@@ -103,6 +110,7 @@ export function ContentCatalogPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: templateTitle,
+          category: templateCategory,
           content: templateContent,
           isActive: true,
         }),
@@ -115,44 +123,17 @@ export function ContentCatalogPanel({
         throw new Error(result.error || "Не удалось добавить шаблон.");
       }
 
-      setTemplates((items) => [...items, result.template!]);
+      setTemplates((items) => [result.template!, ...items]);
       setTemplateTitle("");
+      setTemplateCategory("classic");
       setTemplateContent("");
-      setMessage("Шаблон добавлен. Он сразу появится в квизе и конструкторе.");
+      setMessage("Шаблон добавлен и сразу появится в конструкторе.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Ошибка сохранения шаблона.",
       );
     } finally {
       setIsSavingTemplate(false);
-    }
-  };
-
-  const loadDemoTemplates = async () => {
-    setBusyId("demo-templates");
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/admin/catalog/templates/demo", {
-        method: "POST",
-      });
-      const result = (await response.json()) as {
-        error?: string;
-        templates?: InvitationTemplateOption[];
-      };
-      if (!response.ok) {
-        throw new Error(result.error || "Не удалось загрузить демо-данные.");
-      }
-      if (result.templates) {
-        setTemplates(result.templates);
-      }
-      setMessage("Демо-данные добавлены в каталог.");
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Ошибка загрузки демо-данных.",
-      );
-    } finally {
-      setBusyId(null);
     }
   };
 
@@ -177,9 +158,7 @@ export function ContentCatalogPanel({
         setTemplates((items) => items.filter((item) => item.id !== id));
       }
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Не удалось удалить запись.",
-      );
+      setMessage(error instanceof Error ? error.message : "Не удалось удалить запись.");
     } finally {
       setBusyId(null);
     }
@@ -190,9 +169,9 @@ export function ContentCatalogPanel({
       <article className="admin-card">
         <PanelTitle
           icon={<Music2 size={22} />}
-          eyebrow="Динамический каталог"
-          title="Музыка"
-          description="Добавляйте MP3 только с компьютера. Треки сразу становятся доступны в квизе и конструкторе."
+          eyebrow="Каталог музыки"
+          title="Треки для приглашений"
+          description="Загружайте MP3 с компьютера. После сохранения трек сразу доступен в квизе и конструкторе."
         />
         <form className="grid gap-3" onSubmit={addTrack} ref={trackFormRef}>
           <input
@@ -205,7 +184,7 @@ export function ContentCatalogPanel({
           <input
             className={fieldClass}
             required
-            placeholder="Исполнитель"
+            placeholder="Исполнитель или настроение"
             value={trackArtist}
             onChange={(event) => setTrackArtist(event.target.value)}
           />
@@ -217,11 +196,7 @@ export function ContentCatalogPanel({
             onChange={(event) => setTrackFile(event.target.files?.[0] ?? null)}
           />
           <button className="admin-primary-button" disabled={isSavingTrack}>
-            {isSavingTrack ? (
-              <Loader2 className="animate-spin" size={17} />
-            ) : (
-              <Plus size={17} />
-            )}
+            {isSavingTrack ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
             {isSavingTrack ? "Загружаем..." : "Добавить трек"}
           </button>
         </form>
@@ -230,16 +205,9 @@ export function ContentCatalogPanel({
             <div className="admin-list-row" key={track.id}>
               <div className="min-w-0 flex-1">
                 <strong className="block truncate">{track.title}</strong>
-                <small className="block truncate text-stone-500">
-                  {track.artist}
-                </small>
+                <small className="block truncate text-stone-500">{track.artist}</small>
               </div>
-              <audio
-                className="hidden max-w-56 sm:block"
-                controls
-                preload="none"
-                src={track.fileUrl}
-              />
+              <audio className="hidden max-w-56 sm:block" controls preload="none" src={track.fileUrl} />
               <button
                 className="admin-danger-icon"
                 type="button"
@@ -247,26 +215,20 @@ export function ContentCatalogPanel({
                 disabled={busyId === track.id}
                 onClick={() => void removeItem("tracks", track.id)}
               >
-                {busyId === track.id ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Trash2 size={16} />
-                )}
+                {busyId === track.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
               </button>
             </div>
           ))}
-          {tracks.length === 0 && (
-            <p className="admin-muted">Библиотека музыки пока пустая.</p>
-          )}
+          {tracks.length === 0 && <p className="admin-muted">Библиотека музыки пока пустая.</p>}
         </div>
       </article>
 
       <article className="admin-card">
         <PanelTitle
           icon={<Type size={22} />}
-          eyebrow="Динамический каталог"
-          title="Тексты приглашений"
-          description="Шаблоны берутся из базы и доступны пользователю в квизе и конструкторе."
+          eyebrow="Тексты"
+          title="Шаблоны приглашений"
+          description="Разделяйте тексты по тегам: так пользователю проще выбрать тон приглашения."
         />
         <form className="grid gap-3" onSubmit={addTemplate}>
           <input
@@ -276,6 +238,17 @@ export function ContentCatalogPanel({
             value={templateTitle}
             onChange={(event) => setTemplateTitle(event.target.value)}
           />
+          <select
+            className={fieldClass}
+            value={templateCategory}
+            onChange={(event) => setTemplateCategory(event.target.value)}
+          >
+            {templateCategories.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
+              </option>
+            ))}
+          </select>
           <textarea
             className={`${fieldClass} min-h-36 py-3`}
             required
@@ -284,32 +257,20 @@ export function ContentCatalogPanel({
             onChange={(event) => setTemplateContent(event.target.value)}
           />
           <button className="admin-primary-button" disabled={isSavingTemplate}>
-            {isSavingTemplate ? (
-              <Loader2 className="animate-spin" size={17} />
-            ) : (
-              <Plus size={17} />
-            )}
+            {isSavingTemplate ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
             {isSavingTemplate ? "Сохраняем..." : "Добавить шаблон"}
-          </button>
-          <button
-            className="admin-secondary-button"
-            disabled={busyId === "demo-templates"}
-            onClick={() => void loadDemoTemplates()}
-            type="button"
-          >
-            {busyId === "demo-templates"
-              ? "Загружаем..."
-              : "Загрузить демо-шаблоны"}
           </button>
         </form>
         <div className="mt-5 grid gap-2">
           {templates.map((template) => (
             <div className="admin-list-row items-start" key={template.id}>
               <div className="min-w-0 flex-1">
+                <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500">
+                  <Tag size={12} />
+                  {templateCategories.find((item) => item.value === template.category)?.label ?? "Классические"}
+                </span>
                 <strong className="block">{template.title}</strong>
-                <p className="m-0 mt-1 line-clamp-3 text-sm text-stone-500">
-                  {template.content}
-                </p>
+                <p className="m-0 mt-1 line-clamp-3 text-sm text-stone-500">{template.content}</p>
               </div>
               <button
                 className="admin-danger-icon"
@@ -318,17 +279,11 @@ export function ContentCatalogPanel({
                 disabled={busyId === template.id}
                 onClick={() => void removeItem("templates", template.id)}
               >
-                {busyId === template.id ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Trash2 size={16} />
-                )}
+                {busyId === template.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
               </button>
             </div>
           ))}
-          {templates.length === 0 && (
-            <p className="admin-muted">Шаблоны пока не добавлены.</p>
-          )}
+          {templates.length === 0 && <p className="admin-muted">Шаблоны пока не добавлены.</p>}
         </div>
         {message && <p className="mt-4 text-sm text-stone-600">{message}</p>}
       </article>

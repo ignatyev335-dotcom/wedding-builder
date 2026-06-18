@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, Loader2, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { SiteAdminActions } from "@/features/admin/ui/site-admin-actions";
@@ -33,23 +33,22 @@ export function AdminSitesPanel({
   statusLabels: Record<SiteStatus, string>;
 }) {
   const [query, setQuery] = useState("");
+  const [sites, setSites] = useState(initialSites);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<(typeof filterOptions)[number]["value"]>("ALL");
 
   const filteredSites = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return initialSites.filter((site) => {
+    return sites.filter((site) => {
       const matchesStatus =
         statusFilter === "ALL" ? true : site.status === statusFilter;
 
-      if (!matchesStatus) {
-        return false;
-      }
-
-      if (!normalizedQuery) {
-        return true;
-      }
+      if (!matchesStatus) return false;
+      if (!normalizedQuery) return true;
 
       const haystack = [
         site.ownerEmail,
@@ -64,7 +63,56 @@ export function AdminSitesPanel({
 
       return haystack.includes(normalizedQuery);
     });
-  }, [initialSites, query, statusFilter]);
+  }, [sites, query, statusFilter]);
+
+  const visibleIds = filteredSites.map((site) => site.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelected = (siteId: string) => {
+    setSelectedIds((ids) =>
+      ids.includes(siteId)
+        ? ids.filter((id) => id !== siteId)
+        : [...ids, siteId],
+    );
+  };
+
+  const toggleVisibleSelected = () => {
+    setSelectedIds((ids) =>
+      allVisibleSelected
+        ? ids.filter((id) => !visibleIds.includes(id))
+        : Array.from(new Set([...ids, ...visibleIds])),
+    );
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Удалить выбранные сайты: ${selectedIds.length}?`)) return;
+
+    setIsBulkDeleting(true);
+    setMessage("");
+
+    const idsToDelete = [...selectedIds];
+    try {
+      await Promise.all(
+        idsToDelete.map(async (id) => {
+          const response = await fetch(`/api/admin/sites/${id}`, {
+            method: "DELETE",
+          });
+          if (!response.ok) throw new Error("Не удалось удалить часть сайтов.");
+        }),
+      );
+      setSites((items) => items.filter((site) => !idsToDelete.includes(site.id)));
+      setSelectedIds([]);
+      setMessage("Выбранные сайты удалены.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Не удалось удалить сайты.",
+      );
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   return (
     <section className="admin-sites">
@@ -103,8 +151,29 @@ export function AdminSitesPanel({
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          className="admin-secondary-button"
+          type="button"
+          onClick={toggleVisibleSelected}
+        >
+          {allVisibleSelected ? "Снять выбор" : "Выбрать видимые"}
+        </button>
+        <button
+          className="admin-secondary-button text-red-700"
+          type="button"
+          disabled={selectedIds.length === 0 || isBulkDeleting}
+          onClick={() => void bulkDelete()}
+        >
+          {isBulkDeleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+          Удалить выбранные ({selectedIds.length})
+        </button>
+        {message && <span className="text-sm text-stone-500">{message}</span>}
+      </div>
+
       <div className="admin-table">
         <div className="admin-table-head">
+          <span>Выбор</span>
           <span>Проект</span>
           <span>Владелец</span>
           <span>Статус</span>
@@ -113,6 +182,14 @@ export function AdminSitesPanel({
         </div>
         {filteredSites.map((site) => (
           <article key={site.id}>
+            <label className="flex items-center">
+              <input
+                className="h-5 w-5 accent-stone-900"
+                type="checkbox"
+                checked={selectedIds.includes(site.id)}
+                onChange={() => toggleSelected(site.id)}
+              />
+            </label>
             <div>
               <strong>
                 {site.partnerOneName || site.partnerTwoName
@@ -140,6 +217,17 @@ export function AdminSitesPanel({
             <SiteAdminActions
               siteId={site.id}
               isArchived={site.status === "ARCHIVED"}
+              onStatusChange={(siteId, status) =>
+                setSites((items) =>
+                  items.map((item) =>
+                    item.id === siteId ? { ...item, status } : item,
+                  ),
+                )
+              }
+              onRemove={(siteId) => {
+                setSites((items) => items.filter((item) => item.id !== siteId));
+                setSelectedIds((ids) => ids.filter((id) => id !== siteId));
+              }}
             />
           </article>
         ))}

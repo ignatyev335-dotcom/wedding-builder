@@ -45,6 +45,8 @@ const contentSchema = z.object({
   transferTime: z.string().regex(/^\d{2}:\d{2}$/),
   transferMeetingPoint: z.string().max(300),
   postWeddingMode: z.boolean(),
+  postWeddingAutoEnabled: z.boolean(),
+  postWeddingHeroImage: z.string().max(4_000_000).nullable(),
   postWeddingPhotoUrl: z.string().trim().max(1000),
   postWeddingThankYouText: z.string().trim().max(1200),
   customQuestions: z
@@ -56,7 +58,7 @@ const contentSchema = z.object({
         options: z.array(z.string().trim().min(1).max(120)).max(6),
       }),
     )
-    .max(2),
+    .max(5),
   fontCode: z.enum(fontCodes),
   blockOrder: z.array(z.enum(contentBlockCodes)).length(contentBlockCodes.length),
   ceremonyTime: z.string().regex(/^\d{2}:\d{2}$/),

@@ -24,6 +24,8 @@ export type SiteExtras = {
   transferTime: string;
   transferMeetingPoint: string;
   postWeddingMode: boolean;
+  postWeddingAutoEnabled: boolean;
+  postWeddingHeroImage: string | null;
   postWeddingPhotoUrl: string;
   postWeddingThankYouText: string;
   fontCode: FontCode;
@@ -49,6 +51,8 @@ export const defaultSiteExtras: SiteExtras = {
   transferTime: "14:30",
   transferMeetingPoint: "Центр города",
   postWeddingMode: false,
+  postWeddingAutoEnabled: false,
+  postWeddingHeroImage: null,
   postWeddingPhotoUrl: "",
   postWeddingThankYouText:
     "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
@@ -155,6 +159,14 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
         typeof parsed.postWeddingMode === "boolean"
           ? parsed.postWeddingMode
           : false,
+      postWeddingAutoEnabled:
+        typeof parsed.postWeddingAutoEnabled === "boolean"
+          ? parsed.postWeddingAutoEnabled
+          : false,
+      postWeddingHeroImage:
+        typeof parsed.postWeddingHeroImage === "string"
+          ? parsed.postWeddingHeroImage
+          : null,
       postWeddingPhotoUrl:
         typeof parsed.postWeddingPhotoUrl === "string"
           ? parsed.postWeddingPhotoUrl
@@ -223,7 +235,7 @@ export function parseCustomQuestions(
           .filter((option): option is string => typeof option === "string")
           .slice(0, 6),
       }))
-      .slice(0, 2);
+      .slice(0, 5);
   } catch {
     return [];
   }

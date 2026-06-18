@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Check,
@@ -54,9 +54,9 @@ type ContentSection =
 
 const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> = [
   { id: "content", label: "Контент", icon: FileText },
-  { id: "styles", label: "Стили", icon: Palette },
+  { id: "styles", label: "Стиль", icon: Palette },
   { id: "music", label: "Музыка", icon: Music2 },
-  { id: "media", label: "Медиа", icon: Images },
+  { id: "media", label: "Фото", icon: Images },
   { id: "guests", label: "Гости", icon: UsersRound },
   { id: "crew", label: "Команда", icon: Clock3 },
   { id: "publish", label: "Публикация", icon: Upload },
@@ -73,41 +73,50 @@ const moduleLabels: Record<BuilderModule, string> = {
 
 const palettePresets = [
   {
-    title: "Шалфей и айвори",
+    title: "РЁР°Р»С„РµР№ Рё Р°Р№РІРѕСЂРё",
     colors: ["#F5F0E6", "#D8D4C4", "#AEB7A1", "#74806B", "#3E4A3D"],
   },
   {
-    title: "Пыльная роза",
+    title: "РџС‹Р»СЊРЅР°СЏ СЂРѕР·Р°",
     colors: ["#F8EDEA", "#E8CBC8", "#C99898", "#986C72", "#684B52"],
   },
   {
-    title: "Шампань",
+    title: "РЁР°РјРїР°РЅСЊ",
     colors: ["#FFF9ED", "#EEDFC3", "#D2B98B", "#A48659", "#66523A"],
   },
   {
-    title: "Терракота",
+    title: "РўРµСЂСЂР°РєРѕС‚Р°",
     colors: ["#F5E5D5", "#DDB89A", "#C17C5D", "#8E513F", "#5C3931"],
   },
   {
-    title: "Дымчато-синий",
+    title: "Р”С‹РјС‡Р°С‚Рѕ-СЃРёРЅРёР№",
     colors: ["#EEF2F3", "#CCD8DD", "#91A8B3", "#5F7783", "#344955"],
   },
   {
-    title: "Черный и золото",
+    title: "Р§РµСЂРЅС‹Р№ Рё Р·РѕР»РѕС‚Рѕ",
     colors: ["#F5F1E8", "#D7C6A3", "#A8894F", "#4A443B", "#171817"],
   },
 ] as const;
 
+const invitationTemplateCategories = [
+  { value: "all", label: "Все" },
+  { value: "classic", label: "Классика" },
+  { value: "warm", label: "Теплые" },
+  { value: "modern", label: "Современные" },
+  { value: "funny", label: "С юмором" },
+  { value: "minimal", label: "Минимализм" },
+] as const;
+
 const countdownStyles: Array<{ code: CountdownStyleCode; title: string }> = [
-  { code: "MINIMAL", title: "Минимализм" },
-  { code: "TILES", title: "Карточки" },
-  { code: "FLIP", title: "Табло" },
+  { code: "MINIMAL", title: "РњРёРЅРёРјР°Р»РёР·Рј" },
+  { code: "TILES", title: "РљР°СЂС‚РѕС‡РєРё" },
+  { code: "FLIP", title: "РўР°Р±Р»Рѕ" },
 ];
 
 const photoMaskOptions: Array<{ code: PhotoMaskCode; title: string }> = [
-  { code: "RECTANGLE", title: "Прямоугольник" },
-  { code: "ARCH", title: "Арка" },
-  { code: "OVAL", title: "Овал" },
+  { code: "RECTANGLE", title: "РџСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРє" },
+  { code: "ARCH", title: "РђСЂРєР°" },
+  { code: "OVAL", title: "РћРІР°Р»" },
 ];
 
 const cardStyleOptions: Array<{
@@ -115,12 +124,12 @@ const cardStyleOptions: Array<{
   title: string;
   description: string;
 }> = [
-  { code: "PLAIN", title: "Классика", description: "Чистые спокойные карточки" },
-  { code: "GLASS", title: "Матовое стекло", description: "Полупрозрачность и blur" },
-  { code: "LIQUID", title: "Liquid Glass", description: "Прозрачный объем в духе Apple" },
-  { code: "EDITORIAL", title: "Журнал", description: "Крупная типографика и тонкие линии" },
-  { code: "SILK", title: "Шелк", description: "Мягкие светлые слои и тени" },
-  { code: "MONOGRAM", title: "Вензель", description: "Тонкая рамка с акцентом" },
+  { code: "PLAIN", title: "РљР»Р°СЃСЃРёРєР°", description: "Р§РёСЃС‚С‹Рµ СЃРїРѕРєРѕР№РЅС‹Рµ РєР°СЂС‚РѕС‡РєРё" },
+  { code: "GLASS", title: "РњР°С‚РѕРІРѕРµ СЃС‚РµРєР»Рѕ", description: "РџРѕР»СѓРїСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ Рё blur" },
+  { code: "LIQUID", title: "Liquid Glass", description: "РџСЂРѕР·СЂР°С‡РЅС‹Р№ РѕР±СЉРµРј РІ РґСѓС…Рµ Apple" },
+  { code: "EDITORIAL", title: "Р–СѓСЂРЅР°Р»", description: "РљСЂСѓРїРЅР°СЏ С‚РёРїРѕРіСЂР°С„РёРєР° Рё С‚РѕРЅРєРёРµ Р»РёРЅРёРё" },
+  { code: "SILK", title: "РЁРµР»Рє", description: "РњСЏРіРєРёРµ СЃРІРµС‚Р»С‹Рµ СЃР»РѕРё Рё С‚РµРЅРё" },
+  { code: "MONOGRAM", title: "Р’РµРЅР·РµР»СЊ", description: "РўРѕРЅРєР°СЏ СЂР°РјРєР° СЃ Р°РєС†РµРЅС‚РѕРј" },
 ];
 
 export function ConstructorSidebar({
@@ -148,6 +157,7 @@ export function ConstructorSidebar({
   const [activeInvitationTemplate, setActiveInvitationTemplate] = useState<
     string | null
   >(null);
+  const [templateCategory, setTemplateCategory] = useState("all");
   const [catalogTracks, setCatalogTracks] = useState<AudioTrackOption[]>([]);
   const [catalogTemplates, setCatalogTemplates] = useState<
     InvitationTemplateOption[]
@@ -157,6 +167,12 @@ export function ConstructorSidebar({
   const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
   const [draggedBlock, setDraggedBlock] = useState<ContentBlockCode | null>(null);
+  const filteredTemplates =
+    templateCategory === "all"
+      ? catalogTemplates
+      : catalogTemplates.filter(
+          (template) => template.category === templateCategory,
+        );
   const saveExtrasQuietly = () => {
     void persistSiteExtras().catch(() => undefined);
   };
@@ -204,6 +220,8 @@ export function ConstructorSidebar({
     transferMeetingPoint,
     invitationText,
     postWeddingMode,
+    postWeddingAutoEnabled,
+    postWeddingHeroImage,
     postWeddingPhotoUrl,
     postWeddingThankYouText,
     heroImageDesktop,
@@ -253,6 +271,8 @@ export function ConstructorSidebar({
     removeWishlistItem,
     setInvitationText,
     setPostWeddingMode,
+    setPostWeddingAutoEnabled,
+    setPostWeddingHeroImage,
     setPostWeddingPhotoUrl,
     setPostWeddingThankYouText,
   } = useWeddingStore();
@@ -268,7 +288,7 @@ export function ConstructorSidebar({
   const applyInvitationTemplate = (template: InvitationTemplateOption) => {
     const firstName = partnerOneName.trim();
     const secondName = partnerTwoName.trim();
-    const names = [firstName, secondName].filter(Boolean).join(" и ");
+    const names = [firstName, secondName].filter(Boolean).join(" Рё ");
     setInvitationText(
       template.content
         .replaceAll("{names}", names)
@@ -284,7 +304,7 @@ export function ConstructorSidebar({
 
     void fetch("/api/catalog", { cache: "no-store" })
       .then(async (response) => {
-        if (!response.ok) throw new Error("Не удалось загрузить библиотеку.");
+        if (!response.ok) throw new Error("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р±РёР±Р»РёРѕС‚РµРєСѓ.");
         return (await response.json()) as {
           tracks: AudioTrackOption[];
           templates: InvitationTemplateOption[];
@@ -299,7 +319,7 @@ export function ConstructorSidebar({
         setCatalogError("");
       })
       .catch(() => {
-        if (active) setCatalogError("Библиотека временно недоступна.");
+        if (active) setCatalogError("Р‘РёР±Р»РёРѕС‚РµРєР° РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРЅР°.");
       })
       .finally(() => {
         if (active) setCatalogLoading(false);
@@ -333,16 +353,16 @@ export function ConstructorSidebar({
   const uploadCustomMusic = (file?: File) => {
     if (!file) return;
     if (file.type !== "audio/mpeg" && !file.name.toLowerCase().endsWith(".mp3")) {
-      setMusicError("Выберите файл в формате MP3.");
+      setMusicError("Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р» РІ С„РѕСЂРјР°С‚Рµ MP3.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setMusicError("Размер MP3 не должен превышать 5 МБ.");
+      setMusicError("Р Р°Р·РјРµСЂ MP3 РЅРµ РґРѕР»Р¶РµРЅ РїСЂРµРІС‹С€Р°С‚СЊ 5 РњР‘.");
       return;
     }
 
     const reader = new FileReader();
-    reader.onerror = () => setMusicError("Не удалось прочитать аудиофайл.");
+    reader.onerror = () => setMusicError("РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ Р°СѓРґРёРѕС„Р°Р№Р».");
     reader.onload = () => {
       setCustomMusic(String(reader.result), file.name);
       setMusicError("");
@@ -378,7 +398,7 @@ export function ConstructorSidebar({
     >
       <nav
         className={`constructor-tabs ${hideTabs ? "hidden" : "hidden lg:flex"}`}
-        aria-label="Разделы конструктора"
+        aria-label="Р Р°Р·РґРµР»С‹ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°"
       >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -396,50 +416,98 @@ export function ConstructorSidebar({
       <div className="constructor-editor">
         <section className="constructor-progress">
           <div>
-            <span>Ваш сайт почти готов</span>
+            <span>Р’Р°С€ СЃР°Р№С‚ РїРѕС‡С‚Рё РіРѕС‚РѕРІ</span>
             <strong>{completion}%</strong>
           </div>
           <div className="constructor-progress-track">
             <i style={{ width: `${completion}%` }} />
           </div>
           <p>
-            Ваш сайт готов на {completion}%.{" "}
+            Р’Р°С€ СЃР°Р№С‚ РіРѕС‚РѕРІ РЅР° {completion}%.{" "}
             {completion === 100
-              ? "Можно оживить сайт и отправлять."
-              : "Осталось совсем немного."}
+              ? "РњРѕР¶РЅРѕ РѕР¶РёРІРёС‚СЊ СЃР°Р№С‚ Рё РѕС‚РїСЂР°РІР»СЏС‚СЊ."
+              : "РћСЃС‚Р°Р»РѕСЃСЊ СЃРѕРІСЃРµРј РЅРµРјРЅРѕРіРѕ."}
           </p>
         </section>
 
         {activeTab === "content" && (
           <>
             <EditorHeading
-              eyebrow="Содержание"
-              title="Расскажите вашу историю"
-              description="Все изменения сразу отражаются в предпросмотре."
+              eyebrow="РЎРѕРґРµСЂР¶Р°РЅРёРµ"
+              title="Р Р°СЃСЃРєР°Р¶РёС‚Рµ РІР°С€Сѓ РёСЃС‚РѕСЂРёСЋ"
+              description="Р’СЃРµ РёР·РјРµРЅРµРЅРёСЏ СЃСЂР°Р·Сѓ РѕС‚СЂР°Р¶Р°СЋС‚СЃСЏ РІ РїСЂРµРґРїСЂРѕСЃРјРѕС‚СЂРµ."
             />
 
             <section className="post-wedding-toggle">
               <div>
                 <strong>Режим после свадьбы</strong>
                 <small>
-                  Включите после мероприятия: сайт станет благодарностью, а не планом подготовки и встречи.
+                  Подготовьте его заранее: сайт сам переключится в 00:00 на следующий день после свадьбы. Вручную включать в праздник ничего не придется.
                 </small>
               </div>
               <button
-                className={`switch ${postWeddingMode ? "is-on" : ""}`}
+                className={`switch ${postWeddingAutoEnabled ? "is-on" : ""}`}
                 type="button"
                 role="switch"
-                aria-checked={postWeddingMode}
+                aria-checked={postWeddingAutoEnabled}
                 onClick={() => {
-                  setPostWeddingMode(!postWeddingMode);
+                  setPostWeddingAutoEnabled(!postWeddingAutoEnabled);
                   window.setTimeout(saveExtrasQuietly, 0);
                 }}
               >
                 <i />
               </button>
             </section>
-            {postWeddingMode && (
+            {(postWeddingAutoEnabled || postWeddingMode) && (
               <div className="post-wedding-settings">
+                <section className="post-wedding-toggle is-soft">
+                  <div>
+                    <strong>Показать режим сейчас</strong>
+                    <small>
+                      Только для проверки или если свадьба уже прошла. Автозапуск при этом останется настроенным.
+                    </small>
+                  </div>
+                  <button
+                    className={`switch ${postWeddingMode ? "is-on" : ""}`}
+                    type="button"
+                    role="switch"
+                    aria-checked={postWeddingMode}
+                    onClick={() => {
+                      setPostWeddingMode(!postWeddingMode);
+                      window.setTimeout(saveExtrasQuietly, 0);
+                    }}
+                  >
+                    <i />
+                  </button>
+                </section>
+                <label className="constructor-field">
+                  <span>Обложка после свадьбы</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      void uploadSingleImage(
+                        event.target.files?.[0],
+                        setPostWeddingHeroImage,
+                      )
+                    }
+                  />
+                  {postWeddingHeroImage && (
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={() => {
+                        setPostWeddingHeroImage(null);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      Убрать фото
+                    </button>
+                  )}
+                  <small>
+                    Можно поставить уже свадебный кадр: платье, букет, первый танец или общее фото.
+                  </small>
+                </label>
                 <label className="constructor-field">
                   <span>Текст благодарности</span>
                   <textarea
@@ -462,7 +530,7 @@ export function ConstructorSidebar({
                     onBlur={saveExtrasQuietly}
                   />
                   <small>
-                    По этой ссылке гости смогут открыть фотографии после свадьбы.
+                    Love Story останется на сайте, а эта ссылка откроет гостям готовые фотографии после свадьбы.
                   </small>
                 </label>
               </div>
@@ -470,7 +538,7 @@ export function ConstructorSidebar({
 
             <div className="content-accordion">
               <ContentAccordionHeader
-                title="Главный блок"
+                title="Р“Р»Р°РІРЅС‹Р№ Р±Р»РѕРє"
                 isOpen={openSections.includes("HERO")}
                 onOpen={() => toggleSection("HERO")}
               />
@@ -478,20 +546,20 @@ export function ConstructorSidebar({
                 <div className="accordion-body">
                   <div className="constructor-field-grid">
                     <label className="constructor-field">
-                      <span>Жених</span>
+                      <span>Р–РµРЅРёС…</span>
                       <input
                         value={partnerOneName}
-                        placeholder="Жених"
+                        placeholder="Р–РµРЅРёС…"
                         onChange={(event) =>
                           setNames(event.target.value, partnerTwoName)
                         }
                       />
                     </label>
                     <label className="constructor-field">
-                      <span>Невеста</span>
+                      <span>РќРµРІРµСЃС‚Р°</span>
                       <input
                         value={partnerTwoName}
-                        placeholder="Невеста"
+                        placeholder="РќРµРІРµСЃС‚Р°"
                         onChange={(event) =>
                           setNames(partnerOneName, event.target.value)
                         }
@@ -499,7 +567,7 @@ export function ConstructorSidebar({
                     </label>
                   </div>
                   <label className="constructor-field">
-                    <span>Дата свадьбы</span>
+                    <span>Р”Р°С‚Р° СЃРІР°РґСЊР±С‹</span>
                     <input
                       type="date"
                       value={weddingDate}
@@ -507,7 +575,7 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field">
-                    <span>Время начала</span>
+                    <span>Р’СЂРµРјСЏ РЅР°С‡Р°Р»Р°</span>
                     <input
                       type="time"
                       step={15 * 60}
@@ -517,9 +585,25 @@ export function ConstructorSidebar({
                     />
                   </label>
                   <label className="constructor-field invitation-copy-field">
-                    <span>Текст приглашения</span>
-                    <div className="tone-chips" aria-label="Стиль текста">
-                      {catalogTemplates.map((template) => (
+                    <span>РўРµРєСЃС‚ РїСЂРёРіР»Р°С€РµРЅРёСЏ</span>
+                    <div className="tone-chips" aria-label="Категория текста">
+                      {invitationTemplateCategories.map((category) => (
+                        <button
+                          className={
+                            templateCategory === category.value
+                              ? "is-selected"
+                              : ""
+                          }
+                          key={category.value}
+                          type="button"
+                          onClick={() => setTemplateCategory(category.value)}
+                        >
+                          {category.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="tone-chips" aria-label="Шаблон текста">
+                      {filteredTemplates.map((template) => (
                         <button
                           className={
                             activeInvitationTemplate === template.id
@@ -535,11 +619,11 @@ export function ConstructorSidebar({
                       ))}
                     </div>
                     {catalogLoading && (
-                      <small className="catalog-message">Загружаем шаблоны...</small>
+                      <small className="catalog-message">Р—Р°РіСЂСѓР¶Р°РµРј С€Р°Р±Р»РѕРЅС‹...</small>
                     )}
                     {!catalogLoading && catalogTemplates.length === 0 && (
                       <small className="catalog-message">
-                        Шаблоны появятся после добавления в админке.
+                        РЁР°Р±Р»РѕРЅС‹ РїРѕСЏРІСЏС‚СЃСЏ РїРѕСЃР»Рµ РґРѕР±Р°РІР»РµРЅРёСЏ РІ Р°РґРјРёРЅРєРµ.
                       </small>
                     )}
                     <textarea
@@ -558,8 +642,8 @@ export function ConstructorSidebar({
             {!postWeddingMode && (
               <>
                 <div className="editor-section-heading">
-                  <span>Блоки сайта</span>
-                  <small>Перетаскивайте блоки и меняйте структуру приглашения</small>
+                  <span>Р‘Р»РѕРєРё СЃР°Р№С‚Р°</span>
+                  <small>РџРµСЂРµС‚Р°СЃРєРёРІР°Р№С‚Рµ Р±Р»РѕРєРё Рё РјРµРЅСЏР№С‚Рµ СЃС‚СЂСѓРєС‚СѓСЂСѓ РїСЂРёРіР»Р°С€РµРЅРёСЏ</small>
                 </div>
 
                 <div className="content-accordion-list">
@@ -583,14 +667,14 @@ export function ConstructorSidebar({
                     >
                       <div className="content-accordion">
                         <ContentAccordionHeader
-                          title="Подарки и пожелания"
+                          title="РџРѕРґР°СЂРєРё Рё РїРѕР¶РµР»Р°РЅРёСЏ"
                           isOpen={openSections.includes("WISHLIST")}
                           onOpen={() => toggleSection("WISHLIST")}
                         />
                         {openSections.includes("WISHLIST") && (
                           <div className="accordion-body wishlist-editor">
                             <label className="constructor-field">
-                              <span>Ссылка для дистанционного подарка</span>
+                              <span>РЎСЃС‹Р»РєР° РґР»СЏ РґРёСЃС‚Р°РЅС†РёРѕРЅРЅРѕРіРѕ РїРѕРґР°СЂРєР°</span>
                               <input
                                 type="url"
                                 value={giftPaymentLink}
@@ -603,14 +687,14 @@ export function ConstructorSidebar({
                             </label>
                             <div className="gift-qr-editor">
                               <div>
-                                <strong>QR-код для подарка</strong>
-                                <small>Покажем гостю, если он не сможет прийти</small>
+                                <strong>QR-РєРѕРґ РґР»СЏ РїРѕРґР°СЂРєР°</strong>
+                                <small>РџРѕРєР°Р¶РµРј РіРѕСЃС‚СЋ, РµСЃР»Рё РѕРЅ РЅРµ СЃРјРѕР¶РµС‚ РїСЂРёР№С‚Рё</small>
                               </div>
                               {giftQrCode ? (
                                 <figure>
                                   <Image
                                     src={giftQrCode}
-                                    alt="QR-код подарка"
+                                    alt="QR-РєРѕРґ РїРѕРґР°СЂРєР°"
                                     fill
                                     unoptimized
                                   />
@@ -627,7 +711,7 @@ export function ConstructorSidebar({
                               ) : (
                                 <label>
                                   <Upload size={16} />
-                                  Загрузить QR
+                                  Р—Р°РіСЂСѓР·РёС‚СЊ QR
                                   <input
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
@@ -642,7 +726,7 @@ export function ConstructorSidebar({
                               )}
                             </div>
                             <label className="constructor-field">
-                              <span>Пожелание гостям</span>
+                              <span>РџРѕР¶РµР»Р°РЅРёРµ РіРѕСЃС‚СЏРј</span>
                               <textarea
                                 value={wishlistText}
                                 onChange={(event) => setWishlistText(event.target.value)}
@@ -650,7 +734,7 @@ export function ConstructorSidebar({
                               />
                             </label>
                             <div className="no-flowers-setting">
-                              <strong>Без цветов</strong>
+                              <strong>Р‘РµР· С†РІРµС‚РѕРІ</strong>
                               <button
                                 className={`switch ${noFlowersEnabled ? "is-on" : ""}`}
                                 type="button"
@@ -666,7 +750,7 @@ export function ConstructorSidebar({
                             </div>
                             {noFlowersEnabled && (
                               <label className="constructor-field">
-                                <span>Текст пожелания без цветов</span>
+                                <span>РўРµРєСЃС‚ РїРѕР¶РµР»Р°РЅРёСЏ Р±РµР· С†РІРµС‚РѕРІ</span>
                                 <textarea
                                   value={noFlowersText}
                                   onChange={(event) => setNoFlowersText(event.target.value)}
@@ -679,7 +763,7 @@ export function ConstructorSidebar({
                                 <Gift size={15} />
                                 <select
                                   value={item.type}
-                                  aria-label="Тип подарка"
+                                  aria-label="РўРёРї РїРѕРґР°СЂРєР°"
                                   onChange={(event) => {
                                     updateWishlistItem(
                                       item.id,
@@ -689,13 +773,13 @@ export function ConstructorSidebar({
                                     window.setTimeout(saveExtrasQuietly, 0);
                                   }}
                                 >
-                                  <option value="ITEM">Вещь</option>
-                                  <option value="EXPERIENCE">Впечатление</option>
+                                  <option value="ITEM">Р’РµС‰СЊ</option>
+                                  <option value="EXPERIENCE">Р’РїРµС‡Р°С‚Р»РµРЅРёРµ</option>
                                 </select>
                                 <input
                                   value={item.title}
-                                  aria-label="Название подарка"
-                                  placeholder="Название"
+                                  aria-label="РќР°Р·РІР°РЅРёРµ РїРѕРґР°СЂРєР°"
+                                  placeholder="РќР°Р·РІР°РЅРёРµ"
                                   onChange={(event) =>
                                     updateWishlistItem(item.id, "title", event.target.value)
                                   }
@@ -703,10 +787,10 @@ export function ConstructorSidebar({
                                 />
                                 <input
                                   value={item.url}
-                                  aria-label="Ссылка на подарок"
+                                  aria-label="РЎСЃС‹Р»РєР° РЅР° РїРѕРґР°СЂРѕРє"
                                   placeholder={
                                     item.type === "EXPERIENCE"
-                                      ? "Используется общая ссылка"
+                                      ? "РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РѕР±С‰Р°СЏ СЃСЃС‹Р»РєР°"
                                       : "https://..."
                                   }
                                   disabled={item.type === "EXPERIENCE"}
@@ -717,7 +801,7 @@ export function ConstructorSidebar({
                                 />
                                 <button
                                   type="button"
-                                  aria-label={`Удалить ${item.title}`}
+                                  aria-label={`РЈРґР°Р»РёС‚СЊ ${item.title}`}
                                   onClick={() => {
                                     removeWishlistItem(item.id);
                                     saveExtrasQuietly();
@@ -733,7 +817,7 @@ export function ConstructorSidebar({
                               disabled={wishlistItems.length >= 8}
                               onClick={addWishlistItem}
                             >
-                              <Plus size={16} /> Добавить ссылку
+                              <Plus size={16} /> Р”РѕР±Р°РІРёС‚СЊ СЃСЃС‹Р»РєСѓ
                             </button>
                           </div>
                         )}
@@ -761,7 +845,7 @@ export function ConstructorSidebar({
                     >
                       <div className="content-accordion">
                         <ContentAccordionHeader
-                          title="Организатор / координатор"
+                          title="РћСЂРіР°РЅРёР·Р°С‚РѕСЂ / РєРѕРѕСЂРґРёРЅР°С‚РѕСЂ"
                           isOpen={openSections.includes("COORDINATOR")}
                           onOpen={() => toggleSection("COORDINATOR")}
                         />
@@ -772,7 +856,7 @@ export function ConstructorSidebar({
                                 <figure>
                                   <Image
                                     src={coordinatorPhoto}
-                                    alt="Фото координатора"
+                                    alt="Р¤РѕС‚Рѕ РєРѕРѕСЂРґРёРЅР°С‚РѕСЂР°"
                                     fill
                                     unoptimized
                                   />
@@ -792,7 +876,7 @@ export function ConstructorSidebar({
                               ) : (
                                 <label>
                                   <UserRound size={19} />
-                                  <span>Добавить фото</span>
+                                  <span>Р”РѕР±Р°РІРёС‚СЊ С„РѕС‚Рѕ</span>
                                   <input
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
@@ -811,26 +895,26 @@ export function ConstructorSidebar({
                               )}
                             </div>
                             {[
-                              ["coordinatorName", "Имя", coordinatorName],
-                              ["coordinatorRole", "Должность", coordinatorRole],
+                              ["coordinatorName", "РРјСЏ", coordinatorName],
+                              ["coordinatorRole", "Р”РѕР»Р¶РЅРѕСЃС‚СЊ", coordinatorRole],
                               [
                                 "coordinatorTelegram",
-                                "Ссылка на Telegram",
+                                "РЎСЃС‹Р»РєР° РЅР° Telegram",
                                 coordinatorTelegram,
                               ],
                               [
                                 "coordinatorWhatsapp",
-                                "Ссылка на WhatsApp",
+                                "РЎСЃС‹Р»РєР° РЅР° WhatsApp",
                                 coordinatorWhatsapp,
                               ],
                               [
                                 "coordinatorPhone",
-                                "Номер телефона",
+                                "РќРѕРјРµСЂ С‚РµР»РµС„РѕРЅР°",
                                 coordinatorPhone,
                               ],
                               [
                                 "coordinatorMapLink",
-                                "Ссылка на карту / маршрут",
+                                "РЎСЃС‹Р»РєР° РЅР° РєР°СЂС‚Сѓ / РјР°СЂС€СЂСѓС‚",
                                 coordinatorMapLink,
                               ],
                             ].map(([field, label, value]) => (
@@ -840,9 +924,9 @@ export function ConstructorSidebar({
                                   value={value}
                                   placeholder={
                                     field === "coordinatorName"
-                                      ? "Анна"
+                                      ? "РђРЅРЅР°"
                                       : field === "coordinatorRole"
-                                        ? "Координатор свадьбы"
+                                        ? "РљРѕРѕСЂРґРёРЅР°С‚РѕСЂ СЃРІР°РґСЊР±С‹"
                                         : field === "coordinatorPhone"
                                           ? "+7 999 123-45-67"
                                           : "https://..."
@@ -889,19 +973,19 @@ export function ConstructorSidebar({
                     >
                       <div className="content-accordion">
                         <ContentAccordionHeader
-                          title="Частые вопросы"
+                          title="Р§Р°СЃС‚С‹Рµ РІРѕРїСЂРѕСЃС‹"
                           isOpen={openSections.includes("FAQ")}
                           onOpen={() => toggleSection("FAQ")}
                         />
                         {openSections.includes("FAQ") && (
                           <div className="accordion-body faq-editor">
-                            <p>Добавьте ответы на вопросы, которые гости задают чаще всего.</p>
+                            <p>Р”РѕР±Р°РІСЊС‚Рµ РѕС‚РІРµС‚С‹ РЅР° РІРѕРїСЂРѕСЃС‹, РєРѕС‚РѕСЂС‹Рµ РіРѕСЃС‚Рё Р·Р°РґР°СЋС‚ С‡Р°С‰Рµ РІСЃРµРіРѕ.</p>
                             {faqItems.map((item, index) => (
                               <div className="faq-editor-item" key={item.id}>
-                                <span>Вопрос {index + 1}</span>
+                                <span>Р’РѕРїСЂРѕСЃ {index + 1}</span>
                                 <input
                                   value={item.question}
-                                  placeholder="Можно ли приехать с детьми?"
+                                  placeholder="РњРѕР¶РЅРѕ Р»Рё РїСЂРёРµС…Р°С‚СЊ СЃ РґРµС‚СЊРјРё?"
                                   onChange={(event) =>
                                     updateFaqItem(
                                       item.id,
@@ -914,7 +998,7 @@ export function ConstructorSidebar({
                                 <textarea
                                   rows={3}
                                   value={item.answer}
-                                  placeholder="Напишите короткий и заботливый ответ"
+                                  placeholder="РќР°РїРёС€РёС‚Рµ РєРѕСЂРѕС‚РєРёР№ Рё Р·Р°Р±РѕС‚Р»РёРІС‹Р№ РѕС‚РІРµС‚"
                                   onChange={(event) =>
                                     updateFaqItem(
                                       item.id,
@@ -931,7 +1015,7 @@ export function ConstructorSidebar({
                                     window.setTimeout(saveExtrasQuietly, 0);
                                   }}
                                 >
-                                  <Trash2 size={14} /> Удалить
+                                  <Trash2 size={14} /> РЈРґР°Р»РёС‚СЊ
                                 </button>
                               </div>
                             ))}
@@ -944,7 +1028,7 @@ export function ConstructorSidebar({
                                 window.setTimeout(saveExtrasQuietly, 0);
                               }}
                             >
-                              <Plus size={15} /> Добавить вопрос
+                              <Plus size={15} /> Р”РѕР±Р°РІРёС‚СЊ РІРѕРїСЂРѕСЃ
                             </button>
                           </div>
                         )}
@@ -989,7 +1073,7 @@ export function ConstructorSidebar({
                               <input
                                 type="time"
                                 value={event.time}
-                                aria-label="Время события"
+                                aria-label="Р’СЂРµРјСЏ СЃРѕР±С‹С‚РёСЏ"
                                 onChange={(changeEvent) =>
                                   updateTimelineEvent(
                                     event.id,
@@ -1000,7 +1084,7 @@ export function ConstructorSidebar({
                               />
                               <input
                                 value={event.title}
-                                aria-label="Название события"
+                                aria-label="РќР°Р·РІР°РЅРёРµ СЃРѕР±С‹С‚РёСЏ"
                                 onChange={(changeEvent) =>
                                   updateTimelineEvent(
                                     event.id,
@@ -1011,7 +1095,7 @@ export function ConstructorSidebar({
                               />
                               <button
                                 type="button"
-                                aria-label={`Удалить ${event.title}`}
+                                aria-label={`РЈРґР°Р»РёС‚СЊ ${event.title}`}
                                 onClick={() => removeTimelineEvent(event.id)}
                               >
                                 <Trash2 size={15} />
@@ -1023,14 +1107,14 @@ export function ConstructorSidebar({
                             type="button"
                             onClick={addTimelineEvent}
                           >
-                            <Plus size={16} /> Добавить событие
+                            <Plus size={16} /> Р”РѕР±Р°РІРёС‚СЊ СЃРѕР±С‹С‚РёРµ
                           </button>
                         </div>
                       )}
 
                       {contentModule === "DRESS_CODE" && (
                         <div className="palette-editor">
-                          <p>Подберите от трех до пяти оттенков для образов гостей</p>
+                          <p>РџРѕРґР±РµСЂРёС‚Рµ РѕС‚ С‚СЂРµС… РґРѕ РїСЏС‚Рё РѕС‚С‚РµРЅРєРѕРІ РґР»СЏ РѕР±СЂР°Р·РѕРІ РіРѕСЃС‚РµР№</p>
                           <div className="palette-presets">
                             {palettePresets.map((preset) => (
                               <button
@@ -1061,7 +1145,7 @@ export function ConstructorSidebar({
                                     className="!h-12 !w-12 cursor-pointer rounded-full border border-stone-200 shadow-sm transition-transform active:scale-95"
                                     type="color"
                                     value={color}
-                                    aria-label={`Цвет палитры ${index + 1}`}
+                                    aria-label={`Р¦РІРµС‚ РїР°Р»РёС‚СЂС‹ ${index + 1}`}
                                     onInput={(event) =>
                                       setPaletteColor(index, event.currentTarget.value)
                                     }
@@ -1079,7 +1163,7 @@ export function ConstructorSidebar({
                                 <button
                                   type="button"
                                   disabled={colorPalette.length <= 3}
-                                  aria-label={`Удалить цвет ${index + 1}`}
+                                  aria-label={`РЈРґР°Р»РёС‚СЊ С†РІРµС‚ ${index + 1}`}
                                   onClick={() => {
                                     removePaletteColor(index);
                                     window.setTimeout(saveExtrasQuietly, 0);
@@ -1099,26 +1183,26 @@ export function ConstructorSidebar({
                                 window.setTimeout(saveExtrasQuietly, 0);
                               }}
                             >
-                              <Plus size={14} /> Добавить оттенок
+                              <Plus size={14} /> Р”РѕР±Р°РІРёС‚СЊ РѕС‚С‚РµРЅРѕРє
                             </button>
                           )}
                           <div className="dress-moodboard-editor">
                             <div>
-                              <strong>Мудборд образов</strong>
-                              <small>{dressMoodboard.length} из 4 фотографий</small>
+                              <strong>РњСѓРґР±РѕСЂРґ РѕР±СЂР°Р·РѕРІ</strong>
+                              <small>{dressMoodboard.length} РёР· 4 С„РѕС‚РѕРіСЂР°С„РёР№</small>
                             </div>
                             <div className="dress-moodboard-grid">
                               {dressMoodboard.map((photo, index) => (
                                 <figure key={`${photo.slice(-16)}-${index}`}>
                                   <Image
                                     src={photo}
-                                    alt={`Референс образа ${index + 1}`}
+                                    alt={`Р РµС„РµСЂРµРЅСЃ РѕР±СЂР°Р·Р° ${index + 1}`}
                                     fill
                                     unoptimized
                                   />
                                   <button
                                     type="button"
-                                    aria-label={`Удалить референс ${index + 1}`}
+                                    aria-label={`РЈРґР°Р»РёС‚СЊ СЂРµС„РµСЂРµРЅСЃ ${index + 1}`}
                                     onClick={() => {
                                       removeDressMoodboardPhoto(index);
                                       window.setTimeout(saveExtrasQuietly, 0);
@@ -1131,7 +1215,7 @@ export function ConstructorSidebar({
                               {dressMoodboard.length < 4 && (
                                 <label>
                                   <Images size={18} />
-                                  <span>Добавить</span>
+                                  <span>Р”РѕР±Р°РІРёС‚СЊ</span>
                                   <input
                                     type="file"
                                     multiple
@@ -1150,10 +1234,10 @@ export function ConstructorSidebar({
                       {contentModule === "MAP" && (
                         <div className="venue-editor">
                           <label>
-                            <span>Название площадки</span>
+                            <span>РќР°Р·РІР°РЅРёРµ РїР»РѕС‰Р°РґРєРё</span>
                             <input
                               value={venueName}
-                              placeholder="Усадьба «Лесная»"
+                              placeholder="РЈСЃР°РґСЊР±Р° В«Р›РµСЃРЅР°СЏВ»"
                               onChange={(event) => setVenueName(event.target.value)}
                               onBlur={saveExtrasQuietly}
                             />
@@ -1173,7 +1257,7 @@ export function ConstructorSidebar({
                           />
                           <div className="venue-coordinate-grid">
                             <label>
-                              <span>Широта</span>
+                              <span>РЁРёСЂРѕС‚Р°</span>
                               <input
                                 type="number"
                                 step="any"
@@ -1191,7 +1275,7 @@ export function ConstructorSidebar({
                               />
                             </label>
                             <label>
-                              <span>Долгота</span>
+                              <span>Р”РѕР»РіРѕС‚Р°</span>
                               <input
                                 type="number"
                                 step="any"
@@ -1210,7 +1294,7 @@ export function ConstructorSidebar({
                             </label>
                           </div>
                           <small>
-                            Координаты необязательны: без них карта построится по адресу.
+                            РљРѕРѕСЂРґРёРЅР°С‚С‹ РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅС‹: Р±РµР· РЅРёС… РєР°СЂС‚Р° РїРѕСЃС‚СЂРѕРёС‚СЃСЏ РїРѕ Р°РґСЂРµСЃСѓ.
                           </small>
                         </div>
                       )}
@@ -1218,11 +1302,11 @@ export function ConstructorSidebar({
                       {contentModule === "TRANSFER" && (
                         <div className="transfer-editor">
                           <label>
-                            <span>Описание трансфера</span>
+                            <span>РћРїРёСЃР°РЅРёРµ С‚СЂР°РЅСЃС„РµСЂР°</span>
                             <textarea
                               rows={4}
                               value={transferDescription}
-                              placeholder="Автобус будет ждать гостей..."
+                              placeholder="РђРІС‚РѕР±СѓСЃ Р±СѓРґРµС‚ Р¶РґР°С‚СЊ РіРѕСЃС‚РµР№..."
                               onChange={(event) =>
                                 setTransferDescription(event.target.value)
                               }
@@ -1231,7 +1315,7 @@ export function ConstructorSidebar({
                           </label>
                           <div>
                             <label>
-                              <span>Время сбора</span>
+                              <span>Р’СЂРµРјСЏ СЃР±РѕСЂР°</span>
                               <input
                                 type="time"
                                 value={transferTime}
@@ -1242,10 +1326,10 @@ export function ConstructorSidebar({
                               />
                             </label>
                             <label>
-                              <span>Место сбора</span>
+                              <span>РњРµСЃС‚Рѕ СЃР±РѕСЂР°</span>
                               <input
                                 value={transferMeetingPoint}
-                                placeholder="Метро, площадь или отель"
+                                placeholder="РњРµС‚СЂРѕ, РїР»РѕС‰Р°РґСЊ РёР»Рё РѕС‚РµР»СЊ"
                                 onChange={(event) =>
                                   setTransferMeetingPoint(event.target.value)
                                 }
@@ -1259,10 +1343,10 @@ export function ConstructorSidebar({
                       {contentModule === "COUNTDOWN" && (
                         <div className="countdown-editor">
                           <label>
-                            <span>Заголовок таймера</span>
+                            <span>Р—Р°РіРѕР»РѕРІРѕРє С‚Р°Р№РјРµСЂР°</span>
                             <input
                               value={countdownTitle}
-                              placeholder="До свадьбы осталось"
+                              placeholder="Р”Рѕ СЃРІР°РґСЊР±С‹ РѕСЃС‚Р°Р»РѕСЃСЊ"
                               onChange={(event) =>
                                 setCountdownTitle(event.target.value)
                               }
@@ -1300,7 +1384,7 @@ export function ConstructorSidebar({
                         contentModule !== "TRANSFER" &&
                         contentModule !== "COUNTDOWN" && (
                         <p className="module-helper">
-                          Блок включен в структуру приглашения.
+                          Р‘Р»РѕРє РІРєР»СЋС‡РµРЅ РІ СЃС‚СЂСѓРєС‚СѓСЂСѓ РїСЂРёРіР»Р°С€РµРЅРёСЏ.
                         </p>
                       )}
                     </div>
@@ -1318,13 +1402,13 @@ export function ConstructorSidebar({
         {activeTab === "styles" && (
           <>
             <EditorHeading
-              eyebrow="Внешний вид"
-              title="Выберите настроение"
-              description="Контент остается прежним при любой смене оформления."
+              eyebrow="Р’РЅРµС€РЅРёР№ РІРёРґ"
+              title="Р’С‹Р±РµСЂРёС‚Рµ РЅР°СЃС‚СЂРѕРµРЅРёРµ"
+              description="РљРѕРЅС‚РµРЅС‚ РѕСЃС‚Р°РµС‚СЃСЏ РїСЂРµР¶РЅРёРј РїСЂРё Р»СЋР±РѕР№ СЃРјРµРЅРµ РѕС„РѕСЂРјР»РµРЅРёСЏ."
             />
             <div className="editor-section-heading">
-              <span>Темы из вашей админки</span>
-              <small>Настраивайте цвета, шрифты и формы в админке, а здесь они появятся автоматически</small>
+              <span>РўРµРјС‹ РёР· РІР°С€РµР№ Р°РґРјРёРЅРєРё</span>
+              <small>РќР°СЃС‚СЂР°РёРІР°Р№С‚Рµ С†РІРµС‚Р°, С€СЂРёС„С‚С‹ Рё С„РѕСЂРјС‹ РІ Р°РґРјРёРЅРєРµ, Р° Р·РґРµСЃСЊ РѕРЅРё РїРѕСЏРІСЏС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё</small>
             </div>
             <div className="constructor-theme-list">
               {catalogThemes.map((theme) => (
@@ -1364,12 +1448,12 @@ export function ConstructorSidebar({
             </div>
             {!catalogLoading && catalogThemes.length === 0 && (
               <p className="catalog-message">
-                В библиотеке пока нет тем. Добавьте первую тему в админке, и она сразу появится здесь.
+                Р’ Р±РёР±Р»РёРѕС‚РµРєРµ РїРѕРєР° РЅРµС‚ С‚РµРј. Р”РѕР±Р°РІСЊС‚Рµ РїРµСЂРІСѓСЋ С‚РµРјСѓ РІ Р°РґРјРёРЅРєРµ, Рё РѕРЅР° СЃСЂР°Р·Сѓ РїРѕСЏРІРёС‚СЃСЏ Р·РґРµСЃСЊ.
               </p>
             )}
                   <div className="editor-section-heading">
-              <span>Форма фотографий</span>
-              <small>Для галереи, мудборда и команды</small>
+              <span>Р¤РѕСЂРјР° С„РѕС‚РѕРіСЂР°С„РёР№</span>
+              <small>Р”Р»СЏ РіР°Р»РµСЂРµРё, РјСѓРґР±РѕСЂРґР° Рё РєРѕРјР°РЅРґС‹</small>
             </div>
             <div className="photo-mask-picker">
               {photoMaskOptions.map((option) => (
@@ -1390,8 +1474,8 @@ export function ConstructorSidebar({
               ))}
             </div>
             <div className="editor-section-heading">
-              <span>Стиль карточек</span>
-              <small>Форма и материал смысловых блоков</small>
+              <span>РЎС‚РёР»СЊ РєР°СЂС‚РѕС‡РµРє</span>
+              <small>Р¤РѕСЂРјР° Рё РјР°С‚РµСЂРёР°Р» СЃРјС‹СЃР»РѕРІС‹С… Р±Р»РѕРєРѕРІ</small>
             </div>
             <div className="card-style-picker">
               {cardStyleOptions.map((option) => (
@@ -1415,7 +1499,7 @@ export function ConstructorSidebar({
             <div className="style-note">
               <Sparkles size={18} />
               <span>
-                Изменение карточек влияет только на форму блоков, контент остается на месте и не теряется.
+                РР·РјРµРЅРµРЅРёРµ РєР°СЂС‚РѕС‡РµРє РІР»РёСЏРµС‚ С‚РѕР»СЊРєРѕ РЅР° С„РѕСЂРјСѓ Р±Р»РѕРєРѕРІ, РєРѕРЅС‚РµРЅС‚ РѕСЃС‚Р°РµС‚СЃСЏ РЅР° РјРµСЃС‚Рµ Рё РЅРµ С‚РµСЂСЏРµС‚СЃСЏ.
               </span>
             </div>
           </>
@@ -1424,9 +1508,9 @@ export function ConstructorSidebar({
         {activeTab === "music" && (
           <>
             <EditorHeading
-              eyebrow="Музыкальное настроение"
-              title="Музыка приглашения"
-              description="Выберите спокойную композицию из библиотеки или загрузите свой MP3."
+              eyebrow="РњСѓР·С‹РєР°Р»СЊРЅРѕРµ РЅР°СЃС‚СЂРѕРµРЅРёРµ"
+              title="РњСѓР·С‹РєР° РїСЂРёРіР»Р°С€РµРЅРёСЏ"
+              description="Р’С‹Р±РµСЂРёС‚Рµ СЃРїРѕРєРѕР№РЅСѓСЋ РєРѕРјРїРѕР·РёС†РёСЋ РёР· Р±РёР±Р»РёРѕС‚РµРєРё РёР»Рё Р·Р°РіСЂСѓР·РёС‚Рµ СЃРІРѕР№ MP3."
             />
             <div className="default-track-list">
               {catalogTracks.map((track) => {
@@ -1453,23 +1537,23 @@ export function ConstructorSidebar({
                       }}
                     >
                       {selected ? <Check size={14} /> : null}
-                      {selected ? "Выбрано" : "Выбрать"}
+                      {selected ? "Р’С‹Р±СЂР°РЅРѕ" : "Р’С‹Р±СЂР°С‚СЊ"}
                     </button>
                   </article>
                 );
               })}
             </div>
             {catalogLoading && (
-              <p className="catalog-message">Загружаем музыкальную библиотеку...</p>
+              <p className="catalog-message">Р—Р°РіСЂСѓР¶Р°РµРј РјСѓР·С‹РєР°Р»СЊРЅСѓСЋ Р±РёР±Р»РёРѕС‚РµРєСѓ...</p>
             )}
             {!catalogLoading && catalogTracks.length === 0 && (
               <p className="catalog-message">
-                В библиотеке пока нет треков. Администратор может добавить их в панели управления.
+                Р’ Р±РёР±Р»РёРѕС‚РµРєРµ РїРѕРєР° РЅРµС‚ С‚СЂРµРєРѕРІ. РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РјРѕР¶РµС‚ РґРѕР±Р°РІРёС‚СЊ РёС… РІ РїР°РЅРµР»Рё СѓРїСЂР°РІР»РµРЅРёСЏ.
               </p>
             )}
             {catalogError && <p className="telegram-error">{catalogError}</p>}
             <div className="music-choice-divider">
-              <span>или загрузите свою композицию</span>
+              <span>РёР»Рё Р·Р°РіСЂСѓР·РёС‚Рµ СЃРІРѕСЋ РєРѕРјРїРѕР·РёС†РёСЋ</span>
             </div>
             <label className="custom-music-upload">
               <Music2 size={23} />
@@ -1477,9 +1561,9 @@ export function ConstructorSidebar({
                 <strong>
                   {customMusicName ||
                     musicTrackTitle ||
-                    "Выбрать MP3 с вашего устройства"}
+                    "Р’С‹Р±СЂР°С‚СЊ MP3 СЃ РІР°С€РµРіРѕ СѓСЃС‚СЂРѕР№СЃС‚РІР°"}
                 </strong>
-                <small>Только MP3, не более 5 МБ</small>
+                <small>РўРѕР»СЊРєРѕ MP3, РЅРµ Р±РѕР»РµРµ 5 РњР‘</small>
               </span>
               <input
                 type="file"
@@ -1499,15 +1583,15 @@ export function ConstructorSidebar({
                     window.setTimeout(saveExtrasQuietly, 0);
                   }}
                 >
-                  <Trash2 size={14} /> Удалить
+                  <Trash2 size={14} /> РЈРґР°Р»РёС‚СЊ
                 </button>
               </div>
             )}
             {musicError && <p className="telegram-error">{musicError}</p>}
             <p className="music-policy-note">
-              В приглашении музыка запускается после первого клика по экрану.
-              Загружая файл, вы подтверждаете право на его использование согласно
-              Пользовательскому соглашению.
+              Р’ РїСЂРёРіР»Р°С€РµРЅРёРё РјСѓР·С‹РєР° Р·Р°РїСѓСЃРєР°РµС‚СЃСЏ РїРѕСЃР»Рµ РїРµСЂРІРѕРіРѕ РєР»РёРєР° РїРѕ СЌРєСЂР°РЅСѓ.
+              Р—Р°РіСЂСѓР¶Р°СЏ С„Р°Р№Р», РІС‹ РїРѕРґС‚РІРµСЂР¶РґР°РµС‚Рµ РїСЂР°РІРѕ РЅР° РµРіРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ СЃРѕРіР»Р°СЃРЅРѕ
+              РџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРјСѓ СЃРѕРіР»Р°С€РµРЅРёСЋ.
             </p>
           </>
         )}
@@ -1520,17 +1604,17 @@ export function ConstructorSidebar({
           <>
             <EditorHeading
               eyebrow="Crew mode"
-              title="Тайминг для команды"
-              description="Строгий технический план для ведущего, декораторов, фотографа и площадки."
+              title="РўР°Р№РјРёРЅРі РґР»СЏ РєРѕРјР°РЅРґС‹"
+              description="РЎС‚СЂРѕРіРёР№ С‚РµС…РЅРёС‡РµСЃРєРёР№ РїР»Р°РЅ РґР»СЏ РІРµРґСѓС‰РµРіРѕ, РґРµРєРѕСЂР°С‚РѕСЂРѕРІ, С„РѕС‚РѕРіСЂР°С„Р° Рё РїР»РѕС‰Р°РґРєРё."
             />
             <div className="crew-link-note">
               <Clock3 size={18} />
               <div>
-                <strong>Секретная ссылка</strong>
+                <strong>РЎРµРєСЂРµС‚РЅР°СЏ СЃСЃС‹Р»РєР°</strong>
                 <small>
                   {siteId
                     ? `/wedding/${siteId}/crew`
-                    : "Появится после сохранения проекта"}
+                    : "РџРѕСЏРІРёС‚СЃСЏ РїРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ РїСЂРѕРµРєС‚Р°"}
                 </small>
               </div>
             </div>
@@ -1541,7 +1625,7 @@ export function ConstructorSidebar({
                   <input
                     type="time"
                     value={item.time}
-                    aria-label="Время"
+                    aria-label="Р’СЂРµРјСЏ"
                     onChange={(event) =>
                       updateCrewTiming(item.id, "time", event.target.value)
                     }
@@ -1549,8 +1633,8 @@ export function ConstructorSidebar({
                   />
                   <input
                     value={item.description}
-                    aria-label="Описание задачи"
-                    placeholder="Монтаж декора"
+                    aria-label="РћРїРёСЃР°РЅРёРµ Р·Р°РґР°С‡Рё"
+                    placeholder="РњРѕРЅС‚Р°Р¶ РґРµРєРѕСЂР°"
                     onChange={(event) =>
                       updateCrewTiming(
                         item.id,
@@ -1562,8 +1646,8 @@ export function ConstructorSidebar({
                   />
                   <input
                     value={item.contactPerson}
-                    aria-label="Контактное лицо"
-                    placeholder="Анна, координатор"
+                    aria-label="РљРѕРЅС‚Р°РєС‚РЅРѕРµ Р»РёС†Рѕ"
+                    placeholder="РђРЅРЅР°, РєРѕРѕСЂРґРёРЅР°С‚РѕСЂ"
                     onChange={(event) =>
                       updateCrewTiming(
                         item.id,
@@ -1575,7 +1659,7 @@ export function ConstructorSidebar({
                   />
                   <button
                     type="button"
-                    aria-label={`Удалить пункт ${index + 1}`}
+                    aria-label={`РЈРґР°Р»РёС‚СЊ РїСѓРЅРєС‚ ${index + 1}`}
                     onClick={() => {
                       removeCrewTiming(item.id);
                       window.setTimeout(saveExtrasQuietly, 0);
@@ -1594,7 +1678,7 @@ export function ConstructorSidebar({
                   window.setTimeout(saveExtrasQuietly, 0);
                 }}
               >
-                <Plus size={15} /> Добавить пункт тайминга
+                <Plus size={15} /> Р”РѕР±Р°РІРёС‚СЊ РїСѓРЅРєС‚ С‚Р°Р№РјРёРЅРіР°
               </button>
             </div>
           </>
@@ -1604,8 +1688,8 @@ export function ConstructorSidebar({
           <PackagesPanel />
         )}
         <footer className="constructor-legal">
-          <a href="#">Политика конфиденциальности</a>
-          <a href="#">Пользовательское соглашение</a>
+          <a href="#">РџРѕР»РёС‚РёРєР° РєРѕРЅС„РёРґРµРЅС†РёР°Р»СЊРЅРѕСЃС‚Рё</a>
+          <a href="#">РџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРѕРµ СЃРѕРіР»Р°С€РµРЅРёРµ</a>
         </footer>
       </div>
     </aside>
@@ -1721,11 +1805,11 @@ function AddressAutocomplete({
 
   return (
     <label className="address-autocomplete">
-      <span>Адрес площадки</span>
+      <span>РђРґСЂРµСЃ РїР»РѕС‰Р°РґРєРё</span>
       <input
         value={value}
         autoComplete="off"
-        placeholder="Начните вводить адрес"
+        placeholder="РќР°С‡РЅРёС‚Рµ РІРІРѕРґРёС‚СЊ Р°РґСЂРµСЃ"
         onFocus={() => setIsFocused(true)}
         onChange={(event) => onChange(event.target.value)}
         onBlur={() => {
@@ -1737,7 +1821,7 @@ function AddressAutocomplete({
         value.trim().length >= 3 &&
         (isLoading || suggestions.length > 0) && (
         <div className="address-suggestions">
-          {isLoading && <small>Ищем подходящие адреса...</small>}
+          {isLoading && <small>РС‰РµРј РїРѕРґС…РѕРґСЏС‰РёРµ Р°РґСЂРµСЃР°...</small>}
           {!isLoading &&
             suggestions.map((suggestion) => (
               <button
@@ -1753,7 +1837,7 @@ function AddressAutocomplete({
                 <strong>{suggestion.address}</strong>
                 <small>
                   {suggestion.provider === "yandex"
-                    ? "Яндекс Карты"
+                    ? "РЇРЅРґРµРєСЃ РљР°СЂС‚С‹"
                     : "OpenStreetMap"}
                 </small>
               </button>
@@ -1801,10 +1885,11 @@ function DraggableContentBlock({
         onDragEnd();
       }}
     >
-      <span className="drag-handle" aria-label="Перетащить блок">
+      <span className="drag-handle" aria-label="РџРµСЂРµС‚Р°С‰РёС‚СЊ Р±Р»РѕРє">
         <GripVertical size={16} />
       </span>
       {children}
     </div>
   );
 }
+

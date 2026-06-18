@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 
 const templateSchema = z.object({
   title: z.string().trim().min(2).max(120),
+  category: z
+    .enum(["classic", "warm", "modern", "funny", "minimal"])
+    .default("classic"),
   content: z.string().trim().min(10).max(3000),
   isActive: z.boolean().default(true),
 });
@@ -30,6 +33,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         title: true,
+        category: true,
         content: true,
         isActive: true,
         sortOrder: true,

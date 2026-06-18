@@ -44,6 +44,7 @@ export type AudioTrackOption = {
 export type InvitationTemplateOption = {
   id: string;
   title: string;
+  category: string;
   content: string;
 };
 
@@ -318,6 +319,8 @@ export type WeddingBuilderData = {
   transferTime: string;
   transferMeetingPoint: string;
   postWeddingMode: boolean;
+  postWeddingAutoEnabled: boolean;
+  postWeddingHeroImage: string | null;
   postWeddingPhotoUrl: string;
   postWeddingThankYouText: string;
   customQuestions: CustomQuestion[];

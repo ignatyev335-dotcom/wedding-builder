@@ -103,6 +103,8 @@ export function ConstructorFromQuiz() {
     transferTime: "14:30",
     transferMeetingPoint: "Центр города",
     postWeddingMode: false,
+    postWeddingAutoEnabled: false,
+    postWeddingHeroImage: null,
     postWeddingPhotoUrl: "",
     postWeddingThankYouText:
       "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",

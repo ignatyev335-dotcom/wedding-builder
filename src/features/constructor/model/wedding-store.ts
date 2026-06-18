@@ -135,6 +135,8 @@ type WeddingStore = WeddingBuilderData & {
   ) => void;
   removeWishlistItem: (id: string) => void;
   setPostWeddingMode: (postWeddingMode: boolean) => void;
+  setPostWeddingAutoEnabled: (postWeddingAutoEnabled: boolean) => void;
+  setPostWeddingHeroImage: (postWeddingHeroImage: string | null) => void;
   setPostWeddingPhotoUrl: (postWeddingPhotoUrl: string) => void;
   setPostWeddingThankYouText: (value: string) => void;
   setCustomQuestions: (questions: WeddingBuilderData["customQuestions"]) => void;
@@ -231,6 +233,8 @@ const initialState: WeddingBuilderData = {
   transferTime: "14:30",
   transferMeetingPoint: "Центр города",
   postWeddingMode: false,
+  postWeddingAutoEnabled: false,
+  postWeddingHeroImage: null,
   postWeddingPhotoUrl: "",
   postWeddingThankYouText:
     "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
@@ -514,6 +518,10 @@ export const useWeddingStore = create<WeddingStore>()(
           wishlistItems: state.wishlistItems.filter((item) => item.id !== id),
         })),
       setPostWeddingMode: (postWeddingMode) => set({ postWeddingMode }),
+      setPostWeddingAutoEnabled: (postWeddingAutoEnabled) =>
+        set({ postWeddingAutoEnabled }),
+      setPostWeddingHeroImage: (postWeddingHeroImage) =>
+        set({ postWeddingHeroImage }),
       setPostWeddingPhotoUrl: (postWeddingPhotoUrl) =>
         set({ postWeddingPhotoUrl }),
       setPostWeddingThankYouText: (postWeddingThankYouText) =>
@@ -582,6 +590,8 @@ export const useWeddingStore = create<WeddingStore>()(
         transferMeetingPoint: state.transferMeetingPoint,
         invitationText: state.invitationText,
         postWeddingMode: state.postWeddingMode,
+        postWeddingAutoEnabled: state.postWeddingAutoEnabled,
+        postWeddingHeroImage: state.postWeddingHeroImage,
         postWeddingPhotoUrl: state.postWeddingPhotoUrl,
         postWeddingThankYouText: state.postWeddingThankYouText,
         customQuestions: state.customQuestions,

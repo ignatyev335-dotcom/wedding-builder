@@ -44,3 +44,27 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ userId: string }> },
+) {
+  if (!(await getCurrentAdmin())) {
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
+  }
+
+  try {
+    const { userId } = await params;
+    await prisma.$transaction([
+      prisma.order.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("User delete failed", error);
+    return NextResponse.json(
+      { error: "Не удалось удалить пользователя." },
+      { status: 500 },
+    );
+  }
+}

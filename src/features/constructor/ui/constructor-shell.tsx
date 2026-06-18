@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   ArrowLeft,
@@ -27,6 +27,8 @@ import {
 } from "@/features/constructor/ui/constructor-sidebar";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 
+type MobileStepTab = "content" | "styles" | "media" | "music" | "guests" | "publish";
+
 type MobileStep = {
   tab: MobileStepTab;
   label: string;
@@ -35,8 +37,6 @@ type MobileStep = {
   description: string;
   icon: LucideIcon;
 };
-
-type MobileStepTab = "content" | "styles" | "media" | "music" | "guests" | "publish";
 
 const mobileSteps: MobileStep[] = [
   {
@@ -96,7 +96,7 @@ export function ConstructorShell({
   initialTab = "content",
 }: {
   initialData: WeddingBuilderData;
-  initialTab?: "content" | "styles" | "music" | "media" | "guests" | "publish";
+  initialTab?: ConstructorTab;
 }) {
   const initialize = useWeddingStore((state) => state.initialize);
   const partnerOneName = useWeddingStore((state) => state.partnerOneName);
@@ -159,13 +159,14 @@ export function ConstructorShell({
   );
 
   const completion = Math.round(
-    (Object.values(completedSteps).filter(Boolean).length / mobileSteps.length) *
-      100,
+    (Object.values(completedSteps).filter(Boolean).length / mobileSteps.length) * 100,
   );
 
   const scrollPreview = (event: React.WheelEvent<HTMLElement>) => {
     const screen = previewScreenRef.current;
-    if (!screen) return;
+    if (!screen) {
+      return;
+    }
 
     event.preventDefault();
     screen.scrollBy({
@@ -188,12 +189,22 @@ export function ConstructorShell({
             <ArrowLeft size={18} />
           </Link>
           <span className="brand">vowly</span>
-          <span className="save-status">
-            Изменения сохраняются автоматически
-          </span>
+          <span className="save-status">Изменения сохраняются автоматически</span>
         </div>
 
-        <div className="constructor-header-actions hidden lg:flex">
+        {initialData.slug ? (
+          <a
+            className="constructor-header-preview lg:hidden"
+            href={`/wedding/${initialData.slug}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Smartphone size={15} />
+            Предпросмотр
+          </a>
+        ) : null}
+
+        <div className="constructor-header-actions">
           <button
             className={`device-button ${previewMode === "mobile" ? "is-active" : ""}`}
             type="button"
@@ -236,11 +247,7 @@ export function ConstructorShell({
             onSelectTab={setMobileTab}
             onNext={goNextMobileStep}
           />
-          <ConstructorSidebar
-            activeTab={mobileTab}
-            onTabChange={setMobileTab}
-            hideTabs
-          />
+          <ConstructorSidebar activeTab={mobileTab} onTabChange={setMobileTab} hideTabs />
         </div>
 
         <section
@@ -248,11 +255,7 @@ export function ConstructorShell({
           onWheel={scrollPreview}
         >
           <div className="constructor-preview-label">
-            <span>
-              {previewMode === "mobile"
-                ? "Мобильный вид"
-                : "Просмотр на компьютере"}
-            </span>
+            <span>{previewMode === "mobile" ? "Мобильный вид" : "Просмотр на компьютере"}</span>
             <small>{previewMode === "mobile" ? "390 x 844" : "1440 x 900"}</small>
           </div>
           <div className={`constructor-device constructor-${previewMode}`}>
@@ -272,17 +275,6 @@ export function ConstructorShell({
           </div>
         </section>
       </div>
-
-      {initialData.slug && (
-        <a
-          className="constructor-floating-preview lg:hidden"
-          href={`/wedding/${initialData.slug}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Предпросмотр
-        </a>
-      )}
 
       <nav className="constructor-mobile-nav lg:hidden" aria-label="Разделы конструктора">
         {mobileSteps.map((step) => {
@@ -359,9 +351,7 @@ function MobileAssistant({
 
           return (
             <button
-              className={`${step.tab === currentStep.tab ? "is-active" : ""} ${
-                done ? "is-done" : ""
-              }`}
+              className={`${step.tab === currentStep.tab ? "is-active" : ""} ${done ? "is-done" : ""}`}
               type="button"
               key={step.tab}
               onClick={() => onSelectTab(step.tab)}

@@ -4,35 +4,52 @@ import {
   BusFront,
   Check,
   CheckCircle2,
+  ClipboardList,
   Copy,
   Download,
   GlassWater,
   Link2,
+  ListChecks,
+  Music2,
   Plus,
   Tag,
   Trash2,
   UserRoundX,
   Users,
+  Utensils,
   Wine,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
+  alcoholPreferenceCodes,
   guestTagCodes,
+  transportPreferenceCodes,
+  type AlcoholPreferenceCode,
   type CustomQuestion,
   type GuestResponse,
   type GuestTagCode,
   type LanguageCode,
+  type TransportPreferenceCode,
 } from "@/entities/wedding/model";
 import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 
-const statusLabels = {
+type GuestFilter = "ALL" | "ACCEPTED" | "DECLINED" | "PENDING";
+type FoodKey = "meat" | "fish" | "vegan" | "unknown";
+
+const statusLabels: Record<GuestResponse["status"], string> = {
   PENDING: "Ждем ответ",
   ACCEPTED: "Придет",
-  DECLINED: "Отказ",
-} as const;
+  DECLINED: "Не придет",
+};
+
+const statusClasses: Record<GuestResponse["status"], string> = {
+  PENDING: "bg-stone-100 text-stone-600",
+  ACCEPTED: "bg-emerald-50 text-emerald-700",
+  DECLINED: "bg-rose-50 text-rose-700",
+};
 
 const tagLabels: Record<GuestTagCode, string> = {
   FAMILY: "Семья",
@@ -46,611 +63,901 @@ const languageLabels: Record<LanguageCode, string> = {
   ZH: "中文",
 };
 
+const alcoholLabels: Record<AlcoholPreferenceCode, string> = {
+  WINE: "Вино",
+  CHAMPAGNE: "Шампанское",
+  STRONG: "Крепкое",
+  NONE: "Не пьют",
+};
+
+const transportLabels: Record<TransportPreferenceCode, string> = {
+  TRANSFER: "Нужен трансфер",
+  OWN_CAR: "На своей машине",
+  SELF: "Доберутся сами",
+};
+
+const foodLabels: Record<FoodKey, string> = {
+  meat: "Мясо",
+  fish: "Рыба",
+  vegan: "Веган",
+  unknown: "Не выбрали",
+};
+
+const builtInQuestions = [
+  "Присутствие и формат прихода",
+  "Предпочтения по меню и аллергии",
+  "Бар: вино, шампанское, крепкое или без алкоголя",
+  "Транспорт до площадки",
+  "Трек для танцевального плейлиста",
+];
+
+const questionPresets: Array<Pick<CustomQuestion, "title" | "type" | "options">> = [
+  {
+    title: "Будете ли вы с детьми?",
+    type: "OPTIONS",
+    options: ["Да", "Нет"],
+  },
+  {
+    title: "Нужен ли детский стул?",
+    type: "OPTIONS",
+    options: ["Да", "Нет", "Пока не знаю"],
+  },
+  {
+    title: "Нужен ли трансфер обратно после банкета?",
+    type: "OPTIONS",
+    options: ["Да", "Нет"],
+  },
+  {
+    title: "Есть ли важные пожелания организатору?",
+    type: "TEXT",
+    options: [],
+  },
+];
+
+function normalizeFood(value?: string | null): FoodKey {
+  if (!value) {
+    return "unknown";
+  }
+
+  const normalized = value.toLowerCase();
+
+  if (normalized.includes("мяс") || normalized.includes("meat") || normalized.includes("СЏСЃ".toLowerCase())) {
+    return "meat";
+  }
+
+  if (normalized.includes("рыб") || normalized.includes("fish") || normalized.includes("С‹Р±".toLowerCase())) {
+    return "fish";
+  }
+
+  if (normalized.includes("вег") || normalized.includes("vegan")) {
+    return "vegan";
+  }
+
+  return "unknown";
+}
+
+function getHeadcount(guest: GuestResponse) {
+  if (guest.status === "DECLINED") {
+    return 0;
+  }
+
+  if (guest.isCouple && guest.partnerName) {
+    if (guest.status === "ACCEPTED") {
+      if (guest.attendanceChoice === "PRIMARY" || guest.attendanceChoice === "PARTNER") {
+        return 1;
+      }
+
+      if (guest.attendanceChoice === "NONE") {
+        return 0;
+      }
+
+      return 2;
+    }
+  }
+
+  return guest.status === "ACCEPTED" ? 1 : 0;
+}
+
+function getInvitationUrl(siteId: string, guest: GuestResponse) {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return `${window.location.origin}/wedding/${siteId}?guest=${guest.magicToken}`;
+}
+
+function makeQuestionId() {
+  return `question-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function PreferenceCard({
+  icon: Icon,
+  title,
+  value,
+  note,
+}: {
+  icon: typeof Wine;
+  title: string;
+  value: string | number;
+  note?: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-stone-200 bg-white/80 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="rounded-2xl bg-stone-100 p-2 text-stone-600">
+          <Icon className="h-5 w-5" />
+        </div>
+        <strong className="font-serif text-2xl text-stone-900">{value}</strong>
+      </div>
+      <p className="mt-3 text-sm font-medium text-stone-800">{title}</p>
+      {note ? <p className="mt-1 text-xs leading-relaxed text-stone-500">{note}</p> : null}
+    </div>
+  );
+}
+
 export function GuestsPanel() {
-  const siteId = useWeddingStore((state) => state.siteId);
-  const guests = useWeddingStore((state) => state.guests);
-  const setGuests = useWeddingStore((state) => state.setGuests);
-  const prependGuest = useWeddingStore((state) => state.prependGuest);
-  const updateGuest = useWeddingStore((state) => state.updateGuest);
-  const customQuestions = useWeddingStore((state) => state.customQuestions);
-  const setCustomQuestions = useWeddingStore((state) => state.setCustomQuestions);
-  const language = useWeddingStore((state) => state.language);
-  const setLanguage = useWeddingStore((state) => state.setLanguage);
+  const {
+    siteId,
+    customQuestions,
+    setCustomQuestions,
+  } = useWeddingStore();
+
+  const [guests, setGuests] = useState<GuestResponse[]>([]);
+  const [isLoadingGuests, setIsLoadingGuests] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [inviteLanguage, setInviteLanguage] = useState<LanguageCode>("RU");
   const [isCouple, setIsCouple] = useState(false);
   const [partnerName, setPartnerName] = useState("");
   const [tags, setTags] = useState<GuestTagCode[]>([]);
-  const [phone, setPhone] = useState("");
-  const [inviteLanguage, setInviteLanguage] = useState<LanguageCode>(language);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<
-    "ALL" | GuestResponse["status"]
-  >("ALL");
-  const filteredGuests =
-    statusFilter === "ALL"
-      ? guests
-      : guests.filter((guest) => guest.status === statusFilter);
+  const [isSavingGuest, setIsSavingGuest] = useState(false);
+  const [filter, setFilter] = useState<GuestFilter>("ALL");
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const [questionMessage, setQuestionMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!siteId || siteId === "quiz-draft") return;
+    let cancelled = false;
 
-    const controller = new AbortController();
-    fetch(`/api/wedding-sites/${encodeURIComponent(siteId)}/guests`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Не удалось загрузить гостей.");
-        return (await response.json()) as { guests: GuestResponse[] };
-      })
-      .then((data) => setGuests(data.guests))
-      .catch((requestError: unknown) => {
-        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
-        setError("Не удалось обновить список гостей.");
-      });
-
-    return () => controller.abort();
-  }, [setGuests, siteId]);
-
-  const attending = guests.reduce((total, guest) => {
-    if (guest.status !== "ACCEPTED") return total;
-    if (!guest.isCouple) return total + 1 + (guest.hasPlusOne ? 1 : 0);
-    return total + (guest.attendanceChoice === "BOTH" ? 2 : 1);
-  }, 0);
-  const declined = guests.reduce(
-    (total, guest) =>
-      total + (guest.status === "DECLINED" ? (guest.isCouple ? 2 : 1) : 0),
-    0,
-  );
-  const totalHeadcount = guests.reduce(
-    (total, guest) =>
-      total + (guest.isCouple ? 2 : 1 + (guest.hasPlusOne ? 1 : 0)),
-    0,
-  );
-  const wine = guests.filter((guest) =>
-    guest.alcoholPreferences.includes("WINE"),
-  ).length;
-  const champagne = guests.filter((guest) =>
-    guest.alcoholPreferences.includes("CHAMPAGNE"),
-  ).length;
-  const strong = guests.filter((guest) =>
-    guest.alcoholPreferences.includes("STRONG"),
-  ).length;
-  const nonAlcohol = guests.filter((guest) =>
-    guest.alcoholPreferences.includes("NONE"),
-  ).length;
-  const transfer = guests.filter(
-    (guest) =>
-      guest.transportPreference === "TRANSFER" || guest.needsTransport,
-  ).length;
-
-  const addGuest = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!siteId || siteId === "quiz-draft") {
-      setError("Сначала сохраните проект.");
-      return;
-    }
-
-    setIsSaving(true);
-    setError("");
-    setLanguage(inviteLanguage);
-    window.setTimeout(() => void persistSiteExtras().catch(() => undefined), 0);
-
-    try {
-      const response = await fetch(
-        `/api/wedding-sites/${encodeURIComponent(siteId)}/guests`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, phone, isCouple, partnerName, tags }),
-        },
-      );
-      const data = (await response.json()) as {
-        guest?: GuestResponse;
-        error?: string;
-      };
-
-      if (!response.ok || !data.guest) {
-        throw new Error(data.error || "Не удалось добавить гостя.");
+    async function loadGuests() {
+      if (!siteId) {
+        return;
       }
 
-      prependGuest(data.guest);
-      setName("");
-      setPhone("");
-      setIsCouple(false);
-      setPartnerName("");
-      setTags([]);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Не удалось добавить гостя.",
-      );
-    } finally {
-      setIsSaving(false);
+      setIsLoadingGuests(true);
+      setGuestError(null);
+
+      try {
+        const response = await fetch(`/api/wedding-sites/${siteId}/guests`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Не удалось загрузить список гостей.");
+        }
+
+        const payload = (await response.json()) as { guests?: GuestResponse[] };
+
+        if (!cancelled) {
+          setGuests(payload.guests ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setGuestError(error instanceof Error ? error.message : "Не удалось загрузить список гостей.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingGuests(false);
+        }
+      }
     }
-  };
 
-  const toggleDraftTag = (tag: GuestTagCode) => {
-    setTags((current) =>
-      current.includes(tag)
-        ? current.filter((item) => item !== tag)
-        : [...current, tag],
-    );
-  };
+    void loadGuests();
 
-  const toggleGuestTag = async (guest: GuestResponse, tag: GuestTagCode) => {
-    if (!siteId || siteId === "quiz-draft") return;
-    const nextTags = guest.tags.includes(tag)
-      ? guest.tags.filter((item) => item !== tag)
-      : [...guest.tags, tag];
-    const response = await fetch(
-      `/api/wedding-sites/${encodeURIComponent(siteId)}/guests`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guestId: guest.id, tags: nextTags }),
-      },
-    );
-    const data = (await response.json()) as { guest?: GuestResponse };
-    if (response.ok && data.guest) updateGuest(data.guest);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [siteId]);
 
-  const saveQuestions = (questions: CustomQuestion[]) => {
-    setCustomQuestions(questions);
-    window.setTimeout(() => void persistSiteExtras().catch(() => undefined), 0);
-  };
+  const guestStats = useMemo(() => {
+    const accepted = guests.filter((guest) => guest.status === "ACCEPTED").length;
+    const declined = guests.filter((guest) => guest.status === "DECLINED").length;
+    const pending = guests.filter((guest) => guest.status === "PENDING").length;
+    const headcount = guests.reduce((sum, guest) => sum + getHeadcount(guest), 0);
 
-  const addCustomQuestion = () => {
-    if (customQuestions.length >= 2) return;
-    saveQuestions([
-      ...customQuestions,
-      {
-        id: crypto.randomUUID(),
-        title: "Ваш вопрос",
-        type: "TEXT",
-        options: [],
-      },
-    ]);
-  };
+    return {
+      accepted,
+      declined,
+      pending,
+      total: guests.length,
+      headcount,
+    };
+  }, [guests]);
 
-  const updateCustomQuestion = (
-    id: string,
-    patch: Partial<CustomQuestion>,
-  ) => {
-    saveQuestions(
-      customQuestions.map((question) =>
-        question.id === id ? { ...question, ...patch } : question,
-      ),
-    );
-  };
+  const preferenceStats = useMemo(() => {
+    const food: Record<FoodKey, number> = {
+      meat: 0,
+      fish: 0,
+      vegan: 0,
+      unknown: 0,
+    };
+    const alcohol: Record<AlcoholPreferenceCode, number> = {
+      WINE: 0,
+      CHAMPAGNE: 0,
+      STRONG: 0,
+      NONE: 0,
+    };
+    const transport: Record<TransportPreferenceCode, number> = {
+      TRANSFER: 0,
+      OWN_CAR: 0,
+      SELF: 0,
+    };
+    let allergies = 0;
+    let danceTracks = 0;
 
-  const copyInvitation = async (guest: GuestResponse) => {
-    if (!guest.invitationUrl) return;
-    await navigator.clipboard.writeText(guest.invitationUrl);
-    setCopiedId(guest.id);
-    window.setTimeout(() => setCopiedId(null), 1600);
-  };
+    guests.forEach((guest) => {
+      if (guest.status !== "ACCEPTED") {
+        return;
+      }
 
-  const downloadGuests = async () => {
-    if (!siteId || siteId === "quiz-draft") return;
+      food[normalizeFood(guest.foodPreference)] += 1;
 
-    const response = await fetch(
-      `/api/wedding-sites/${encodeURIComponent(siteId)}/guests/export`,
-    );
-    if (!response.ok) {
-      setError("Не удалось подготовить таблицу гостей.");
+      if (guest.isCouple && guest.partnerName) {
+        food[normalizeFood(guest.partnerFoodPreference)] += 1;
+      }
+
+      guest.alcoholPreferences.forEach((preference) => {
+        if (alcoholPreferenceCodes.includes(preference)) {
+          alcohol[preference] += 1;
+        }
+      });
+
+      if (guest.transportPreference && transportPreferenceCodes.includes(guest.transportPreference)) {
+        transport[guest.transportPreference] += 1;
+      } else if (guest.needsTransport) {
+        transport.TRANSFER += 1;
+      }
+
+      if (guest.allergies?.trim()) {
+        allergies += 1;
+      }
+
+      if (guest.musicRequest?.trim()) {
+        danceTracks += 1;
+      }
+    });
+
+    return {
+      alcohol,
+      allergies,
+      danceTracks,
+      food,
+      transport,
+    };
+  }, [guests]);
+
+  const customAnswerSummary = useMemo(() => {
+    return customQuestions.map((question) => {
+      const answers = guests
+        .map((guest) => guest.customAnswers?.[question.id])
+        .filter((answer): answer is string => Boolean(answer?.trim()));
+
+      return {
+        answers,
+        question,
+      };
+    });
+  }, [customQuestions, guests]);
+
+  const filteredGuests = useMemo(() => {
+    if (filter === "ALL") {
+      return guests;
+    }
+
+    return guests.filter((guest) => guest.status === filter);
+  }, [filter, guests]);
+
+  async function addGuest() {
+    if (!siteId) {
+      setGuestError("Сначала сохраните сайт, чтобы добавлять гостей.");
       return;
     }
 
-    const url = URL.createObjectURL(await response.blob());
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `vowly-guests-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
+    if (!name.trim()) {
+      setGuestError("Введите имя гостя.");
+      return;
+    }
+
+    setIsSavingGuest(true);
+    setGuestError(null);
+
+    try {
+      const response = await fetch(`/api/wedding-sites/${siteId}/guests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inviteLanguage,
+          isCouple,
+          name: name.trim(),
+          partnerName: isCouple ? partnerName.trim() : "",
+          phone: phone.trim(),
+          tags,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Не удалось добавить гостя.");
+      }
+
+      const payload = (await response.json()) as { guest?: GuestResponse };
+
+      if (payload.guest) {
+        setGuests((current) => [payload.guest!, ...current]);
+      }
+
+      setName("");
+      setPhone("");
+      setPartnerName("");
+      setIsCouple(false);
+      setTags([]);
+    } catch (error) {
+      setGuestError(error instanceof Error ? error.message : "Не удалось добавить гостя.");
+    } finally {
+      setIsSavingGuest(false);
+    }
+  }
+
+  async function updateGuestTags(guest: GuestResponse, nextTags: GuestTagCode[]) {
+    if (!siteId) {
+      return;
+    }
+
+    setGuests((current) => current.map((item) => (item.id === guest.id ? { ...item, tags: nextTags } : item)));
+
+    try {
+      await fetch(`/api/wedding-sites/${siteId}/guests`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guestId: guest.id,
+          tags: nextTags,
+        }),
+      });
+    } catch {
+      setGuests((current) => current.map((item) => (item.id === guest.id ? guest : item)));
+    }
+  }
+
+  async function copyGuestLink(guest: GuestResponse) {
+    if (!siteId) {
+      return;
+    }
+
+    const invitationUrl = getInvitationUrl(siteId, guest);
+
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setCopiedGuestId(guest.id);
+      window.setTimeout(() => setCopiedGuestId(null), 1800);
+    } catch {
+      setGuestError("Не удалось скопировать ссылку. Попробуйте вручную.");
+    }
+  }
+
+  function downloadCsv() {
+    const rows = [
+      [
+        "Имя",
+        "Телефон",
+        "Статус",
+        "Пара",
+        "Теги",
+        "Еда",
+        "Аллергии",
+        "Алкоголь",
+        "Транспорт",
+        "Музыка",
+        "Ссылка",
+      ],
+      ...guests.map((guest) => [
+        guest.name,
+        guest.phone,
+        statusLabels[guest.status],
+        guest.partnerName ?? "",
+        guest.tags.map((tag) => tagLabels[tag]).join(", "),
+        [guest.foodPreference, guest.partnerFoodPreference].filter(Boolean).join(" / "),
+        guest.allergies ?? "",
+        guest.alcoholPreferences.map((preference) => alcoholLabels[preference]).join(", "),
+        guest.transportPreference ? transportLabels[guest.transportPreference] : guest.needsTransport ? "Нужен трансфер" : "",
+        guest.musicRequest ?? "",
+        siteId ? getInvitationUrl(siteId, guest) : "",
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "vowly-guests.csv";
+    link.click();
     URL.revokeObjectURL(url);
-  };
+  }
+
+  async function saveQuestions(nextQuestions: CustomQuestion[], message = "Опросник обновлен.") {
+    if (!siteId) {
+      setQuestionMessage("Сначала сохраните сайт, чтобы редактировать опросник.");
+      return;
+    }
+
+    const limitedQuestions = nextQuestions.slice(0, 5);
+    setCustomQuestions(limitedQuestions);
+    setQuestionMessage("Сохраняем...");
+
+    try {
+      await persistSiteExtras();
+      setQuestionMessage(message);
+    } catch {
+      setQuestionMessage("Не удалось сохранить опросник. Попробуйте еще раз.");
+    }
+  }
+
+  function addQuestion(preset?: Pick<CustomQuestion, "title" | "type" | "options">) {
+    if (customQuestions.length >= 5) {
+      setQuestionMessage("Можно добавить до 5 дополнительных вопросов.");
+      return;
+    }
+
+    const nextQuestion: CustomQuestion = {
+      id: makeQuestionId(),
+      options: preset?.options ?? [],
+      title: preset?.title ?? "Новый вопрос",
+      type: preset?.type ?? "TEXT",
+    };
+
+    void saveQuestions([...customQuestions, nextQuestion], "Вопрос добавлен.");
+  }
+
+  function updateQuestion(questionId: string, patch: Partial<CustomQuestion>) {
+    const nextQuestions = customQuestions.map((question) =>
+      question.id === questionId
+        ? {
+            ...question,
+            ...patch,
+            options: patch.type === "TEXT" ? [] : patch.options ?? question.options,
+          }
+        : question,
+    );
+
+    void saveQuestions(nextQuestions, "Опросник обновлен.");
+  }
+
+  function removeQuestion(questionId: string) {
+    void saveQuestions(
+      customQuestions.filter((question) => question.id !== questionId),
+      "Вопрос удален.",
+    );
+  }
+
+  function toggleDraftTag(tag: GuestTagCode) {
+    setTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+  }
 
   return (
-    <>
-      <header className="guests-heading">
-        <span>Все под рукой</span>
+    <section className="constructor-section space-y-8">
+      <header className="space-y-3">
+        <p className="section-kicker">Все под рукой</p>
         <h2>Ваши любимые гости</h2>
         <p>
-          Добавьте близких, выберите язык приглашения и отправьте каждому
-          персональную ссылку.
+          Добавляйте гостей, собирайте ответы, меню, бар, транспорт и индивидуальные пожелания в одной аккуратной CRM.
         </p>
       </header>
 
       <div className="guest-stats">
-        <article>
-          <Users size={18} />
-          <span>Всего гостей</span>
-          <strong>{totalHeadcount}</strong>
-        </article>
-        <article>
-          <CheckCircle2 size={18} />
-          <span>Подтвердили</span>
-          <strong>{attending}</strong>
-        </article>
-        <article>
-          <XCircle size={18} />
-          <span>Отказались</span>
-          <strong>{declined}</strong>
-        </article>
-      </div>
-
-      <div className="guest-insights">
-        <Insight icon={<Wine size={17} />} label="Вино" value={wine} />
-        <Insight icon={<GlassWater size={17} />} label="Шампанское" value={champagne} />
-        <Insight icon={<GlassWater size={17} />} label="Крепкое" value={strong} />
-        <Insight icon={<GlassWater size={17} />} label="Не пьют" value={nonAlcohol} />
-        <Insight icon={<BusFront size={17} />} label="Нужен трансфер" value={transfer} />
-      </div>
-
-      <form className="guest-quick-form" onSubmit={addGuest}>
         <div>
-          <strong>Добавить гостя</strong>
-          <small>Персональная ссылка создастся автоматически</small>
+          <Users className="h-5 w-5" />
+          <span>Всего гостей</span>
+          <strong>{guestStats.total}</strong>
         </div>
-        <label>
-          <span>Имя</span>
-          <input
-            required
-            minLength={2}
-            value={name}
-            placeholder="Александр"
-            onChange={(event) => setName(event.target.value)}
+        <div>
+          <CheckCircle2 className="h-5 w-5" />
+          <span>Подтвердили</span>
+          <strong>{guestStats.accepted}</strong>
+        </div>
+        <div>
+          <XCircle className="h-5 w-5" />
+          <span>Отказались</span>
+          <strong>{guestStats.declined}</strong>
+        </div>
+      </div>
+
+      <div className="rounded-[28px] border border-stone-200 bg-white/70 p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="section-kicker">Предпочтения гостей</p>
+            <h3 className="font-serif text-3xl text-stone-950">Сводка для ресторана и организатора</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-500">
+              Блок автоматически собирает ответы RSVP: еду, бар, транспорт, аллергии и песни для вечеринки.
+            </p>
+          </div>
+          <div className="rounded-full bg-stone-100 px-4 py-2 text-sm font-medium text-stone-700">
+            Примерно гостей на площадке: {guestStats.headcount}
+          </div>
+        </div>
+
+        <div className="guest-preference-grid">
+          <PreferenceCard
+            icon={Utensils}
+            title="Меню"
+            value={`${preferenceStats.food.meat}/${preferenceStats.food.fish}/${preferenceStats.food.vegan}`}
+            note={`Мясо / рыба / веган. Без выбора: ${preferenceStats.food.unknown}`}
           />
-        </label>
-        <label>
-          <span>Телефон</span>
-          <input
-            required
-            type="tel"
-            value={phone}
-            placeholder="+7 999 123-45-67"
-            onChange={(event) => setPhone(event.target.value)}
+          <PreferenceCard
+            icon={Wine}
+            title="Бар"
+            value={preferenceStats.alcohol.WINE + preferenceStats.alcohol.CHAMPAGNE + preferenceStats.alcohol.STRONG}
+            note={`Вино: ${preferenceStats.alcohol.WINE}, шампанское: ${preferenceStats.alcohol.CHAMPAGNE}, крепкое: ${preferenceStats.alcohol.STRONG}, не пьют: ${preferenceStats.alcohol.NONE}`}
           />
-        </label>
+          <PreferenceCard
+            icon={BusFront}
+            title="Трансфер"
+            value={preferenceStats.transport.TRANSFER}
+            note={`Своя машина: ${preferenceStats.transport.OWN_CAR}, доберутся сами: ${preferenceStats.transport.SELF}`}
+          />
+          <PreferenceCard
+            icon={ClipboardList}
+            title="Особые отметки"
+            value={preferenceStats.allergies}
+            note={`Аллергии и ограничения. Треков в плейлист: ${preferenceStats.danceTracks}`}
+          />
+        </div>
+      </div>
+
+      <div className="guest-quick-form">
+        <div>
+          <h3>Добавить гостя</h3>
+          <p>Персональная ссылка создастся автоматически.</p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label>
+            <span>Имя</span>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Александр"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="next"
+            />
+          </label>
+          <label>
+            <span>Телефон</span>
+            <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+7 999 123-45-67" />
+          </label>
+        </div>
+
         <label>
           <span>Язык приглашения</span>
-          <select
-            value={inviteLanguage}
-            onChange={(event) =>
-              setInviteLanguage(event.target.value as LanguageCode)
-            }
-          >
-            {(["RU", "EN", "ZH"] as const).map((code) => (
+          <select value={inviteLanguage} onChange={(event) => setInviteLanguage(event.target.value as LanguageCode)}>
+            {Object.entries(languageLabels).map(([code, label]) => (
               <option key={code} value={code}>
-                {languageLabels[code]}
+                {label}
               </option>
             ))}
           </select>
         </label>
+
         <label className="guest-couple-toggle">
-          <input
-            type="checkbox"
-            checked={isCouple}
-            onChange={(event) => setIsCouple(event.target.checked)}
-          />
+          <input checked={isCouple} onChange={(event) => setIsCouple(event.target.checked)} type="checkbox" />
           <span>Пригласить пару по одной ссылке</span>
         </label>
-        {isCouple && (
+
+        {isCouple ? (
           <label>
             <span>Имя второго гостя</span>
             <input
-              required
-              minLength={2}
               value={partnerName}
-              placeholder="Мария"
               onChange={(event) => setPartnerName(event.target.value)}
+              placeholder="Мария"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="done"
             />
           </label>
-        )}
-        <div className="guest-tag-picker">
-          <span>Теги</span>
-          <div>
+        ) : null}
+
+        <div>
+          <span className="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">Теги</span>
+          <div className="guest-tag-row">
             {guestTagCodes.map((tag) => (
               <button
-                className={tags.includes(tag) ? "is-selected" : ""}
-                type="button"
                 key={tag}
+                type="button"
+                className={tags.includes(tag) ? "active" : ""}
                 onClick={() => toggleDraftTag(tag)}
               >
-                <Tag size={12} /> {tagLabels[tag]}
+                <Tag className="h-3.5 w-3.5" />
+                {tagLabels[tag]}
               </button>
             ))}
           </div>
         </div>
-        <button type="submit" disabled={isSaving}>
-          <Plus size={16} />
-          {isSaving ? "Добавляем..." : "Добавить"}
-        </button>
-        {error && <p className="guest-form-error">{error}</p>}
-      </form>
 
-      <section className="guest-question-builder">
-        <div>
-          <span>Умный опрос гостей</span>
-          <strong>Ваши вопросы</strong>
-          <small>Добавьте до двух вопросов, которые появятся в RSVP.</small>
-        </div>
-        {customQuestions.map((question, index) => (
-          <article key={question.id}>
-            <span>Вопрос {index + 1}</span>
-            <input
-              value={question.title}
-              onChange={(event) =>
-                updateCustomQuestion(question.id, { title: event.target.value })
-              }
-            />
-            <select
-              value={question.type}
-              onChange={(event) =>
-                updateCustomQuestion(question.id, {
-                  type: event.target.value as CustomQuestion["type"],
-                  options:
-                    event.target.value === "OPTIONS"
-                      ? question.options.length
-                        ? question.options
-                        : ["Да", "Нет"]
-                      : [],
-                })
-              }
-            >
-              <option value="TEXT">Текстовое поле</option>
-              <option value="OPTIONS">Варианты ответа</option>
-            </select>
-            {question.type === "OPTIONS" && (
-              <input
-                value={question.options.join(", ")}
-                placeholder="Например: Да, Нет, Пока не знаю"
-                onChange={(event) =>
-                  updateCustomQuestion(question.id, {
-                    options: event.target.value
-                      .split(",")
-                      .map((option) => option.trim())
-                      .filter(Boolean)
-                      .slice(0, 6),
-                  })
-                }
-              />
-            )}
-            <button
-              type="button"
-              aria-label="Удалить вопрос"
-              onClick={() =>
-                saveQuestions(
-                  customQuestions.filter((item) => item.id !== question.id),
-                )
-              }
-            >
-              <Trash2 size={14} />
-            </button>
-          </article>
-        ))}
-        {customQuestions.length < 2 && (
-          <button type="button" onClick={addCustomQuestion}>
-            <Plus size={15} /> Добавить вопрос
-          </button>
-        )}
-      </section>
+        {guestError ? <p className="text-sm text-red-600">{guestError}</p> : null}
 
-      <div className="guests-toolbar">
-        <div>
-          <strong>Список гостей</strong>
-          <small>{guests.length ? "Ответы обновляются из базы" : "Пока никого нет"}</small>
-        </div>
-        <button
-          type="button"
-          disabled={!guests.length}
-          onClick={() => void downloadGuests()}
-        >
-          <Download size={15} /> Скачать таблицу CSV
+        <button className="primary-action" type="button" onClick={addGuest} disabled={isSavingGuest}>
+          <Plus className="h-4 w-4" />
+          {isSavingGuest ? "Добавляем..." : "Добавить"}
         </button>
       </div>
-      <div className="guest-status-filters" aria-label="Фильтр гостей">
-        {([
+
+      <div className="guest-question-builder">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="section-kicker">Умный опрос гостей</p>
+            <h3>Ваши вопросы</h3>
+            <p>Основные вопросы уже включены в RSVP. Ниже можно добавить свои уточнения.</p>
+          </div>
+          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+            {customQuestions.length}/5 вопросов
+          </span>
+        </div>
+
+        <div className="builtin-question-grid">
+          {builtInQuestions.map((question) => (
+            <div key={question}>
+              <Check className="h-4 w-4" />
+              <span>{question}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-stone-800">Быстрые заготовки</p>
+          <div className="question-preset-row">
+            {questionPresets.map((preset) => (
+              <button key={preset.title} type="button" onClick={() => addQuestion(preset)}>
+                <Plus className="h-3.5 w-3.5" />
+                {preset.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {customQuestions.map((question) => (
+            <div key={question.id} className="question-editor-card">
+              <div className="grid gap-3 md:grid-cols-[1fr_160px_auto] md:items-end">
+                <label>
+                  <span>Текст вопроса</span>
+                  <input
+                    value={question.title}
+                    onChange={(event) => updateQuestion(question.id, { title: event.target.value })}
+                    placeholder="Например: будете ли с детьми?"
+                  />
+                </label>
+                <label>
+                  <span>Тип ответа</span>
+                  <select
+                    value={question.type}
+                    onChange={(event) =>
+                      updateQuestion(question.id, {
+                        options: event.target.value === "OPTIONS" ? question.options.length ? question.options : ["Да", "Нет"] : [],
+                        type: event.target.value as CustomQuestion["type"],
+                      })
+                    }
+                  >
+                    <option value="TEXT">Текст</option>
+                    <option value="OPTIONS">Варианты</option>
+                  </select>
+                </label>
+                <button className="secondary-action danger" type="button" onClick={() => removeQuestion(question.id)}>
+                  <Trash2 className="h-4 w-4" />
+                  Удалить
+                </button>
+              </div>
+              {question.type === "OPTIONS" ? (
+                <label className="mt-3 block">
+                  <span>Варианты через запятую</span>
+                  <input
+                    value={question.options.join(", ")}
+                    onChange={(event) =>
+                      updateQuestion(question.id, {
+                        options: event.target.value
+                          .split(",")
+                          .map((option) => option.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                    placeholder="Да, Нет, Пока не знаю"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        <button className="secondary-action w-full justify-center" type="button" onClick={() => addQuestion()}>
+          <Plus className="h-4 w-4" />
+          Добавить свой вопрос
+        </button>
+
+        {customAnswerSummary.some((item) => item.answers.length > 0) ? (
+          <div className="custom-answer-summary">
+            <p className="text-sm font-medium text-stone-800">Ответы на ваши вопросы</p>
+            {customAnswerSummary
+              .filter((item) => item.answers.length > 0)
+              .map((item) => (
+                <div key={item.question.id}>
+                  <span>{item.question.title}</span>
+                  <strong>{item.answers.length}</strong>
+                </div>
+              ))}
+          </div>
+        ) : null}
+
+        {questionMessage ? <p className="text-sm text-stone-500">{questionMessage}</p> : null}
+      </div>
+
+      <div className="guest-list-header">
+        <div>
+          <h3>Список гостей</h3>
+          <p>{isLoadingGuests ? "Загружаем гостей..." : guests.length ? "Все ссылки и ответы под рукой." : "Пока никого нет."}</p>
+        </div>
+        <button className="secondary-action" type="button" onClick={downloadCsv} disabled={!guests.length}>
+          <Download className="h-4 w-4" />
+          Скачать таблицу CSV
+        </button>
+      </div>
+
+      <div className="guest-filter-row">
+        {[
           ["ALL", "Все"],
           ["ACCEPTED", "Придут"],
           ["DECLINED", "Не придут"],
           ["PENDING", "Ждем ответ"],
-        ] as const).map(([value, label]) => (
+        ].map(([value, label]) => (
           <button
-            className={statusFilter === value ? "is-active" : ""}
-            type="button"
             key={value}
-            onClick={() => setStatusFilter(value)}
+            className={filter === value ? "active" : ""}
+            type="button"
+            onClick={() => setFilter(value as GuestFilter)}
           >
             {label}
           </button>
         ))}
       </div>
 
-      {guests.length ? (
+      {filteredGuests.length ? (
         <>
-          <div className="hidden md:block">
-            <div className="guest-table guest-crm-table">
-              <div className="guest-table-head">
-                <span>Гость</span>
-                <span>Статус</span>
-                <span>Персональная ссылка</span>
-              </div>
-              {filteredGuests.map((guest) => (
-                <GuestDesktopRow
-                  guest={guest}
-                  copied={copiedId === guest.id}
-                  key={guest.id}
-                  onCopy={copyInvitation}
-                  onToggleTag={toggleGuestTag}
-                />
-              ))}
-            </div>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="guest-table">
+              <thead>
+                <tr>
+                  <th>Гость</th>
+                  <th>Статус</th>
+                  <th>Предпочтения</th>
+                  <th>Теги</th>
+                  <th>Ссылка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGuests.map((guest) => (
+                  <tr key={guest.id}>
+                    <td>
+                      <strong>{guest.name}</strong>
+                      {guest.partnerName ? <span> + {guest.partnerName}</span> : null}
+                      <small>{guest.phone || "Телефон не указан"}</small>
+                    </td>
+                    <td>
+                      <span className={`guest-status ${statusClasses[guest.status]}`}>{statusLabels[guest.status]}</span>
+                    </td>
+                    <td>
+                      <span>{foodLabels[normalizeFood(guest.foodPreference)]}</span>
+                      <small>
+                        {guest.alcoholPreferences.length
+                          ? guest.alcoholPreferences.map((preference) => alcoholLabels[preference]).join(", ")
+                          : "Бар не выбран"}
+                      </small>
+                      <small>
+                        {guest.transportPreference ? transportLabels[guest.transportPreference] : "Транспорт не выбран"}
+                      </small>
+                    </td>
+                    <td>
+                      <div className="guest-tag-row compact">
+                        {guestTagCodes.map((tag) => {
+                          const nextTags = guest.tags.includes(tag)
+                            ? guest.tags.filter((item) => item !== tag)
+                            : [...guest.tags, tag];
+
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              className={guest.tags.includes(tag) ? "active" : ""}
+                              onClick={() => updateGuestTags(guest, nextTags)}
+                            >
+                              {tagLabels[tag]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td>
+                      <button className="copy-link-button" type="button" onClick={() => copyGuestLink(guest)}>
+                        {copiedGuestId === guest.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copiedGuestId === guest.id ? "Скопировано" : "Скопировать"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="grid w-full gap-3 overflow-hidden md:hidden">
+          <div className="space-y-3 md:hidden">
             {filteredGuests.map((guest) => (
-              <GuestMobileCard
-                copied={copiedId === guest.id}
-                guest={guest}
-                key={guest.id}
-                onCopy={copyInvitation}
-                onToggleTag={toggleGuestTag}
-              />
+              <article key={guest.id} className="guest-mobile-card">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <strong>{guest.name}</strong>
+                    {guest.partnerName ? <p>+ {guest.partnerName}</p> : null}
+                    <span>{guest.phone || "Телефон не указан"}</span>
+                  </div>
+                  <span className={`guest-status ${statusClasses[guest.status]}`}>{statusLabels[guest.status]}</span>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Еда</dt>
+                    <dd>{foodLabels[normalizeFood(guest.foodPreference)]}</dd>
+                  </div>
+                  <div>
+                    <dt>Алкоголь</dt>
+                    <dd>
+                      {guest.alcoholPreferences.length
+                        ? guest.alcoholPreferences.map((preference) => alcoholLabels[preference]).join(", ")
+                        : "Не выбрано"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Транспорт</dt>
+                    <dd>{guest.transportPreference ? transportLabels[guest.transportPreference] : "Не выбрано"}</dd>
+                  </div>
+                </dl>
+                <button className="copy-link-button w-full justify-center" type="button" onClick={() => copyGuestLink(guest)}>
+                  <Link2 className="h-4 w-4" />
+                  {copiedGuestId === guest.id ? "Ссылка скопирована" : "Скопировать приглашение"}
+                </button>
+              </article>
             ))}
           </div>
-          {!filteredGuests.length && (
-            <div className="guests-empty compact">
-              <UserRoundX size={22} />
-              <strong>В этой категории пока никого нет</strong>
-            </div>
-          )}
         </>
       ) : (
-        <div className="guests-empty">
-          <UserRoundX size={25} />
+        <div className="empty-guest-state">
+          <UserRoundX className="h-10 w-10" />
           <strong>Список пока пуст</strong>
-          <p>
-            Добавьте первого гостя, и мы подготовим для него личную ссылку.
-          </p>
+          <p>Добавьте первого гостя, и мы подготовим для него личную ссылку.</p>
         </div>
       )}
-    </>
-  );
-}
 
-function Insight({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-}) {
-  return (
-    <article>
-      {icon}
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-    </article>
-  );
-}
-
-function GuestMobileCard({
-  guest,
-  copied,
-  onCopy,
-  onToggleTag,
-}: {
-  guest: GuestResponse;
-  copied: boolean;
-  onCopy: (guest: GuestResponse) => Promise<void>;
-  onToggleTag: (guest: GuestResponse, tag: GuestTagCode) => Promise<void>;
-}) {
-  return (
-    <article className="w-full min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="grid min-w-0 gap-1">
-          <strong className="break-words">{guest.name}</strong>
-          {guest.isCouple && <small>и {guest.partnerName}</small>}
-          <small className="text-stone-500">
-            {guest.phone || "Телефон не указан"}
-          </small>
+      <div className="rounded-[24px] border border-stone-200 bg-stone-50/80 p-4 text-sm leading-relaxed text-stone-500">
+        <div className="mb-2 flex items-center gap-2 font-medium text-stone-700">
+          <ListChecks className="h-4 w-4" />
+          Как это работает
         </div>
-        <span className={`guest-status status-${guest.status.toLowerCase()}`}>
-          {guest.status === "DECLINED" ? "Не придет" : statusLabels[guest.status]}
-        </span>
+        Гость открывает персональную ссылку, отвечает на RSVP и выбирает предпочтения. Ответ сразу появляется в этой
+        панели, а CSV можно отправить координатору или ресторану.
       </div>
-      <div className="mt-3 grid min-w-0 gap-1 break-words text-sm text-stone-600">
-        <span>Алкоголь: {guest.drinks || "не выбран"}</span>
-        <span>Еда: {guest.foodPreference || "не выбрана"}</span>
-        {guest.allergies && <span>Аллергии: {guest.allergies}</span>}
-        {guest.musicRequest && <span>Трек: {guest.musicRequest}</span>}
-      </div>
-      <div className="guest-row-tags mt-3">
-        {guestTagCodes.map((tag) => (
-          <button
-            className={guest.tags.includes(tag) ? "is-selected" : ""}
-            type="button"
-            key={tag}
-            onClick={() => void onToggleTag(guest, tag)}
-          >
-            {tagLabels[tag]}
-          </button>
-        ))}
-      </div>
-      <button
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm text-white disabled:opacity-50"
-        type="button"
-        disabled={!guest.invitationUrl}
-        onClick={() => void onCopy(guest)}
-      >
-        {copied ? <Check size={14} /> : <Copy size={14} />}
-        {copied ? "Скопировано" : "Скопировать ссылку"}
-      </button>
-    </article>
-  );
-}
-
-function GuestDesktopRow({
-  guest,
-  copied,
-  onCopy,
-  onToggleTag,
-}: {
-  guest: GuestResponse;
-  copied: boolean;
-  onCopy: (guest: GuestResponse) => Promise<void>;
-  onToggleTag: (guest: GuestResponse, tag: GuestTagCode) => Promise<void>;
-}) {
-  return (
-    <article>
-      <div>
-        <strong>{guest.name}</strong>
-        {guest.isCouple && <small className="guest-pair-name">и {guest.partnerName}</small>}
-        <small>{guest.phone || "Телефон не указан"}</small>
-        <small>
-          {guest.foodPreference || "Еда не выбрана"}
-          {guest.allergies ? ` · Аллергии: ${guest.allergies}` : ""}
-        </small>
-        {guest.plusOneName && <small>С парой: {guest.plusOneName}</small>}
-        {guest.musicRequest && <small>Трек: {guest.musicRequest}</small>}
-        <div className="guest-row-tags">
-          {guestTagCodes.map((tag) => (
-            <button
-              className={guest.tags.includes(tag) ? "is-selected" : ""}
-              type="button"
-              key={tag}
-              onClick={() => void onToggleTag(guest, tag)}
-            >
-              {tagLabels[tag]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <span className={`guest-status status-${guest.status.toLowerCase()}`}>
-        {statusLabels[guest.status]}
-      </span>
-      <div className="guest-link-cell">
-        <span>
-          <Link2 size={13} />
-          {guest.invitationUrl ? "Ссылка готова" : "Старая запись"}
-        </span>
-        <button
-          type="button"
-          disabled={!guest.invitationUrl}
-          onClick={() => void onCopy(guest)}
-        >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Скопировано" : "Копировать"}
-        </button>
-      </div>
-    </article>
+    </section>
   );
 }

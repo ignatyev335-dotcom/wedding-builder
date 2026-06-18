@@ -100,6 +100,8 @@ export function InvitationPreview({
     transferMeetingPoint,
     invitationText,
     postWeddingMode,
+    postWeddingAutoEnabled,
+    postWeddingHeroImage,
     postWeddingPhotoUrl,
     postWeddingThankYouText,
     language,
@@ -110,9 +112,34 @@ export function InvitationPreview({
   const selectedAudioName =
     customMusicName ?? musicTrackTitle ?? "Музыка приглашения";
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState(Boolean(personalizedGuest));
   const [isRsvpSent, setIsRsvpSent] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const activePostWeddingMode = useMemo(() => {
+    if (postWeddingMode) return true;
+    if (!postWeddingAutoEnabled || !weddingDate) return false;
+
+    const activationDate = new Date(`${weddingDate}T00:00:00`);
+    activationDate.setDate(activationDate.getDate() + 1);
+
+    return now >= activationDate.getTime();
+  }, [now, postWeddingAutoEnabled, postWeddingMode, weddingDate]);
+
+  const activeHeroImageDesktop =
+    activePostWeddingMode && postWeddingHeroImage
+      ? postWeddingHeroImage
+      : heroImageDesktop;
+  const activeHeroImageMobile =
+    activePostWeddingMode && postWeddingHeroImage
+      ? postWeddingHeroImage
+      : heroImageMobile;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -240,18 +267,18 @@ export function InvitationPreview({
 
       <section
         className={`wedding-hero break-words hyphens-auto overflow-hidden ${
-          heroImageDesktop || heroImageMobile || coverPhoto ? "has-cover" : ""
+          activeHeroImageDesktop || activeHeroImageMobile || coverPhoto ? "has-cover" : ""
         }`}
       >
-        {(heroImageDesktop || heroImageMobile || coverPhoto) && (
+        {(activeHeroImageDesktop || activeHeroImageMobile || coverPhoto) && (
           <>
             {previewMode ? (
               <Image
                 className="wedding-cover"
                 src={
                   previewMode === "mobile"
-                    ? heroImageMobile ?? heroImageDesktop ?? coverPhoto!
-                    : heroImageDesktop ?? heroImageMobile ?? coverPhoto!
+                    ? activeHeroImageMobile ?? activeHeroImageDesktop ?? coverPhoto!
+                    : activeHeroImageDesktop ?? activeHeroImageMobile ?? coverPhoto!
                 }
                 alt=""
                 fill
@@ -262,7 +289,7 @@ export function InvitationPreview({
               <>
                 <Image
                   className="wedding-cover hidden md:block"
-                  src={heroImageDesktop ?? heroImageMobile ?? coverPhoto!}
+                  src={activeHeroImageDesktop ?? activeHeroImageMobile ?? coverPhoto!}
                   alt=""
                   fill
                   priority
@@ -270,7 +297,7 @@ export function InvitationPreview({
                 />
                 <Image
                   className="wedding-cover block md:hidden"
-                  src={heroImageMobile ?? heroImageDesktop ?? coverPhoto!}
+                  src={activeHeroImageMobile ?? activeHeroImageDesktop ?? coverPhoto!}
                   alt=""
                   fill
                   priority
@@ -282,7 +309,7 @@ export function InvitationPreview({
           </>
         )}
         <span className="wedding-kicker">
-          {postWeddingMode ? "Этот день останется с нами" : t.invitation}
+          {activePostWeddingMode ? "Этот день останется с нами" : t.invitation}
         </span>
         <div className="boho-sun" aria-hidden="true" />
         <h1 className="wedding-couple-names flex max-w-full flex-col items-center overflow-hidden break-words px-2 text-center leading-none tracking-tight">
@@ -296,14 +323,14 @@ export function InvitationPreview({
             {partnerTwoName}
           </span>
         </h1>
-        <p>{postWeddingMode ? "Спасибо, что были с нами!" : formattedDate}</p>
+        <p>{activePostWeddingMode ? "Спасибо, что были с нами!" : formattedDate}</p>
         <span className="wedding-scroll-line" />
       </section>
 
-      {!postWeddingMode && platformContent.greetingEnabled && <section className="wedding-welcome">
-        <span>{postWeddingMode ? "С любовью к вам" : t.dearGuests}</span>
+      {!activePostWeddingMode && platformContent.greetingEnabled && <section className="wedding-welcome">
+        <span>{activePostWeddingMode ? "С любовью к вам" : t.dearGuests}</span>
         <h2>
-          {postWeddingMode
+          {activePostWeddingMode
             ? "Спасибо, что сделали этот день незабываемым"
             : t.welcome}
         </h2>
@@ -319,7 +346,7 @@ export function InvitationPreview({
       )}
 
       <div className="wedding-sortable-blocks">
-      {postWeddingMode && (
+      {activePostWeddingMode && (
         <section className="wedding-module post-wedding-thanks">
           <ImagePlus size={19} />
           <span>Спасибо, что были рядом</span>
@@ -342,7 +369,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.COUNTDOWN && (
+      {!activePostWeddingMode && moduleVisibility.COUNTDOWN && (
         <section
           className="wedding-module wedding-countdown"
           style={{ order: blockOrder.indexOf("COUNTDOWN") }}
@@ -359,7 +386,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode &&
+      {!activePostWeddingMode &&
         platformContent.timelineEnabled &&
         moduleVisibility.TIMELINE && (
         <section
@@ -380,7 +407,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode &&
+      {!activePostWeddingMode &&
         platformContent.dressCodeEnabled &&
         moduleVisibility.DRESS_CODE && (
         <section
@@ -412,7 +439,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && platformContent.mapEnabled && moduleVisibility.MAP && (
+      {!activePostWeddingMode && platformContent.mapEnabled && moduleVisibility.MAP && (
         <section
           className="wedding-module wedding-location"
           style={{ order: blockOrder.indexOf("MAP") }}
@@ -431,7 +458,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && moduleVisibility.TRANSFER && (
+      {!activePostWeddingMode && moduleVisibility.TRANSFER && (
         <section
           className="wedding-module"
           style={{ order: blockOrder.indexOf("TRANSFER") }}
@@ -453,7 +480,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && (wishlistText || wishlistItems.length > 0) && (
+      {!activePostWeddingMode && (wishlistText || wishlistItems.length > 0) && (
         <section
           className="wedding-module wedding-wishlist"
           style={{ order: blockOrder.indexOf("WISHLIST") }}
@@ -507,7 +534,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && coordinatorName && (
+      {!activePostWeddingMode && coordinatorName && (
         <section
           className="wedding-module wedding-coordinator"
           style={{ order: blockOrder.indexOf("COORDINATOR") }}
@@ -570,7 +597,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode && faqItems.length > 0 && (
+      {!activePostWeddingMode && faqItems.length > 0 && (
         <section
           className="wedding-module wedding-faq"
           style={{ order: blockOrder.indexOf("FAQ") }}
@@ -591,7 +618,7 @@ export function InvitationPreview({
         </section>
       )}
 
-      {!postWeddingMode &&
+      {!activePostWeddingMode &&
         platformContent.rsvpEnabled &&
         moduleVisibility.RSVP && (
         <section

@@ -25,15 +25,22 @@ export async function POST(request: Request) {
     const parsed = fontSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Проверьте название, семейство и файл шрифта." },
+        { error: "Проверьте название, CSS-семейство и файл шрифта." },
         { status: 400 },
       );
     }
 
     const isLocalUpload = parsed.data.fileUrl.startsWith("/uploads/admin/");
-    if (!isLocalUpload) {
+    const isRemoteFont = /^https:\/\/.+\.(woff2|woff|ttf|otf)(\?.*)?$/i.test(
+      parsed.data.fileUrl,
+    );
+
+    if (!isLocalUpload && !isRemoteFont) {
       return NextResponse.json(
-        { error: "Шрифты нужно загружать с компьютера через админку." },
+        {
+          error:
+            "Шрифт нужно загрузить файлом или указать прямую https-ссылку на .woff2, .woff, .ttf или .otf.",
+        },
         { status: 400 },
       );
     }
@@ -53,7 +60,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Custom font create failed", error);
     return NextResponse.json(
-      { error: "Не удалось добавить шрифт. Возможно, такое название уже занято." },
+      {
+        error:
+          "Не удалось добавить шрифт. Возможно, такое CSS-семейство уже занято.",
+      },
       { status: 500 },
     );
   }

@@ -273,6 +273,23 @@ model MonetizationFeature {
   @@index([plan, sortOrder])
 }
 
+model PromoCode {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  description     String           @default("")
+  discountPercent Int
+  targetPlan      MonetizationPlan @default(PREMIUM)
+  maxRedemptions  Int?
+  usedCount       Int              @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([isActive, targetPlan])
+  @@index([expiresAt])
+}
+
 model CustomFont {
   id        String        @id @default(cuid())
   name      String        @unique
@@ -304,13 +321,14 @@ model AudioTrack {
 model InvitationTemplate {
   id        String   @id @default(cuid())
   title     String
+  category  String   @default("classic")
   content   String   @db.Text
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([isActive, sortOrder])
+  @@index([category, isActive, sortOrder])
 }
 
 model SystemSetting {

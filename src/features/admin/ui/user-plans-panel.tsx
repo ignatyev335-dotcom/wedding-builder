@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, Loader2, Users } from "lucide-react";
+import { Crown, Loader2, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 
 type Plan = "FREE" | "PREMIUM" | "VIP";
@@ -15,6 +15,7 @@ type ManagedUser = {
 export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const changePlan = async (userId: string, plan: Plan) => {
@@ -47,6 +48,37 @@ export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }
       );
     } finally {
       setPendingUserId(null);
+    }
+  };
+
+  const removeUser = async (userId: string) => {
+    if (!window.confirm("Удалить пользователя и все его сайты?")) {
+      return;
+    }
+
+    setDeletingUserId(userId);
+    setMessage("");
+    const previousUsers = users;
+    setUsers((items) => items.filter((user) => user.id !== userId));
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/plan`, {
+        method: "DELETE",
+      });
+      const result = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось удалить пользователя.");
+      }
+      setMessage("Пользователь удален.");
+    } catch (requestError) {
+      setUsers(previousUsers);
+      setMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "Не удалось удалить пользователя.",
+      );
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -98,6 +130,19 @@ export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }
                   <option value="PREMIUM">Премиум</option>
                   <option value="VIP">VIP</option>
                 </select>
+                <button
+                  className="admin-danger-icon"
+                  type="button"
+                  disabled={deletingUserId === user.id}
+                  onClick={() => void removeUser(user.id)}
+                  aria-label="Удалить пользователя"
+                >
+                  {deletingUserId === user.id ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                </button>
               </div>
             </article>
           );
