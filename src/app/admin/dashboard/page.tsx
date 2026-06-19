@@ -20,6 +20,7 @@
   TicketPercent,
   Users,
   FileClock,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -283,6 +284,9 @@ export default async function AdminDashboardPage() {
           vowly
         </Link>
         <div>
+          <Link className="admin-soft-link" href="/admin/visual-editor">
+            <Eye size={15} /> Визуальный редактор
+          </Link>
           <span>
             <ShieldCheck size={15} /> Суперадмин
           </span>

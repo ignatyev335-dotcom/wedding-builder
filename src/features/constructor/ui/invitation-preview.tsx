@@ -267,6 +267,7 @@ export function InvitationPreview({
       )}
 
       <section
+        data-vowly-block="HERO"
         className={`wedding-hero break-words hyphens-auto overflow-hidden ${
           activeHeroImageDesktop || activeHeroImageMobile || coverPhoto ? "has-cover" : ""
         }`}
@@ -328,7 +329,7 @@ export function InvitationPreview({
         <span className="wedding-scroll-line" />
       </section>
 
-      {!activePostWeddingMode && platformContent.greetingEnabled && <section className="wedding-welcome">
+      {!activePostWeddingMode && platformContent.greetingEnabled && <section className="wedding-welcome" data-vowly-block="WELCOME">
         <span>{activePostWeddingMode ? "С любовью к вам" : t.dearGuests}</span>
         <h2>
           {activePostWeddingMode
@@ -339,7 +340,7 @@ export function InvitationPreview({
       </section>}
 
       {galleryPhotos.length > 0 && (
-        <section className="wedding-module wedding-gallery">
+        <section className="wedding-module wedding-gallery" data-vowly-block="GALLERY">
           <span>Love Story</span>
           <h2>Моменты нашей истории</h2>
           <LoveStoryGallery photos={galleryPhotos} />
@@ -348,7 +349,7 @@ export function InvitationPreview({
 
       <div className="wedding-sortable-blocks">
       {activePostWeddingMode && (
-        <section className="wedding-module post-wedding-thanks">
+        <section className="wedding-module post-wedding-thanks" data-vowly-block="POST_WEDDING">
           <ImagePlus size={19} />
           <span>Спасибо, что были рядом</span>
           <h2>Этот день стал особенным благодаря вам</h2>
@@ -372,6 +373,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && moduleVisibility.COUNTDOWN && (
         <section
+          data-vowly-block="COUNTDOWN"
           className="wedding-module wedding-countdown"
           style={{ order: blockOrder.indexOf("COUNTDOWN") }}
         >
@@ -391,6 +393,7 @@ export function InvitationPreview({
         platformContent.timelineEnabled &&
         moduleVisibility.TIMELINE && (
         <section
+          data-vowly-block="TIMELINE"
           className="wedding-module"
           style={{ order: blockOrder.indexOf("TIMELINE") }}
         >
@@ -412,6 +415,7 @@ export function InvitationPreview({
         platformContent.dressCodeEnabled &&
         moduleVisibility.DRESS_CODE && (
         <section
+          data-vowly-block="DRESS_CODE"
           className="wedding-module wedding-dress"
           style={{ order: blockOrder.indexOf("DRESS_CODE") }}
         >
@@ -442,6 +446,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && platformContent.mapEnabled && moduleVisibility.MAP && (
         <section
+          data-vowly-block="MAP"
           className="wedding-module wedding-location"
           style={{ order: blockOrder.indexOf("MAP") }}
         >
@@ -461,6 +466,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && moduleVisibility.TRANSFER && (
         <section
+          data-vowly-block="TRANSFER"
           className="wedding-module"
           style={{ order: blockOrder.indexOf("TRANSFER") }}
         >
@@ -483,6 +489,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && (wishlistText || wishlistItems.length > 0) && (
         <section
+          data-vowly-block="WISHLIST"
           className="wedding-module wedding-wishlist"
           style={{ order: blockOrder.indexOf("WISHLIST") }}
         >
@@ -537,6 +544,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && coordinatorName && (
         <section
+          data-vowly-block="COORDINATOR"
           className="wedding-module wedding-coordinator"
           style={{ order: blockOrder.indexOf("COORDINATOR") }}
         >
@@ -600,6 +608,7 @@ export function InvitationPreview({
 
       {!activePostWeddingMode && faqItems.length > 0 && (
         <section
+          data-vowly-block="FAQ"
           className="wedding-module wedding-faq"
           style={{ order: blockOrder.indexOf("FAQ") }}
         >
@@ -623,6 +632,7 @@ export function InvitationPreview({
         platformContent.rsvpEnabled &&
         moduleVisibility.RSVP && (
         <section
+          data-vowly-block="RSVP"
           className="wedding-module wedding-rsvp"
           style={{ order: blockOrder.indexOf("RSVP") }}
         >

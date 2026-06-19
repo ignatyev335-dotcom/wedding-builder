@@ -20,15 +20,16 @@ export function PublicInvitation({
   const initialize = useWeddingStore((state) => state.initialize);
   const language = useWeddingStore((state) => state.language);
   const setLanguage = useWeddingStore((state) => state.setLanguage);
+  const [previewData, setPreviewData] = useState(initialData);
   const [isLoading, setIsLoading] = useState(true);
   const rootRef = useRef<HTMLElement>(null);
   const initials = useMemo(
     () =>
-      `${initialData.partnerOneName.trim().charAt(0).toUpperCase()} & ${initialData.partnerTwoName
+      `${previewData.partnerOneName.trim().charAt(0).toUpperCase()} & ${previewData.partnerTwoName
         .trim()
         .charAt(0)
         .toUpperCase()}`,
-    [initialData.partnerOneName, initialData.partnerTwoName],
+    [previewData.partnerOneName, previewData.partnerTwoName],
   );
   const weddingDate = useMemo(
     () =>
@@ -36,13 +37,59 @@ export function PublicInvitation({
         day: "2-digit",
         month: "long",
         year: "numeric",
-      }).format(new Date(`${initialData.weddingDate}T12:00:00`)),
-    [initialData.weddingDate],
+      }).format(new Date(`${previewData.weddingDate}T12:00:00`)),
+    [previewData.weddingDate],
   );
 
   useEffect(() => {
-    initialize(initialData);
-  }, [initialData, initialize]);
+    initialize(previewData);
+  }, [previewData, initialize]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("editorPreview")) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "VOWLY_EDITOR_DRAFT") return;
+
+      setPreviewData((current) => ({
+        ...current,
+        ...event.data.draft,
+      }));
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const block = target?.closest<HTMLElement>("[data-vowly-block]");
+      if (!block) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      rootRef.current
+        ?.querySelectorAll(".vowly-editor-selected")
+        .forEach((element) => element.classList.remove("vowly-editor-selected"));
+      block.classList.add("vowly-editor-selected");
+
+      window.parent.postMessage(
+        {
+          type: "VOWLY_EDITOR_SELECT",
+          block: block.dataset.vowlyBlock,
+        },
+        window.location.origin,
+      );
+    };
+
+    window.addEventListener("message", handleMessage);
+    document.addEventListener("click", handleClick, true);
+    window.parent.postMessage({ type: "VOWLY_EDITOR_READY" }, window.location.origin);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setIsLoading(false), 1800);
@@ -87,10 +134,10 @@ export function PublicInvitation({
 
   return (
     <main
-      className={`public-invitation preloader-theme-${initialData.currentTheme.toLowerCase()} ${
-        initialData.designTheme ? "has-dynamic-theme" : ""
+      className={`public-invitation preloader-theme-${previewData.currentTheme.toLowerCase()} ${
+        previewData.designTheme ? "has-dynamic-theme" : ""
       }`}
-      style={getDesignThemeStyle(initialData.designTheme, initialData.customFont)}
+      style={getDesignThemeStyle(previewData.designTheme, previewData.customFont)}
       ref={rootRef}
     >
       <div
