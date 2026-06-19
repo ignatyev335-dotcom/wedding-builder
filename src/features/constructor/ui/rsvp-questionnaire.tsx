@@ -1,7 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Gift } from "lucide-react";
-import Image from "next/image";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -43,8 +42,6 @@ export function RsvpQuestionnaire({
 }) {
   const addGuest = useWeddingStore((state) => state.addGuest);
   const updateGuest = useWeddingStore((state) => state.updateGuest);
-  const giftPaymentLink = useWeddingStore((state) => state.giftPaymentLink);
-  const giftQrCode = useWeddingStore((state) => state.giftQrCode);
   const language = useWeddingStore((state) => state.language);
   const customQuestions = useWeddingStore((state) => state.customQuestions);
   const rsvpQuestionSettings = useWeddingStore(
@@ -294,35 +291,6 @@ export function RsvpQuestionnaire({
               {t.declined}
             </button>
           </div>}
-          {isDeclined && (giftPaymentLink || giftQrCode) && (
-            <div className="remote-gift-card">
-              <Gift size={18} />
-              <strong>Нам будет тебя не хватать!</strong>
-              <p>
-                Если хочешь поздравить нас дистанционно, здесь можно оставить
-                теплый подарок для нашей семейной мечты.
-              </p>
-              {giftQrCode && (
-                <Image
-                  src={giftQrCode}
-                  alt="QR-код для дистанционного подарка"
-                  width={150}
-                  height={150}
-                  unoptimized
-                />
-              )}
-              {giftPaymentLink && (
-                <a
-                  href={giftPaymentLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  Поздравить дистанционно
-                </a>
-              )}
-            </div>
-          )}
           {status === "ACCEPTED" &&
             rsvpQuestionSettings.plusOne &&
             !personalizedGuest?.isCouple && (

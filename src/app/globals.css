@@ -2632,6 +2632,49 @@ a {
   gap: 11px;
 }
 
+.style-panel-tabs {
+  margin: 4px 0 18px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  background: #f3f4ef;
+  border: 1px solid #e2e0d8;
+  border-radius: 999px;
+  scrollbar-width: none;
+}
+
+.style-panel-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.style-panel-tabs button {
+  min-height: 40px;
+  padding: 0 16px;
+  flex: 1 0 auto;
+  color: #686d63;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 780;
+  transition: 180ms ease;
+  white-space: nowrap;
+}
+
+.style-panel-tabs button.is-active {
+  color: #20231f;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(35, 32, 28, 0.08);
+}
+
+.style-tab-panel {
+  display: grid;
+  gap: 16px;
+  animation: fadeSlideUp 220ms ease both;
+}
+
 .constructor-theme-card {
   min-height: 104px;
   padding: 13px;
@@ -2738,6 +2781,49 @@ a {
 .font-option small {
   color: #8b9088;
   font-size: 0.52rem;
+}
+
+.font-style-picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.font-option-card {
+  min-height: 118px;
+  padding: 18px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  color: #30342e;
+  background: #fff;
+  border: 1px solid #dfe1db;
+  border-radius: 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: 180ms ease;
+}
+
+.font-option-card.is-selected {
+  border-color: #566751;
+  box-shadow: 0 0 0 2px rgba(86, 103, 81, 0.12);
+}
+
+.font-option-card > span {
+  font-family: var(--selected-font, var(--font-display), Georgia, serif);
+  font-size: clamp(1.45rem, 5vw, 2.2rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.font-option-card strong {
+  font-size: 0.9rem;
+}
+
+.font-option-card small {
+  color: #777d73;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .font-oranienbaum { font-family: var(--font-oranienbaum), Georgia, serif; }

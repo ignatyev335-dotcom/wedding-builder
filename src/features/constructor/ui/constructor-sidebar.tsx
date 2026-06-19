@@ -28,6 +28,7 @@ import type {
   ContentBlockCode,
   CountdownStyleCode,
   DesignThemeOption,
+  FontCode,
   InvitationTemplateOption,
   PhotoMaskCode,
 } from "@/entities/wedding/model";
@@ -53,6 +54,7 @@ type ContentSection =
   | "COORDINATOR"
   | "FAQ"
   | BuilderModule;
+type StylePanelTab = "THEME" | "FONTS" | "MODULES" | "CARDS";
 
 const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> = [
   { id: "content", label: "Контент", icon: FileText },
@@ -111,15 +113,30 @@ const invitationTemplateCategories = [
 ] as const;
 
 const countdownStyles: Array<{ code: CountdownStyleCode; title: string }> = [
-  { code: "MINIMAL", title: "РњРёРЅРёРјР°Р»РёР·Рј" },
-  { code: "TILES", title: "РљР°СЂС‚РѕС‡РєРё" },
-  { code: "FLIP", title: "РўР°Р±Р»Рѕ" },
+  { code: "MINIMAL", title: "Минимализм" },
+  { code: "TILES", title: "Карточки" },
+  { code: "FLIP", title: "Табло" },
 ];
 
 const photoMaskOptions: Array<{ code: PhotoMaskCode; title: string }> = [
-  { code: "RECTANGLE", title: "РџСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРє" },
-  { code: "ARCH", title: "РђСЂРєР°" },
-  { code: "OVAL", title: "РћРІР°Р»" },
+  { code: "RECTANGLE", title: "Прямоугольник" },
+  { code: "ARCH", title: "Арка" },
+  { code: "OVAL", title: "Овал" },
+];
+
+const fontOptions: Array<{
+  code: FontCode;
+  title: string;
+  description: string;
+  sample: string;
+}> = [
+  { code: "CORMORANT", title: "Cormorant", description: "Аристократичная классика", sample: "Александр & Валентина" },
+  { code: "ORANIENBAUM", title: "Oranienbaum", description: "Строгая русская антиква", sample: "Свадебный вечер" },
+  { code: "MARCK", title: "Marck Script", description: "Легкая каллиграфия", sample: "С любовью" },
+  { code: "CAVEAT", title: "Caveat", description: "Живой рукописный акцент", sample: "До встречи!" },
+  { code: "BAD_SCRIPT", title: "Bad Script", description: "Нежная рукописность", sample: "Мы ждем вас" },
+  { code: "PLAYFAIR", title: "Playfair Display", description: "Глянцевая редакционная подача", sample: "Save the Date" },
+  { code: "MONTSERRAT", title: "Montserrat", description: "Чистый современный гротеск", sample: "Vowly" },
 ];
 
 const cardStyleOptions: Array<{
@@ -127,12 +144,12 @@ const cardStyleOptions: Array<{
   title: string;
   description: string;
 }> = [
-  { code: "PLAIN", title: "РљР»Р°СЃСЃРёРєР°", description: "Р§РёСЃС‚С‹Рµ СЃРїРѕРєРѕР№РЅС‹Рµ РєР°СЂС‚РѕС‡РєРё" },
-  { code: "GLASS", title: "РњР°С‚РѕРІРѕРµ СЃС‚РµРєР»Рѕ", description: "РџРѕР»СѓРїСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ Рё blur" },
-  { code: "LIQUID", title: "Liquid Glass", description: "РџСЂРѕР·СЂР°С‡РЅС‹Р№ РѕР±СЉРµРј РІ РґСѓС…Рµ Apple" },
-  { code: "EDITORIAL", title: "Р–СѓСЂРЅР°Р»", description: "РљСЂСѓРїРЅР°СЏ С‚РёРїРѕРіСЂР°С„РёРєР° Рё С‚РѕРЅРєРёРµ Р»РёРЅРёРё" },
-  { code: "SILK", title: "РЁРµР»Рє", description: "РњСЏРіРєРёРµ СЃРІРµС‚Р»С‹Рµ СЃР»РѕРё Рё С‚РµРЅРё" },
-  { code: "MONOGRAM", title: "Р’РµРЅР·РµР»СЊ", description: "РўРѕРЅРєР°СЏ СЂР°РјРєР° СЃ Р°РєС†РµРЅС‚РѕРј" },
+  { code: "PLAIN", title: "Классика", description: "Чистые спокойные карточки" },
+  { code: "GLASS", title: "Матовое стекло", description: "Полупрозрачность и мягкий blur" },
+  { code: "LIQUID", title: "Liquid Glass", description: "Прозрачный объем в духе Apple" },
+  { code: "EDITORIAL", title: "Журнал", description: "Крупная типографика и тонкие линии" },
+  { code: "SILK", title: "Шелк", description: "Мягкие светлые слои и тени" },
+  { code: "MONOGRAM", title: "Вензель", description: "Тонкая рамка с акцентом" },
 ];
 
 export function ConstructorSidebar({
@@ -169,6 +186,7 @@ export function ConstructorSidebar({
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
+  const [stylePanelTab, setStylePanelTab] = useState<StylePanelTab>("THEME");
   const [draggedBlock, setDraggedBlock] = useState<ContentBlockCode | null>(null);
   const filteredTemplates =
     templateCategory === "all"
@@ -190,6 +208,7 @@ export function ConstructorSidebar({
     mapLatitude,
     mapLongitude,
     designTheme,
+    fontCode,
     photoMask,
     cardStyle,
     blockOrder,
@@ -237,6 +256,7 @@ export function ConstructorSidebar({
     setVenueAddress,
     setMapCoordinates,
     setDesignTheme,
+    setFontCode,
     setPhotoMask,
     setCardStyle,
     reorderBlocks,
@@ -1282,106 +1302,169 @@ export function ConstructorSidebar({
         {activeTab === "styles" && (
           <>
             <EditorHeading
-              eyebrow="Р’РЅРµС€РЅРёР№ РІРёРґ"
-              title="Р’С‹Р±РµСЂРёС‚Рµ РЅР°СЃС‚СЂРѕРµРЅРёРµ"
-              description="РљРѕРЅС‚РµРЅС‚ РѕСЃС‚Р°РµС‚СЃСЏ РїСЂРµР¶РЅРёРј РїСЂРё Р»СЋР±РѕР№ СЃРјРµРЅРµ РѕС„РѕСЂРјР»РµРЅРёСЏ."
+              eyebrow="Внешний вид"
+              title="Настройте характер сайта"
+              description="Все данные останутся на месте: меняются только настроение, шрифты и оформление блоков."
             />
-            <div className="editor-section-heading">
-              <span>РўРµРјС‹ РёР· РІР°С€РµР№ Р°РґРјРёРЅРєРё</span>
-              <small>РќР°СЃС‚СЂР°РёРІР°Р№С‚Рµ С†РІРµС‚Р°, С€СЂРёС„С‚С‹ Рё С„РѕСЂРјС‹ РІ Р°РґРјРёРЅРєРµ, Р° Р·РґРµСЃСЊ РѕРЅРё РїРѕСЏРІСЏС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё</small>
-            </div>
-            <div className="constructor-theme-list">
-              {catalogThemes.map((theme) => (
+
+            <div className="style-panel-tabs" role="tablist" aria-label="Разделы оформления">
+              {([
+                ["THEME", "Тема"],
+                ["FONTS", "Шрифты"],
+                ["MODULES", "Модули"],
+                ["CARDS", "Карточки"],
+              ] as Array<[StylePanelTab, string]>).map(([id, label]) => (
                 <button
-                  key={theme.id}
-                  className={`constructor-theme-card ${
-                    designTheme?.id === theme.id ? "is-selected" : ""
-                  }`}
-                  style={{
-                    color: theme.textColor,
-                    backgroundColor: theme.backgroundColor,
-                    backgroundImage: theme.gradientCss ?? undefined,
-                    borderColor: theme.primaryColor,
-                  }}
+                  key={id}
                   type="button"
-                  onClick={() => {
-                    setDesignTheme(theme);
-                    window.setTimeout(saveExtrasQuietly, 0);
-                  }}
+                  role="tab"
+                  aria-selected={stylePanelTab === id}
+                  className={stylePanelTab === id ? "is-active" : ""}
+                  onClick={() => setStylePanelTab(id)}
                 >
-                  <span
-                    className="theme-sample"
-                    style={{
-                      color: theme.backgroundColor,
-                      backgroundColor: theme.primaryColor,
-                    }}
-                  >
-                    A &amp; A
-                  </span>
-                  <span>
-                    <strong>{theme.name}</strong>
-                    <small>{theme.customFont?.name ?? theme.fontFamily.replaceAll("_", " ")}</small>
-                  </span>
-                  <i>{designTheme?.id === theme.id && <Check size={15} />}</i>
+                  {label}
                 </button>
               ))}
             </div>
-            {!catalogLoading && catalogThemes.length === 0 && (
-              <p className="catalog-message">
-                Р’ Р±РёР±Р»РёРѕС‚РµРєРµ РїРѕРєР° РЅРµС‚ С‚РµРј. Р”РѕР±Р°РІСЊС‚Рµ РїРµСЂРІСѓСЋ С‚РµРјСѓ РІ Р°РґРјРёРЅРєРµ, Рё РѕРЅР° СЃСЂР°Р·Сѓ РїРѕСЏРІРёС‚СЃСЏ Р·РґРµСЃСЊ.
-              </p>
+
+            {stylePanelTab === "THEME" && (
+              <div className="style-tab-panel">
+                <div className="editor-section-heading">
+                  <span>Темы из админки</span>
+                  <small>Цвета, градиенты и базовая типографика подтягиваются из каталога автоматически</small>
+                </div>
+                <div className="constructor-theme-list">
+                  {catalogThemes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      className={`constructor-theme-card ${
+                        designTheme?.id === theme.id ? "is-selected" : ""
+                      }`}
+                      style={{
+                        color: theme.textColor,
+                        backgroundColor: theme.backgroundColor,
+                        backgroundImage: theme.gradientCss ?? undefined,
+                        borderColor: theme.primaryColor,
+                      }}
+                      type="button"
+                      onClick={() => {
+                        setDesignTheme(theme);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      <span
+                        className="theme-sample"
+                        style={{
+                          color: theme.backgroundColor,
+                          backgroundColor: theme.primaryColor,
+                        }}
+                      >
+                        A &amp; A
+                      </span>
+                      <span>
+                        <strong>{theme.name}</strong>
+                        <small>
+                          {theme.customFont?.name ?? theme.fontFamily.replaceAll("_", " ")}
+                        </small>
+                      </span>
+                      <i>{designTheme?.id === theme.id && <Check size={15} />}</i>
+                    </button>
+                  ))}
+                </div>
+                {!catalogLoading && catalogThemes.length === 0 && (
+                  <p className="catalog-message">
+                    В библиотеке пока нет тем. Добавьте первую тему в админке, и она сразу появится здесь.
+                  </p>
+                )}
+              </div>
             )}
-                  <div className="editor-section-heading">
-              <span>Р¤РѕСЂРјР° С„РѕС‚РѕРіСЂР°С„РёР№</span>
-              <small>Р”Р»СЏ РіР°Р»РµСЂРµРё, РјСѓРґР±РѕСЂРґР° Рё РєРѕРјР°РЅРґС‹</small>
-            </div>
-            <div className="photo-mask-picker">
-              {photoMaskOptions.map((option) => (
-                <button
-                  className={photoMask === option.code ? "is-selected" : ""}
-                  key={option.code}
-                  type="button"
-                  onClick={() => {
-                    setPhotoMask(option.code);
-                    window.setTimeout(saveExtrasQuietly, 0);
-                  }}
-                >
-                  <i
-                    className={`mask-swatch mask-${option.code.toLowerCase()}`}
-                  />
-                  <span>{option.title}</span>
-                </button>
-              ))}
-            </div>
-            <div className="editor-section-heading">
-              <span>РЎС‚РёР»СЊ РєР°СЂС‚РѕС‡РµРє</span>
-              <small>Р¤РѕСЂРјР° Рё РјР°С‚РµСЂРёР°Р» СЃРјС‹СЃР»РѕРІС‹С… Р±Р»РѕРєРѕРІ</small>
-            </div>
-            <div className="card-style-picker">
-              {cardStyleOptions.map((option) => (
-                <button
-                  className={cardStyle === option.code ? "is-selected" : ""}
-                  key={option.code}
-                  type="button"
-                  onClick={() => {
-                    setCardStyle(option.code);
-                    window.setTimeout(saveExtrasQuietly, 0);
-                  }}
-                >
-                  <i className={`card-style-swatch style-${option.code.toLowerCase()}`}>
-                    <span>V</span>
-                  </i>
-                  <strong>{option.title}</strong>
-                  <small>{option.description}</small>
-                </button>
-              ))}
-            </div>
-            <div className="style-note">
-              <Sparkles size={18} />
-              <span>
-                РР·РјРµРЅРµРЅРёРµ РєР°СЂС‚РѕС‡РµРє РІР»РёСЏРµС‚ С‚РѕР»СЊРєРѕ РЅР° С„РѕСЂРјСѓ Р±Р»РѕРєРѕРІ, РєРѕРЅС‚РµРЅС‚ РѕСЃС‚Р°РµС‚СЃСЏ РЅР° РјРµСЃС‚Рµ Рё РЅРµ С‚РµСЂСЏРµС‚СЃСЏ.
-              </span>
-            </div>
+
+            {stylePanelTab === "FONTS" && (
+              <div className="style-tab-panel">
+                <div className="editor-section-heading">
+                  <span>Шрифтовая пара</span>
+                  <small>Выберите характер текста: от строгого редакционного до рукописного</small>
+                </div>
+                <div className="font-style-picker">
+                  {fontOptions.map((option) => (
+                    <button
+                      key={option.code}
+                      type="button"
+                      className={`font-option-card wedding-font-${option.code.toLowerCase()} ${
+                        fontCode === option.code ? "is-selected" : ""
+                      }`}
+                      onClick={() => {
+                        setFontCode(option.code);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      <span>{option.sample}</span>
+                      <strong>{option.title}</strong>
+                      <small>{option.description}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stylePanelTab === "MODULES" && (
+              <div className="style-tab-panel">
+                <div className="editor-section-heading">
+                  <span>Фото и модули</span>
+                  <small>Форма фотографий влияет на галерею, мудборд, команду и декоративные изображения</small>
+                </div>
+                <div className="photo-mask-picker">
+                  {photoMaskOptions.map((option) => (
+                    <button
+                      className={photoMask === option.code ? "is-selected" : ""}
+                      key={option.code}
+                      type="button"
+                      onClick={() => {
+                        setPhotoMask(option.code);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      <i className={`mask-swatch mask-${option.code.toLowerCase()}`} />
+                      <span>{option.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stylePanelTab === "CARDS" && (
+              <div className="style-tab-panel">
+                <div className="editor-section-heading">
+                  <span>Стиль карточек</span>
+                  <small>Материал и форма смысловых блоков на сайте</small>
+                </div>
+                <div className="card-style-picker">
+                  {cardStyleOptions.map((option) => (
+                    <button
+                      className={cardStyle === option.code ? "is-selected" : ""}
+                      key={option.code}
+                      type="button"
+                      onClick={() => {
+                        setCardStyle(option.code);
+                        window.setTimeout(saveExtrasQuietly, 0);
+                      }}
+                    >
+                      <i className={`card-style-swatch style-${option.code.toLowerCase()}`}>
+                        <span>V</span>
+                      </i>
+                      <strong>{option.title}</strong>
+                      <small>{option.description}</small>
+                    </button>
+                  ))}
+                </div>
+                <div className="style-note">
+                  <Sparkles size={18} />
+                  <span>
+                    Карточки меняют только визуальный материал блоков. Тексты, гости, фото и настройки не теряются.
+                  </span>
+                </div>
+              </div>
+            )}
           </>
         )}
 

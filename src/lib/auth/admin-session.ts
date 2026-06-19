@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 export const adminCookieName = "vowly-admin-session";
-const adminSessionLifetimeSeconds = 60 * 60 * 8;
+const adminSessionLifetimeSeconds = 60 * 60 * 24 * 365;
 
 type AdminSessionPayload = {
   userId: string;

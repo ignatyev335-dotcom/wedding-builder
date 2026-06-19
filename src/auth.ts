@@ -192,7 +192,14 @@ if (process.env.AUTH_YANDEX_ID && process.env.AUTH_YANDEX_SECRET) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers,
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24 * 365,
+    updateAge: 60 * 60 * 24 * 7,
+  },
+  jwt: {
+    maxAge: 60 * 60 * 24 * 365,
+  },
   pages: { signIn: "/login" },
   trustHost: true,
   callbacks: {

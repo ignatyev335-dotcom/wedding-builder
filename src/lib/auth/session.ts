@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const authCookieName = "vowly-session";
-const sessionLifetimeSeconds = 60 * 60 * 24 * 30;
+const sessionLifetimeSeconds = 60 * 60 * 24 * 365;
 
 type SessionPayload = {
   userId: string;
