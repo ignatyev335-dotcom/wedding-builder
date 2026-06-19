@@ -6,10 +6,7 @@ import {
   setAdminSessionCookie,
 } from "@/lib/auth/admin-session";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import {
-  getRequestSession,
-  setSessionCookie,
-} from "@/lib/auth/session";
+import { getRequestSession, setSessionCookie } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const loginSchema = z.object({
@@ -21,7 +18,7 @@ export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "������� ���������� ����� � ������ �� ������ 8 ��������." },
+      { error: "Введите корректную почту и пароль не короче 8 символов." },
       { status: 400 },
     );
   }
@@ -47,7 +44,7 @@ export async function POST(request: Request) {
     const validPassword = await verifyPassword(password, user.passwordHash);
     if (!validPassword) {
       return NextResponse.json(
-        { error: "�������� ����� ��� ������." },
+        { error: "Проверьте почту или пароль." },
         { status: 401 },
       );
     }
@@ -61,7 +58,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "��� ����� �������� ������ ��� �� �����. ������� ������ ��� ���������� � ���������.",
+          "Для этого аккаунта пароль еще не задан. Войдите по коду или задайте пароль в профиле.",
       },
       { status: 409 },
     );

@@ -3,6 +3,10 @@ import path from "node:path";
 
 const root = process.cwd();
 const scanDirs = ["src", "prisma", "scripts"];
+const ignoredFiles = new Set([
+  path.normalize("scripts/check-encoding.mjs"),
+  path.normalize("scripts/fix-mojibake.mjs"),
+]);
 const extensions = new Set([
   ".css",
   ".js",
@@ -61,6 +65,10 @@ for (const dir of scanDirs) {
 const hits = [];
 
 for (const file of files) {
+  if (ignoredFiles.has(path.normalize(path.relative(root, file)))) {
+    continue;
+  }
+
   const content = await readFile(file, "utf8");
   const lines = content.split(/\r?\n/);
 
