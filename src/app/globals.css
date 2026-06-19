@@ -6926,6 +6926,54 @@ a {
   gap: 10px;
 }
 
+.post-wedding-control-card {
+  margin-bottom: 12px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid rgba(75, 95, 69, 0.16);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(215, 226, 205, 0.62), transparent 42%),
+    #fffdf8;
+  box-shadow: 0 18px 42px rgba(45, 43, 38, 0.06);
+}
+
+.post-wedding-control-card.is-soft {
+  background: #f8f6ef;
+}
+
+.post-wedding-control-main {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.post-wedding-control-main > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #536449;
+  font-size: var(--ui-text-xs);
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.post-wedding-control-main strong {
+  color: #252821;
+  font-size: var(--ui-text-lg);
+  line-height: 1.15;
+}
+
+.post-wedding-control-main small {
+  color: #777268;
+  font-size: var(--ui-text-sm);
+  line-height: 1.45;
+}
+
 .post-wedding-settings textarea {
   width: 100%;
   min-height: 112px;
@@ -9963,6 +10011,133 @@ table.guest-table tbody tr:last-child td {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 760;
+}
+
+.publish-auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(23, 27, 22, 0.42);
+  backdrop-filter: blur(14px);
+}
+
+.publish-auth-dialog {
+  position: relative;
+  width: min(100%, 520px);
+  max-height: min(88svh, 760px);
+  overflow-y: auto;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid rgba(75, 95, 69, 0.18);
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(210, 225, 199, 0.76), transparent 34%),
+    linear-gradient(135deg, #fffdfa, #f3f6ef);
+  box-shadow: 0 32px 90px rgba(23, 27, 22, 0.28);
+}
+
+.publish-auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: #626b5c;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(75, 95, 69, 0.14);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.publish-auth-intro {
+  display: grid;
+  gap: 10px;
+  padding-right: 36px;
+}
+
+.publish-auth-intro > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #536449;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.publish-auth-intro h3 {
+  margin: 0;
+  color: #20251f;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2.1rem, 7vw, 3.55rem);
+  font-weight: 560;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.publish-auth-intro p {
+  margin: 0;
+  color: #697064;
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.publish-auth-form {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.publish-auth-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.publish-auth-form label span {
+  color: #596456;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.publish-auth-form input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 16px;
+  color: #20251f;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #dfe2da;
+  border-radius: 18px;
+  outline: none;
+  font-size: 1rem;
+}
+
+.publish-auth-form input:focus {
+  border-color: #536449;
+  box-shadow: 0 0 0 4px rgba(83, 100, 73, 0.1);
+}
+
+.publish-auth-form button[type="submit"] {
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background: #2f3b2d;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.publish-auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .admin-control-room {

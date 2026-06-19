@@ -44,7 +44,7 @@ const contentSchema = z.object({
   transferDescription: z.string().max(700),
   transferTime: z.string().regex(/^\d{2}:\d{2}$/),
   transferMeetingPoint: z.string().max(300),
-  postWeddingMode: z.boolean(),
+  postWeddingMode: z.boolean().optional().default(false),
   postWeddingAutoEnabled: z.boolean(),
   postWeddingHeroImage: z.string().max(4_000_000).nullable(),
   postWeddingPhotoUrl: z.string().trim().max(1000),

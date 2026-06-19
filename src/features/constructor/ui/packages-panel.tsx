@@ -10,10 +10,12 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 
 import type { PackageCode } from "@/entities/wedding/model";
+import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
 import { persistSiteExtras } from "@/features/constructor/lib/persist-site-extras";
 import { useWeddingStore } from "@/features/constructor/model/wedding-store";
 import { QrCodeCard } from "@/features/constructor/ui/qr-code-card";
@@ -280,69 +282,90 @@ export function PackagesPanel() {
       </header>
 
       {authRequired ? (
-        <section className="publish-auth-card">
-          <div>
-            <span>
-              <ShieldCheck size={18} /> Безопасный запуск
-            </span>
-            <h3>Войдите, чтобы сохранить сайт за вами</h3>
-            <p>
-              Введите почту или номер телефона. Мы отправим одноразовый код, а после входа сразу опубликуем сайт.
-            </p>
-          </div>
-
-          {authStep === "identity" ? (
-            <form onSubmit={requestAuthCode}>
-              <label>
-                <span>Почта или телефон</span>
-                <input
-                  required
-                  value={authIdentity}
-                  placeholder="hello@example.ru или 89091234567"
-                  onChange={(event) => setAuthIdentity(event.target.value)}
-                />
-              </label>
-              <button type="submit" disabled={authLoading}>
-                {authLoading ? "Отправляем код..." : "Получить код"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={verifyAuthCode}>
-              <label>
-                <span>Код из сообщения</span>
-                <input
-                  required
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={authCode}
-                  placeholder="000000"
-                  onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                />
-              </label>
-              <button type="submit" disabled={authLoading || authCode.length !== 6}>
-                {authLoading ? "Проверяем..." : "Войти и оживить сайт"}
-              </button>
-              <button
-                className="publish-auth-link"
-                type="button"
-                disabled={authLoading}
-                onClick={() => {
-                  setAuthStep("identity");
-                  setAuthCode("");
-                  setAuthError("");
-                }}
-              >
-                Изменить почту или телефон
-              </button>
+        <div
+          className="publish-auth-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Вход перед публикацией сайта"
+        >
+          <section className="publish-auth-dialog">
+            <button
+              className="publish-auth-close"
+              type="button"
+              aria-label="Закрыть окно входа"
+              onClick={() => {
+                setAuthRequired(false);
+                setAuthError("");
+              }}
+            >
+              <X size={18} />
+            </button>
+            <div className="publish-auth-intro">
+              <span>
+                <ShieldCheck size={18} /> Безопасный запуск
+              </span>
+              <h3>Войдите, чтобы сайт не потерялся</h3>
               <p>
-                Код отправлен на <strong>{authDisplayValue}</strong>.
-                {authDevCode ? <> Для локальной проверки: <strong>{authDevCode}</strong></> : null}
+                Мы привяжем проект к личному кабинету, а после входа сразу продолжим публикацию.
               </p>
-            </form>
-          )}
+            </div>
 
-          {authError ? <p className="telegram-error">{authError}</p> : null}
-        </section>
+            {authStep === "identity" ? (
+              <form className="publish-auth-form" onSubmit={requestAuthCode}>
+                <label>
+                  <span>Почта или телефон</span>
+                  <input
+                    required
+                    value={authIdentity}
+                    placeholder="hello@example.ru или 89091234567"
+                    autoComplete="email tel"
+                    onChange={(event) => setAuthIdentity(event.target.value)}
+                  />
+                </label>
+                <button type="submit" disabled={authLoading}>
+                  {authLoading ? "Отправляем код..." : "Получить код"}
+                </button>
+              </form>
+            ) : (
+              <form className="publish-auth-form" onSubmit={verifyAuthCode}>
+                <label>
+                  <span>Код из сообщения</span>
+                  <input
+                    required
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={authCode}
+                    placeholder="000000"
+                    onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  />
+                </label>
+                <button type="submit" disabled={authLoading || authCode.length !== 6}>
+                  {authLoading ? "Проверяем..." : "Войти и оживить сайт"}
+                </button>
+                <button
+                  className="publish-auth-link"
+                  type="button"
+                  disabled={authLoading}
+                  onClick={() => {
+                    setAuthStep("identity");
+                    setAuthCode("");
+                    setAuthError("");
+                  }}
+                >
+                  Изменить почту или телефон
+                </button>
+                <p>
+                  Код отправлен на <strong>{authDisplayValue}</strong>.
+                  {authDevCode ? <> Для локальной проверки: <strong>{authDevCode}</strong></> : null}
+                </p>
+              </form>
+            )}
+
+            {authError ? <p className="telegram-error">{authError}</p> : null}
+            <AuthProviderButtons redirectTo={typeof window !== "undefined" ? window.location.href : "/dashboard"} />
+          </section>
+        </div>
       ) : null}
 
       <div className="package-grid">

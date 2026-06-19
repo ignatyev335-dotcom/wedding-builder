@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ExternalLink,
   FileText,
+  Heart,
   Images,
   Monitor,
   Music2,
@@ -27,7 +28,14 @@ import {
 } from "@/features/constructor/ui/constructor-sidebar";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 
-type MobileStepTab = "content" | "styles" | "media" | "music" | "guests" | "publish";
+type MobileStepTab =
+  | "content"
+  | "styles"
+  | "media"
+  | "music"
+  | "guests"
+  | "after"
+  | "publish";
 
 type MobileStep = {
   tab: MobileStepTab;
@@ -80,6 +88,14 @@ const mobileSteps: MobileStep[] = [
     icon: UsersRound,
   },
   {
+    tab: "after",
+    label: "После",
+    shortLabel: "После",
+    title: "Подготовьте режим благодарности",
+    description: "Автопереключение после свадьбы, благодарность и ссылка на фото.",
+    icon: Heart,
+  },
+  {
     tab: "publish",
     label: "Публикация",
     shortLabel: "Запуск",
@@ -112,6 +128,10 @@ export function ConstructorShell({
   const customMusicDataUrl = useWeddingStore((state) => state.customMusicDataUrl);
   const guests = useWeddingStore((state) => state.guests);
   const selectedPackage = useWeddingStore((state) => state.selectedPackage);
+  const postWeddingAutoEnabled = useWeddingStore(
+    (state) => state.postWeddingAutoEnabled,
+  );
+  const postWeddingPhotoUrl = useWeddingStore((state) => state.postWeddingPhotoUrl);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
   const [mobileTab, setMobileTab] = useState<ConstructorTab>(initialTab);
   const previewScreenRef = useRef<HTMLDivElement>(null);
@@ -139,6 +159,7 @@ export function ConstructorShell({
         galleryPhotos.length > 0,
       music: Boolean(musicTrack || customMusicDataUrl),
       guests: guests.length > 0,
+      after: postWeddingAutoEnabled || Boolean(postWeddingPhotoUrl.trim()),
       publish: selectedPackage !== "BASIC",
     }),
     [
@@ -152,6 +173,8 @@ export function ConstructorShell({
       musicTrack,
       partnerOneName,
       partnerTwoName,
+      postWeddingAutoEnabled,
+      postWeddingPhotoUrl,
       selectedPackage,
       venueAddress,
       weddingDate,

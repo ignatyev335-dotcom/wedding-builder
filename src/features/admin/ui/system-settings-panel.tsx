@@ -17,6 +17,7 @@ type ConnectionTestKind =
   | "telegram-bot"
   | "telegram-message"
   | "yandex-auth"
+  | "analytics"
   | "maps"
   | "payments";
 
@@ -24,6 +25,17 @@ type ConnectionTestResult = {
   ok: boolean;
   title: string;
   message: string;
+};
+
+type MetrikaSummary = {
+  configured?: boolean;
+  counterId?: string;
+  visits?: number;
+  users?: number;
+  pageviews?: number;
+  period?: string;
+  message?: string;
+  error?: string;
 };
 
 const presets = [
@@ -40,6 +52,7 @@ const presets = [
   { key: "SMS_SENDER", label: "SMS: подпись отправителя", category: "SMS", isSecret: false },
   { key: "YANDEX_GEOCODER_API_KEY", label: "Яндекс Геокодер: API key", category: "MAPS", isSecret: true },
   { key: "YANDEX_METRICA_ID", label: "Яндекс Метрика ID", category: "ANALYTICS", isSecret: false },
+  { key: "YANDEX_METRICA_OAUTH_TOKEN", label: "Яндекс Метрика: OAuth token", category: "ANALYTICS", isSecret: true },
   { key: "VK_PIXEL_ID", label: "VK pixel ID", category: "ANALYTICS", isSecret: false },
   { key: "YOOKASSA_SHOP_ID", label: "ЮKassa: shopId", category: "PAYMENTS", isSecret: false },
   { key: "YOOKASSA_SECRET_KEY", label: "ЮKassa: secret key", category: "PAYMENTS", isSecret: true },
@@ -52,6 +65,7 @@ const connectionTests: { kind: ConnectionTestKind; title: string; description: s
   { kind: "telegram-bot", title: "Telegram-бот", description: "Проверить токен через getMe" },
   { kind: "telegram-message", title: "Telegram-сообщение", description: "Отправить тест в TELEGRAM_TEST_CHAT_ID" },
   { kind: "yandex-auth", title: "Яндекс ID", description: "Проверить наличие OAuth-ключей" },
+  { kind: "analytics", title: "Метрика", description: "Проверить счетчик и доступ к статистике" },
   { kind: "maps", title: "Карты", description: "Проверить Яндекс Геокодер" },
   { kind: "payments", title: "Платежи", description: "Проверить заполненность ключей" },
 ];
@@ -77,6 +91,8 @@ export function SystemSettingsPanel({
   const [testTarget, setTestTarget] = useState("");
   const [testingKind, setTestingKind] = useState<ConnectionTestKind | null>(null);
   const [testResults, setTestResults] = useState<Partial<Record<ConnectionTestKind, ConnectionTestResult>>>({});
+  const [metrikaSummary, setMetrikaSummary] = useState<MetrikaSummary | null>(null);
+  const [isLoadingMetrika, setIsLoadingMetrika] = useState(false);
 
   const groupedSettings = useMemo(() => {
     return settings.reduce<Record<string, SettingRow[]>>((acc, setting) => {
@@ -182,6 +198,23 @@ export function SystemSettingsPanel({
     }
   };
 
+  const loadMetrikaSummary = async () => {
+    setIsLoadingMetrika(true);
+    try {
+      const response = await fetch("/api/admin/metrika/summary", {
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as MetrikaSummary;
+      setMetrikaSummary(payload);
+    } catch {
+      setMetrikaSummary({
+        error: "Не удалось получить данные Метрики. Попробуйте еще раз.",
+      });
+    } finally {
+      setIsLoadingMetrika(false);
+    }
+  };
+
   return (
     <section className="system-settings admin-panel">
       <div className="admin-card-heading">
@@ -247,6 +280,47 @@ export function SystemSettingsPanel({
             );
           })}
         </div>
+      </div>
+
+      <div className="mb-6 rounded-[28px] border border-stone-200 bg-gradient-to-br from-white to-stone-50 p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="m-0 text-xs font-bold uppercase tracking-[0.16em] text-stone-400">
+              Аналитика
+            </p>
+            <h3 className="m-0 mt-1 text-xl font-semibold text-stone-900">
+              Яндекс Метрика
+            </h3>
+            <p className="m-0 mt-2 max-w-2xl text-sm leading-6 text-stone-500">
+              Добавьте YANDEX_METRICA_ID, чтобы счетчик появился на всех публичных свадебных сайтах.
+              Для цифр в админке добавьте YANDEX_METRICA_OAUTH_TOKEN.
+            </p>
+          </div>
+          <button
+            className="min-h-11 rounded-full bg-stone-900 px-5 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-50"
+            type="button"
+            disabled={isLoadingMetrika}
+            onClick={() => void loadMetrikaSummary()}
+          >
+            {isLoadingMetrika ? "Загружаем..." : "Обновить статистику"}
+          </button>
+        </div>
+
+        {metrikaSummary ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {metrikaSummary.error || metrikaSummary.message ? (
+              <div className="rounded-2xl border border-stone-200 bg-white p-4 text-sm leading-6 text-stone-600 md:col-span-3">
+                {metrikaSummary.error ?? metrikaSummary.message}
+              </div>
+            ) : (
+              <>
+                <MetricBox label="Визиты" value={metrikaSummary.visits ?? 0} />
+                <MetricBox label="Посетители" value={metrikaSummary.users ?? 0} />
+                <MetricBox label="Просмотры" value={metrikaSummary.pageviews ?? 0} />
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -368,5 +442,18 @@ export function SystemSettingsPanel({
         ))}
       </div>
     </section>
+  );
+}
+
+function MetricBox({ label, value }: { label: string; value: number }) {
+  return (
+    <article className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <span className="text-xs font-bold uppercase tracking-[0.14em] text-stone-400">
+        {label}
+      </span>
+      <strong className="mt-2 block font-serif text-3xl font-medium text-stone-950">
+        {new Intl.NumberFormat("ru-RU").format(value)}
+      </strong>
+    </article>
   );
 }

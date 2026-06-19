@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FileText,
   Gift,
+  Heart,
   GripVertical,
   Images,
   Music2,
@@ -43,6 +44,7 @@ export type ConstructorTab =
   | "music"
   | "media"
   | "guests"
+  | "after"
   | "crew"
   | "publish";
 type ContentSection =
@@ -58,6 +60,7 @@ const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> 
   { id: "music", label: "Музыка", icon: Music2 },
   { id: "media", label: "Фото", icon: Images },
   { id: "guests", label: "Гости", icon: UsersRound },
+  { id: "after", label: "После", icon: Heart },
   { id: "crew", label: "Команда", icon: Clock3 },
   { id: "publish", label: "Публикация", icon: Upload },
 ];
@@ -412,104 +415,6 @@ export function ConstructorSidebar({
               title="Р Р°СЃСЃРєР°Р¶РёС‚Рµ РІР°С€Сѓ РёСЃС‚РѕСЂРёСЋ"
               description="Р’СЃРµ РёР·РјРµРЅРµРЅРёСЏ СЃСЂР°Р·Сѓ РѕС‚СЂР°Р¶Р°СЋС‚СЃСЏ РІ РїСЂРµРґРїСЂРѕСЃРјРѕС‚СЂРµ."
             />
-
-            <section className="post-wedding-toggle">
-              <div>
-                <strong>Режим после свадьбы</strong>
-                <small>
-                  Подготовьте его заранее: сайт сам переключится в 00:00 на следующий день после свадьбы. Вручную включать в праздник ничего не придется.
-                </small>
-              </div>
-              <button
-                className={`switch ${postWeddingAutoEnabled ? "is-on" : ""}`}
-                type="button"
-                role="switch"
-                aria-checked={postWeddingAutoEnabled}
-                onClick={() => {
-                  setPostWeddingAutoEnabled(!postWeddingAutoEnabled);
-                  window.setTimeout(saveExtrasQuietly, 0);
-                }}
-              >
-                <i />
-              </button>
-            </section>
-            {(postWeddingAutoEnabled || postWeddingMode) && (
-              <div className="post-wedding-settings">
-                <section className="post-wedding-toggle is-soft">
-                  <div>
-                    <strong>Показать режим сейчас</strong>
-                    <small>
-                      Только для проверки или если свадьба уже прошла. Автозапуск при этом останется настроенным.
-                    </small>
-                  </div>
-                  <button
-                    className={`switch ${postWeddingMode ? "is-on" : ""}`}
-                    type="button"
-                    role="switch"
-                    aria-checked={postWeddingMode}
-                    onClick={() => {
-                      setPostWeddingMode(!postWeddingMode);
-                      window.setTimeout(saveExtrasQuietly, 0);
-                    }}
-                  >
-                    <i />
-                  </button>
-                </section>
-                <label className="constructor-field">
-                  <span>Обложка после свадьбы</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) =>
-                      void uploadSingleImage(
-                        event.target.files?.[0],
-                        setPostWeddingHeroImage,
-                      )
-                    }
-                  />
-                  {postWeddingHeroImage && (
-                    <button
-                      className="ghost-button"
-                      type="button"
-                      onClick={() => {
-                        setPostWeddingHeroImage(null);
-                        window.setTimeout(saveExtrasQuietly, 0);
-                      }}
-                    >
-                      Убрать фото
-                    </button>
-                  )}
-                  <small>
-                    Можно поставить уже свадебный кадр: платье, букет, первый танец или общее фото.
-                  </small>
-                </label>
-                <label className="constructor-field">
-                  <span>Текст благодарности</span>
-                  <textarea
-                    value={postWeddingThankYouText}
-                    onChange={(event) =>
-                      setPostWeddingThankYouText(event.target.value)
-                    }
-                    onBlur={saveExtrasQuietly}
-                  />
-                </label>
-                <label className="constructor-field post-wedding-link-field">
-                  <span>Ссылка на готовые фотографии</span>
-                  <input
-                    type="url"
-                    value={postWeddingPhotoUrl}
-                    placeholder="https://disk.yandex.ru/..."
-                    onChange={(event) =>
-                      setPostWeddingPhotoUrl(event.target.value)
-                    }
-                    onBlur={saveExtrasQuietly}
-                  />
-                  <small>
-                    Love Story останется на сайте, а эта ссылка откроет гостям готовые фотографии после свадьбы.
-                  </small>
-                </label>
-              </div>
-            )}
 
             <div className="content-accordion">
               <ContentAccordionHeader
@@ -1574,6 +1479,114 @@ export function ConstructorSidebar({
         {activeTab === "media" && <MediaPanel />}
 
         {activeTab === "guests" && <GuestsPanel />}
+
+        {activeTab === "after" && (
+          <>
+            <EditorHeading
+              eyebrow="После свадьбы"
+              title="Благодарность и фотографии"
+              description="Подготовьте спокойную версию сайта заранее: после даты свадьбы гости увидят спасибо, Love Story и ссылку на готовые фотографии."
+            />
+            <section className="post-wedding-control-card">
+              <div className="post-wedding-control-main">
+                <span>
+                  <Heart size={17} /> Автоматический режим
+                </span>
+                <strong>Включить после свадьбы</strong>
+                <small>
+                  Сайт сам переключится в 00:00 на следующий день после мероприятия. В праздник ничего вручную делать не придется.
+                </small>
+              </div>
+              <button
+                className={`switch ${postWeddingAutoEnabled ? "is-on" : ""}`}
+                type="button"
+                role="switch"
+                aria-checked={postWeddingAutoEnabled}
+                onClick={() => {
+                  setPostWeddingAutoEnabled(!postWeddingAutoEnabled);
+                  window.setTimeout(saveExtrasQuietly, 0);
+                }}
+              >
+                <i />
+              </button>
+            </section>
+            <section className="post-wedding-control-card is-soft">
+              <div className="post-wedding-control-main">
+                <span>
+                  <Images size={17} /> Предпросмотр
+                </span>
+                <strong>Показать режим в превью</strong>
+                <small>
+                  Только для проверки в конструкторе. После перезагрузки режим не включится сам.
+                </small>
+              </div>
+              <button
+                className={`switch ${postWeddingMode ? "is-on" : ""}`}
+                type="button"
+                role="switch"
+                aria-checked={postWeddingMode}
+                onClick={() => setPostWeddingMode(!postWeddingMode)}
+              >
+                <i />
+              </button>
+            </section>
+            <div className="post-wedding-settings">
+              <label className="constructor-field">
+                <span>Обложка после свадьбы</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) =>
+                    void uploadSingleImage(
+                      event.target.files?.[0],
+                      setPostWeddingHeroImage,
+                    )
+                  }
+                />
+                {postWeddingHeroImage && (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => {
+                      setPostWeddingHeroImage(null);
+                      window.setTimeout(saveExtrasQuietly, 0);
+                    }}
+                  >
+                    Убрать фото
+                  </button>
+                )}
+                <small>
+                  Можно поставить уже свадебный кадр: платье, букет, первый танец или общее фото.
+                </small>
+              </label>
+              <label className="constructor-field">
+                <span>Текст благодарности</span>
+                <textarea
+                  value={postWeddingThankYouText}
+                  onChange={(event) =>
+                    setPostWeddingThankYouText(event.target.value)
+                  }
+                  onBlur={saveExtrasQuietly}
+                />
+              </label>
+              <label className="constructor-field post-wedding-link-field">
+                <span>Ссылка на готовые фотографии</span>
+                <input
+                  type="url"
+                  value={postWeddingPhotoUrl}
+                  placeholder="https://disk.yandex.ru/..."
+                  onChange={(event) =>
+                    setPostWeddingPhotoUrl(event.target.value)
+                  }
+                  onBlur={saveExtrasQuietly}
+                />
+                <small>
+                  Love Story останется на сайте, а эта ссылка откроет гостям готовые фотографии после свадьбы.
+                </small>
+              </label>
+            </div>
+          </>
+        )}
 
         {activeTab === "crew" && (
           <>

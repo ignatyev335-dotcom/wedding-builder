@@ -605,7 +605,6 @@ export const useWeddingStore = create<WeddingStore>()(
         transferTime: state.transferTime,
         transferMeetingPoint: state.transferMeetingPoint,
         invitationText: state.invitationText,
-        postWeddingMode: state.postWeddingMode,
         postWeddingAutoEnabled: state.postWeddingAutoEnabled,
         postWeddingHeroImage: state.postWeddingHeroImage,
         postWeddingPhotoUrl: state.postWeddingPhotoUrl,

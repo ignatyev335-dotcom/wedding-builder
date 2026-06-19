@@ -167,9 +167,7 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
           ? parsed.transferMeetingPoint
           : defaultSiteExtras.transferMeetingPoint,
       postWeddingMode:
-        typeof parsed.postWeddingMode === "boolean"
-          ? parsed.postWeddingMode
-          : false,
+        false,
       postWeddingAutoEnabled:
         typeof parsed.postWeddingAutoEnabled === "boolean"
           ? parsed.postWeddingAutoEnabled

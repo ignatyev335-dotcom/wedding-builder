@@ -10,6 +10,7 @@ const testSchema = z.object({
     "telegram-bot",
     "telegram-message",
     "yandex-auth",
+    "analytics",
     "maps",
     "payments",
   ]),
@@ -60,6 +61,10 @@ export async function POST(request: Request) {
       return await testYandexAuth();
     }
 
+    if (parsed.data.kind === "analytics") {
+      return await testAnalytics();
+    }
+
     if (parsed.data.kind === "maps") {
       return await testMaps();
     }
@@ -75,6 +80,58 @@ export async function POST(request: Request) {
       500,
     );
   }
+}
+
+async function testAnalytics() {
+  const counterId = (await getSystemSettingValue("YANDEX_METRICA_ID"))?.trim();
+  const oauthToken = (await getSystemSettingValue("YANDEX_METRICA_OAUTH_TOKEN"))?.trim();
+
+  if (!counterId || !/^\d+$/.test(counterId)) {
+    return json(
+      {
+        ok: false,
+        title: "Метрика не настроена",
+        message: "Добавьте числовой YANDEX_METRICA_ID. Его можно взять в настройках счетчика Яндекс Метрики.",
+      },
+      400,
+    );
+  }
+
+  if (!oauthToken) {
+    return json({
+      ok: true,
+      title: "Счетчик подключен",
+      message: "Публичные сайты уже будут отправлять события. Для статистики в админке добавьте YANDEX_METRICA_OAUTH_TOKEN.",
+    });
+  }
+
+  const url = new URL("https://api-metrika.yandex.net/stat/v1/data");
+  url.searchParams.set("ids", counterId);
+  url.searchParams.set("date1", "today");
+  url.searchParams.set("date2", "today");
+  url.searchParams.set("metrics", "ym:s:visits");
+
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: { Authorization: `OAuth ${oauthToken}` },
+  });
+
+  if (!response.ok) {
+    return json(
+      {
+        ok: false,
+        title: "API Метрики не отвечает",
+        message: `Проверьте OAuth-токен и права доступа к счетчику ${counterId}. Статус: ${response.status}.`,
+      },
+      400,
+    );
+  }
+
+  return json({
+    ok: true,
+    title: "Метрика работает",
+    message: `Счетчик ${counterId} подключен, API статистики отвечает.`,
+  });
 }
 
 async function testEmail(targetEmail: string) {

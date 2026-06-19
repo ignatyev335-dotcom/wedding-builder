@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-export function AuthProviderButtons() {
+export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const callbackName = `vowlyTelegramLogin_${useId().replaceAll(":", "")}` as const;
   const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
   const [error, setError] = useState("");
@@ -34,7 +34,7 @@ export function AuthProviderButtons() {
         ...Object.fromEntries(
           Object.entries(payload).map(([key, value]) => [key, String(value)]),
         ),
-        redirectTo: "/dashboard",
+        redirectTo,
       });
     };
     return () => {
@@ -45,7 +45,7 @@ export function AuthProviderButtons() {
   const loginWithYandex = async () => {
     setError("");
     try {
-      await signIn("yandex", { redirectTo: "/dashboard" });
+      await signIn("yandex", { redirectTo });
     } catch {
       setError("Яндекс ID пока не настроен. Проверьте AUTH_YANDEX_ID и AUTH_YANDEX_SECRET в Vercel.");
     }

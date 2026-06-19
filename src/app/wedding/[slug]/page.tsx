@@ -13,6 +13,7 @@ import {
   parseImageList,
   parseSiteExtras,
 } from "@/features/constructor/lib/site-extras";
+import { YandexMetrica } from "@/features/analytics/ui/yandex-metrica";
 import { PublicInvitation } from "@/features/constructor/ui/public-invitation";
 import {
   hasValidWeddingAccess,
@@ -21,6 +22,7 @@ import {
 import { PrivateWeddingGate } from "@/features/wedding/ui/private-wedding-gate";
 import { prisma } from "@/lib/prisma";
 import { defaultPlatformContent } from "@/features/constructor/lib/platform-content";
+import { getSystemSettingValue } from "@/lib/system-settings";
 
 const builderModules: BuilderModule[] = [
   "RSVP",
@@ -64,6 +66,7 @@ export default async function WeddingPage({
   const platformContent =
     (await prisma.platformContent.findUnique({ where: { id: "global" } })) ??
     defaultPlatformContent;
+  const metricaCounterId = await getSystemSettingValue("YANDEX_METRICA_ID");
 
   if (site.pinCode) {
     const cookieStore = await cookies();
@@ -209,20 +212,23 @@ export default async function WeddingPage({
   };
 
   return (
-    <PublicInvitation
-      initialData={initialData}
-      personalizedGuest={
-        personalizedGuest?.magicToken
-          ? {
-              id: personalizedGuest.id,
-              name: personalizedGuest.name,
-              status: personalizedGuest.status,
-              isCouple: personalizedGuest.isCouple,
-              partnerName: personalizedGuest.partnerName ?? "",
-              magicToken: personalizedGuest.magicToken,
-            }
-          : null
-      }
-    />
+    <>
+      <YandexMetrica counterId={metricaCounterId} />
+      <PublicInvitation
+        initialData={initialData}
+        personalizedGuest={
+          personalizedGuest?.magicToken
+            ? {
+                id: personalizedGuest.id,
+                name: personalizedGuest.name,
+                status: personalizedGuest.status,
+                isCouple: personalizedGuest.isCouple,
+                partnerName: personalizedGuest.partnerName ?? "",
+                magicToken: personalizedGuest.magicToken,
+              }
+            : null
+        }
+      />
+    </>
   );
 }

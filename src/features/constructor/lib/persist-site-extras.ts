@@ -40,7 +40,6 @@ export async function persistSiteExtras() {
       transferDescription: state.transferDescription,
       transferTime: state.transferTime,
       transferMeetingPoint: state.transferMeetingPoint,
-      postWeddingMode: state.postWeddingMode,
       postWeddingAutoEnabled: state.postWeddingAutoEnabled,
       postWeddingHeroImage: state.postWeddingHeroImage,
       postWeddingPhotoUrl: state.postWeddingPhotoUrl,
