@@ -24,7 +24,7 @@ declare global {
 }
 
 export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
-  const callbackName = `vowlyTelegramLogin_${useId().replaceAll(":", "")}` as const;
+  const callbackName = `vowlyTelegramLogin_${useId().replace(/\W/g, "")}` as const;
   const [botUsername, setBotUsername] = useState("");
   const [error, setError] = useState("");
 
@@ -33,7 +33,15 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
     void fetch("/api/runtime-config", { cache: "no-store" })
       .then((response) => response.json())
       .then((config: { telegramBotUsername?: string | null }) => {
-        if (isMounted) setBotUsername(config.telegramBotUsername ?? "");
+        if (isMounted) {
+          setBotUsername(
+            (config.telegramBotUsername ?? "")
+              .trim()
+              .replace(/^@/, "")
+              .replace(/^https?:\/\/t\.me\//i, "")
+              .replace(/^t\.me\//i, ""),
+          );
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -42,18 +50,26 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
   }, []);
 
   useEffect(() => {
-    window[callbackName] = (payload) => {
-      void signIn("telegram", {
+    window[callbackName] = async (payload) => {
+      setError("");
+      const result = await signIn("telegram", {
         ...Object.fromEntries(
           Object.entries(payload).map(([key, value]) => [key, String(value)]),
         ),
-        redirectTo,
+        redirect: false,
       });
+
+      if (result?.error) {
+        setError("Telegram не подтвердил вход. Проверьте токен бота и домен в BotFather.");
+        return;
+      }
+
+      window.location.assign(redirectTo);
     };
     return () => {
       delete window[callbackName];
     };
-  }, [callbackName]);
+  }, [callbackName, redirectTo]);
 
   const loginWithYandex = async () => {
     setError("");
@@ -84,7 +100,7 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
               data-radius="12"
               data-request-access="write"
               data-userpic="false"
-              data-onauth={`${callbackName}(user)`}
+              data-onauth={`window.${callbackName}(user)`}
             />
           </div>
         ) : (

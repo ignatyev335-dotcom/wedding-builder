@@ -18,6 +18,10 @@ export async function sendLoginCodeMessage(message: LoginCodeMessage) {
     const { apiKey, from } = await resolveMailSettings();
 
     if (!apiKey || !from) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Email delivery is not configured. Add RESEND_API_KEY and EMAIL_FROM.");
+      }
+
       console.info(`Vowly login code for ${message.email}: ${message.code}`);
       return;
     }
