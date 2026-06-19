@@ -117,8 +117,26 @@ model User {
   orders           Order[]
   accounts         Account[]
   sessions         Session[]
+  telegramTickets  TelegramLoginTicket[]
 
   @@index([createdAt])
+}
+
+model TelegramLoginTicket {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  status      String    @default("PENDING")
+  telegramId  String?
+  chatId      String?
+  name        String?
+  userId      String?
+  expiresAt   DateTime
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, expiresAt])
+  @@index([userId])
 }
 
 model LoginCode {

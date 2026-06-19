@@ -7,7 +7,13 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
+  const hasVowlySession = Boolean(request.cookies.get("vowly-session")?.value);
+
   if (!token) {
+    if (hasVowlySession) {
+      return NextResponse.next();
+    }
+
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

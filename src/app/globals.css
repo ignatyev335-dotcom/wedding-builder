@@ -9933,9 +9933,29 @@ a {
 }
 
 .auth-provider-button.telegram-widget {
-  display: grid;
-  place-items: center;
+  position: relative;
   overflow: hidden;
+  pointer-events: auto;
+}
+
+.auth-provider-button.telegram-widget span {
+  background: #2aabee;
+}
+
+.telegram-widget-native {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: block;
+  opacity: 0.01;
+}
+
+.telegram-widget-native iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  transform: scale(1.08);
+  transform-origin: center;
 }
 
 .telegram-login-note {

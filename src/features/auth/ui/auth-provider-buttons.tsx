@@ -1,108 +1,107 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { LoaderCircle, Send } from "lucide-react";
 import { signIn } from "next-auth/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-type TelegramPayload = {
-  id: number;
-  first_name?: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
+type TelegramStartResponse = {
+  token?: string;
+  botUrl?: string;
+  error?: string;
 };
 
-declare global {
-  interface Window {
-    [key: `vowlyTelegramLogin_${string}`]:
-      | ((payload: TelegramPayload) => void)
-      | undefined;
-  }
-}
-
-function normalizeTelegramUsername(value?: string | null) {
-  return (value ?? "")
-    .trim()
-    .replace(/^@/, "")
-    .replace(/^https?:\/\/t\.me\//i, "")
-    .replace(/^t\.me\//i, "");
-}
+type TelegramStatusResponse = {
+  status?: "PENDING" | "CONFIRMED" | "EXPIRED";
+  redirectTo?: string;
+  error?: string;
+};
 
 export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
-  const callbackName = `vowlyTelegramLogin_${useId().replace(/\W/g, "")}` as const;
-  const telegramContainerRef = useRef<HTMLDivElement | null>(null);
-  const [botUsername, setBotUsername] = useState("");
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isTelegramLoading, setIsTelegramLoading] = useState(false);
+  const [telegramHint, setTelegramHint] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let isMounted = true;
-    void fetch("/api/runtime-config", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((config: { telegramBotUsername?: string | null }) => {
-        if (isMounted) {
-          setBotUsername(normalizeTelegramUsername(config.telegramBotUsername));
-        }
-      })
-      .catch(() => undefined);
-
     return () => {
-      isMounted = false;
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
     };
   }, []);
 
-  useEffect(() => {
-    window[callbackName] = async (payload) => {
-      setError("");
+  const loginWithTelegram = async () => {
+    setError("");
+    setTelegramHint("");
+    setIsTelegramLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/telegram/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      });
+      const payload = (await response.json()) as TelegramStartResponse;
+
+      if (!response.ok || !payload.token || !payload.botUrl) {
+        throw new Error(payload.error || "Telegram-вход пока не настроен.");
+      }
+
+      window.open(payload.botUrl, "_blank", "noopener,noreferrer");
+      setTelegramHint("Откройте Telegram, нажмите Start у бота — мы сами вернем вас в кабинет.");
+      startTelegramPolling(payload.token);
+    } catch (requestError) {
+      setIsTelegramLoading(false);
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Telegram не ответил. Попробуйте еще раз.",
+      );
+    }
+  };
+
+  const startTelegramPolling = (token: string) => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
+
+    const startedAt = Date.now();
+    pollTimerRef.current = setInterval(async () => {
+      if (Date.now() - startedAt > 5 * 60 * 1000) {
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        setIsTelegramLoading(false);
+        setTelegramHint("");
+        setError("Время входа через Telegram истекло. Запустите вход еще раз.");
+        return;
+      }
 
       try {
-        const result = await signIn("telegram", {
-          ...Object.fromEntries(
-            Object.entries(payload).map(([key, value]) => [key, String(value)]),
-          ),
-          redirect: false,
-        });
+        const response = await fetch(
+          `/api/auth/telegram/status?token=${encodeURIComponent(token)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json()) as TelegramStatusResponse;
 
-        if (result?.error) {
-          setError("Telegram не подтвердил вход. Проверьте токен бота и домен в BotFather.");
+        if (payload.status === "CONFIRMED") {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          window.location.assign(payload.redirectTo ?? redirectTo);
           return;
         }
 
-        window.location.assign(redirectTo);
+        if (payload.status === "EXPIRED" || response.status === 410) {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          setIsTelegramLoading(false);
+          setTelegramHint("");
+          setError("Ссылка Telegram устарела. Нажмите кнопку входа еще раз.");
+        }
       } catch {
-        setError("Telegram не ответил. Попробуйте еще раз или войдите по почте/телефону.");
+        // Сеть может моргнуть, продолжаем ждать до истечения токена.
       }
-    };
-
-    return () => {
-      delete window[callbackName];
-    };
-  }, [callbackName, redirectTo]);
-
-  useEffect(() => {
-    const container = telegramContainerRef.current;
-    if (!container || !botUsername) return;
-
-    container.innerHTML = "";
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", botUsername);
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "12");
-    script.setAttribute("data-request-access", "write");
-    script.setAttribute("data-userpic", "false");
-    script.setAttribute("data-onauth", `window.${callbackName}(user)`);
-    container.appendChild(script);
-
-    return () => {
-      container.innerHTML = "";
-    };
-  }, [botUsername, callbackName]);
+    }, 1600);
+  };
 
   const loginWithYandex = async () => {
     setError("");
+    setTelegramHint("");
     try {
       await signIn("yandex", { redirectTo });
     } catch {
@@ -120,26 +119,19 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
           <span aria-hidden="true">Я</span>
           <i>Яндекс ID</i>
         </button>
-        {botUsername ? (
-          <div
-            ref={telegramContainerRef}
-            className="auth-provider-button telegram-widget"
-            aria-label="Войти через Telegram"
-          />
-        ) : (
-          <button className="auth-provider-button telegram" type="button" disabled>
-            <span aria-hidden="true">
-              <Send size={15} />
-            </span>
-            <i>Telegram</i>
-          </button>
-        )}
+        <button
+          className="auth-provider-button telegram"
+          type="button"
+          disabled={isTelegramLoading}
+          onClick={() => void loginWithTelegram()}
+        >
+          <span aria-hidden="true">
+            {isTelegramLoading ? <LoaderCircle className="spin" size={15} /> : <Send size={15} />}
+          </span>
+          <i>{isTelegramLoading ? "Ждем Telegram" : "Telegram"}</i>
+        </button>
       </div>
-      {!botUsername ? (
-        <small className="telegram-login-note">
-          Telegram включится после подключения бота в настройках проекта.
-        </small>
-      ) : null}
+      {telegramHint ? <small className="telegram-login-note">{telegramHint}</small> : null}
       {error ? <p className="login-error">{error}</p> : null}
     </section>
   );

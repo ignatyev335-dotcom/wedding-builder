@@ -45,7 +45,7 @@ export function LoginForm() {
         throw new Error(payload.error || "Не удалось войти.");
       }
 
-      window.location.assign(payload.redirectTo ?? "/dashboard");
+      window.location.assign(payload.redirectTo ?? "/account");
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -91,7 +91,7 @@ export function LoginForm() {
               required
               type="text"
               autoComplete="email tel"
-              inputMode="email"
+              inputMode="tel"
               value={identity}
               placeholder="hello@example.ru или +7 999 123-45-67"
               onChange={(event) => setIdentity(event.target.value)}
@@ -138,7 +138,7 @@ export function LoginForm() {
       ) : null}
 
       {error ? <p className="login-error">{error}</p> : null}
-      <AuthProviderButtons />
+      <AuthProviderButtons redirectTo="/account" />
       <p className="login-legal">
         Продолжая, вы принимаете Пользовательское соглашение и Политику конфиденциальности.
       </p>

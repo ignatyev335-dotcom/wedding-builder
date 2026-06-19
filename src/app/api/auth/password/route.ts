@@ -160,7 +160,7 @@ export async function POST(request: Request) {
   }
 
   const isAdmin = user.role === "ADMIN" || isAdminBootstrap;
-  const redirectTo = isAdmin ? "/admin/dashboard" : "/dashboard";
+  const redirectTo = isAdmin ? "/admin/dashboard" : "/account";
   const response = NextResponse.json({
     role: isAdmin ? "ADMIN" : user.role,
     redirectTo,
