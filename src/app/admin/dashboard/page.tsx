@@ -19,22 +19,27 @@
   SlidersHorizontal,
   TicketPercent,
   Users,
+  FileClock,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AuditLogPanel } from "@/features/admin/ui/audit-log-panel";
 import { AdminInsightsPanel } from "@/features/admin/ui/admin-insights-panel";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
 import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
 import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
+import { EmailTemplatesPanel } from "@/features/admin/ui/email-templates-panel";
 import { FontManagerPanel } from "@/features/admin/ui/font-manager-panel";
+import { MediaManagerPanel } from "@/features/admin/ui/media-manager-panel";
 import { MonetizationPanel } from "@/features/admin/ui/monetization-panel";
 import {
   PlatformContentPanel,
   type PlatformContentDraft,
 } from "@/features/admin/ui/platform-content-panel";
 import { PromoCodesPanel } from "@/features/admin/ui/promo-codes-panel";
+import { ProductAnalyticsPanel } from "@/features/admin/ui/product-analytics-panel";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
 import { UserPlansPanel } from "@/features/admin/ui/user-plans-panel";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
@@ -50,12 +55,15 @@ const statusLabels = {
 } as const;
 
 const adminSections = [
-  { href: "#overview", label: "Обзор", icon: Gauge },
-  { href: "#catalog", label: "Каталог", icon: LibraryBig },
-  { href: "#monetization", label: "Монетизация", icon: TicketPercent },
-  { href: "#users", label: "Клиенты", icon: Users },
-  { href: "#projects", label: "Проекты", icon: Globe2 },
-  { href: "#settings", label: "Настройки", icon: Settings },
+  { id: "overview", label: "Обзор", icon: Gauge },
+  { id: "catalog", label: "Каталог", icon: LibraryBig },
+  { id: "monetization", label: "Монетизация", icon: TicketPercent },
+  { id: "email", label: "Почта", icon: Mail },
+  { id: "analytics", label: "Аналитика", icon: Activity },
+  { id: "users", label: "Клиенты", icon: Users },
+  { id: "projects", label: "Проекты", icon: Globe2 },
+  { id: "settings", label: "Интеграции", icon: Settings },
+  { id: "logs", label: "Логи", icon: FileClock },
 ] as const;
 
 export default async function AdminDashboardPage() {
@@ -80,7 +88,9 @@ export default async function AdminDashboardPage() {
     managedUsers,
     monetizationFeatures,
     promoCodes,
-    mediaAssetsCount,
+    mediaAssets,
+    emailTemplates,
+    auditLogs,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { subscriptionPlan: { not: "FREE" } } }),
@@ -185,7 +195,43 @@ export default async function AdminDashboardPage() {
         createdAt: true,
       },
     }),
-    prisma.mediaAsset.count({ where: { isActive: true } }),
+    prisma.mediaAsset.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        url: true,
+      },
+    }),
+    prisma.emailTemplate.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        key: true,
+        title: true,
+        subject: true,
+        previewText: true,
+        bodyHtml: true,
+        bodyText: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.adminAuditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        actorEmail: true,
+        action: true,
+        targetType: true,
+        targetId: true,
+        description: true,
+        createdAt: true,
+      },
+    }),
   ]);
 
   const settingKeys = new Set(settings.map((setting) => setting.key));
@@ -262,197 +308,266 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <nav className="admin-section-nav admin-cms-nav" aria-label="Разделы админки">
-        {adminSections.map(({ href, label, icon: Icon }) => (
-          <a href={href} key={href}>
-            <Icon size={16} />
-            {label}
-          </a>
+      <section className="admin-tab-shell">
+        {adminSections.map((section, index) => (
+          <input
+            className="admin-tab-input"
+            defaultChecked={index === 0}
+            id={`admin-tab-${section.id}`}
+            key={section.id}
+            name="admin-dashboard-tab"
+            type="radio"
+          />
         ))}
-      </nav>
 
-      <section className="admin-command-grid" id="overview">
-        <CommandMetric icon={Users} label="Пользователи" value={usersCount} hint={`${premiumUsersCount} не на FREE`} />
-        <CommandMetric icon={Globe2} label="Сайты" value={sitesCount} hint={`${publishedCount} опубликовано`} />
-        <CommandMetric icon={HeartHandshake} label="Ответы гостей" value={guestsCount} hint="RSVP и CRM" />
-        <CommandMetric icon={CreditCard} label="Оплаты" value={`${paidOrderRate}%`} hint={`${paidOrdersCount} оплачено`} />
-      </section>
+        <nav className="admin-section-nav admin-cms-nav admin-tab-list" aria-label="Разделы админки">
+          {adminSections.map(({ id, label, icon: Icon }) => (
+            <label htmlFor={`admin-tab-${id}`} key={id}>
+              <Icon size={16} />
+              {label}
+            </label>
+          ))}
+        </nav>
 
-      <section className="admin-ops-grid">
-        <div className="admin-ops-card">
-          <CardHeading icon={Gauge} title="Здоровье платформы" subtitle="Что готово к реальной работе" />
-          <div className="admin-health-list">
-            {healthItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a className={item.ready ? "is-ready" : "is-warning"} href={item.href} key={item.title}>
-                  <span>
-                    <Icon size={18} />
-                  </span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <small>{item.description}</small>
-                  </div>
-                  {item.ready ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-                </a>
-              );
-            })}
-          </div>
-        </div>
+        <div className="admin-tab-panels">
+          <section className="admin-tab-panel" data-tab="overview" id="overview">
+            <div className="admin-command-grid">
+              <CommandMetric icon={Users} label="Пользователи" value={usersCount} hint={`${premiumUsersCount} не на FREE`} />
+              <CommandMetric icon={Globe2} label="Сайты" value={sitesCount} hint={`${publishedCount} опубликовано`} />
+              <CommandMetric icon={HeartHandshake} label="Ответы гостей" value={guestsCount} hint="RSVP и CRM" />
+              <CommandMetric icon={CreditCard} label="Оплаты" value={`${paidOrderRate}%`} hint={`${paidOrdersCount} оплачено`} />
+            </div>
 
-        <div className="admin-ops-card">
-          <CardHeading icon={Rocket} title="Чек-лист запуска" subtitle="Минимум, чтобы продукт выглядел готовым" />
-          <div className="admin-launch-list">
-            {launchTasks.map((task) => (
-              <div className={task.done ? "is-done" : ""} key={task.label}>
-                <span>{task.done ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}</span>
-                <p>{task.label}</p>
+            <div className="admin-ops-grid">
+              <div className="admin-ops-card">
+                <CardHeading icon={Gauge} title="Здоровье платформы" subtitle="Что готово к реальной работе" />
+                <div className="admin-health-list">
+                  {healthItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <label
+                        className={item.ready ? "is-ready" : "is-warning"}
+                        htmlFor={`admin-tab-${item.href.replace("#", "")}`}
+                        key={item.title}
+                      >
+                        <span>
+                          <Icon size={18} />
+                        </span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <small>{item.description}</small>
+                        </div>
+                        {item.ready ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="admin-ops-card">
-          <CardHeading icon={MessageCircle} title="Последние проекты" subtitle="Быстрый взгляд на новые сайты" />
-          <div className="admin-activity-list">
-            {recentSites.map((site) => (
-              <a href={`/wedding/${site.slug}`} target="_blank" rel="noreferrer" key={site.id}>
-                <strong>
-                  {site.data?.partnerOneName ?? "Пара"} & {site.data?.partnerTwoName ?? "Vowly"}
-                </strong>
-                <small>
-                  {statusLabels[site.status]} · {site._count.guests} гостей · {site.user.email ?? site.user.name ?? "без контакта"}
-                </small>
-              </a>
-            ))}
-            {!recentSites.length ? <p>Пока нет созданных сайтов.</p> : null}
-          </div>
-        </div>
-      </section>
+              <div className="admin-ops-card">
+                <CardHeading icon={Rocket} title="Чек-лист запуска" subtitle="Минимум, чтобы продукт выглядел готовым" />
+                <div className="admin-launch-list">
+                  {launchTasks.map((task) => (
+                    <div className={task.done ? "is-done" : ""} key={task.label}>
+                      <span>{task.done ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}</span>
+                      <p>{task.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-      <AdminInsightsPanel
-        usersCount={usersCount}
-        sitesCount={sitesCount}
-        publishedCount={publishedCount}
-        guestsCount={guestsCount}
-        tracksCount={tracks.length}
-        templatesCount={templates.length}
-        themesCount={designThemes.length}
-        premiumUsersCount={premiumUsersCount}
-      />
+              <div className="admin-ops-card">
+                <CardHeading icon={MessageCircle} title="Последние проекты" subtitle="Быстрый взгляд на новые сайты" />
+                <div className="admin-activity-list">
+                  {recentSites.map((site) => (
+                    <a href={`/wedding/${site.slug}`} target="_blank" rel="noreferrer" key={site.id}>
+                      <strong>
+                        {site.data?.partnerOneName ?? "Пара"} & {site.data?.partnerTwoName ?? "Vowly"}
+                      </strong>
+                      <small>
+                        {statusLabels[site.status]} · {site._count.guests} гостей · {site.user.email ?? site.user.name ?? "без контакта"}
+                      </small>
+                    </a>
+                  ))}
+                  {!recentSites.length ? <p>Пока нет созданных сайтов.</p> : null}
+                </div>
+              </div>
+            </div>
 
-      <section className="admin-section-group" id="catalog">
-        <SectionHeader
-          eyebrow="Каталог продукта"
-          title="Контент, музыка, тексты, шрифты и темы"
-          description="Все, что пользователь видит в квизе, конструкторе и на готовом сайте, должно приходить из этой библиотеки. Это главный центр управления вкусом Vowly."
-        />
-        <div className="admin-catalog-summary">
-          <MiniStat icon={BookOpenText} label="Тексты" value={templates.length} />
-          <MiniStat icon={Database} label="Треки" value={tracks.length} />
-          <MiniStat icon={Palette} label="Темы" value={designThemes.length} />
-          <MiniStat icon={SlidersHorizontal} label="Шрифты" value={customFonts.length} />
-          <MiniStat icon={LibraryBig} label="Медиа" value={mediaAssetsCount} />
-        </div>
-        <ContentCatalogPanel initialTracks={tracks} initialTemplates={templates} />
-        <FontManagerPanel initialFonts={customFonts} />
-        <DesignThemePanel initialThemes={designThemes} customFonts={customFonts} />
-      </section>
+            <AdminInsightsPanel
+              usersCount={usersCount}
+              sitesCount={sitesCount}
+              publishedCount={publishedCount}
+              guestsCount={guestsCount}
+              tracksCount={tracks.length}
+              templatesCount={templates.length}
+              themesCount={designThemes.length}
+              premiumUsersCount={premiumUsersCount}
+            />
+          </section>
 
-      <section className="admin-section-group" id="monetization">
-        <SectionHeader
-          eyebrow="Деньги и ценность"
-          title="Монетизация, тарифы и промокоды"
-          description="Здесь решается, какие функции бесплатные, какие продаются, какие тарифы стоит продвигать и где давать скидки."
-        />
-        <PromoCodesPanel
-          initialPromoCodes={promoCodes.map((promo) => ({
-            ...promo,
-            expiresAt: promo.expiresAt?.toISOString() ?? null,
-          }))}
-        />
-        <MonetizationPanel initialFeatures={monetizationFeatures} />
-      </section>
+          <section className="admin-tab-panel admin-section-group" data-tab="catalog" id="catalog">
+            <SectionHeader
+              eyebrow="Каталог продукта"
+              title="Контент, музыка, тексты, шрифты и темы"
+              description="Все, что пользователь видит в квизе, конструкторе и на готовом сайте, должно приходить из этой библиотеки. Это главный центр управления вкусом Vowly."
+            />
+            <div className="admin-catalog-summary">
+              <MiniStat icon={BookOpenText} label="Тексты" value={templates.length} />
+              <MiniStat icon={Database} label="Треки" value={tracks.length} />
+              <MiniStat icon={Palette} label="Темы" value={designThemes.length} />
+              <MiniStat icon={SlidersHorizontal} label="Шрифты" value={customFonts.length} />
+              <MiniStat icon={LibraryBig} label="Медиа" value={mediaAssets.length} />
+            </div>
+            <ContentCatalogPanel initialTracks={tracks} initialTemplates={templates} />
+            <FontManagerPanel initialFonts={customFonts} />
+            <DesignThemePanel initialThemes={designThemes} customFonts={customFonts} />
+            <MediaManagerPanel initialAssets={mediaAssets} />
+          </section>
 
-      <section className="admin-section-group" id="users">
-        <SectionHeader
-          eyebrow="Клиенты"
-          title="Пользователи и тарифы"
-          description="Меняйте тариф вручную, выдавайте премиум, удаляйте тестовые аккаунты и смотрите, у кого сколько проектов."
-        />
-        <UserPlansPanel
-          initialUsers={managedUsers.map((user) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            subscriptionPlan: user.subscriptionPlan,
-            sitesCount: user._count.weddingSites,
-          }))}
-        />
-      </section>
+          <section className="admin-tab-panel admin-section-group" data-tab="monetization" id="monetization">
+            <SectionHeader
+              eyebrow="Деньги и ценность"
+              title="Монетизация, тарифы и промокоды"
+              description="Здесь решается, какие функции бесплатные, какие продаются, какие тарифы стоит продвигать и где давать скидки."
+            />
+            <PromoCodesPanel
+              initialPromoCodes={promoCodes.map((promo) => ({
+                ...promo,
+                expiresAt: promo.expiresAt?.toISOString() ?? null,
+              }))}
+            />
+            <MonetizationPanel initialFeatures={monetizationFeatures} />
+          </section>
 
-      <section className="admin-section-group" id="projects">
-        <SectionHeader
-          eyebrow="Проекты"
-          title="Свадебные сайты"
-          description="Открывайте живые ссылки, ищите по email или именам пары, фильтруйте статусы, архивируйте и удаляйте без перезагрузки страницы."
-        />
-        <AdminSitesPanel
-          initialSites={sites.map((site) => ({
-            id: site.id,
-            slug: site.slug,
-            ownerEmail: site.user.email,
-            ownerName: site.user.name,
-            partnerOneName: site.data?.partnerOneName ?? null,
-            partnerTwoName: site.data?.partnerTwoName ?? null,
-            status: site.status,
-            guestsCount: site._count.guests,
-            createdAt: site.createdAt.toLocaleDateString("ru-RU"),
-          }))}
-          statusLabels={statusLabels}
-        />
-      </section>
+          <section className="admin-tab-panel admin-section-group" data-tab="email" id="email">
+            <SectionHeader
+              eyebrow="Коммуникации"
+              title="Почта, коды входа и рассылки"
+              description="Шаблоны писем для входа, создания сайта, RSVP-сводок и будущих уведомлений клиентам."
+            />
+            <EmailTemplatesPanel
+              initialTemplates={emailTemplates.map((template) => ({
+                ...template,
+                updatedAt: template.updatedAt.toISOString(),
+              }))}
+            />
+          </section>
 
-      <section className="admin-section-group" id="settings">
-        <SectionHeader
-          eyebrow="Настройки платформы"
-          title="Ключи, интеграции и системные тексты"
-          description="Яндекс, Telegram, почта, SMS, платежи, аналитика и глобальные тексты интерфейса. Секреты хранятся скрыто и перезаписываются при необходимости."
-        />
-        <SystemSettingsPanel
-          initialSettings={settings.map((setting) => {
-            let readableValue = setting.value;
-            if (setting.isSecret) {
-              try {
-                readableValue = decryptSetting(setting.value);
-              } catch {
-                readableValue = "";
+          <section className="admin-tab-panel admin-section-group" data-tab="analytics" id="analytics">
+            <SectionHeader
+              eyebrow="Аналитика"
+              title="Воронка продукта и поведение пользователей"
+              description="Смотрите, как люди проходят путь от входа и квиза до публикации, RSVP и оплаты."
+            />
+            <ProductAnalyticsPanel
+              usersCount={usersCount}
+              sitesCount={sitesCount}
+              publishedCount={publishedCount}
+              guestsCount={guestsCount}
+              ordersCount={ordersCount}
+              paidOrdersCount={paidOrdersCount}
+              templatesCount={templates.length}
+              tracksCount={tracks.length}
+              themesCount={designThemes.length}
+            />
+          </section>
+
+          <section className="admin-tab-panel admin-section-group" data-tab="users" id="users">
+            <SectionHeader
+              eyebrow="Клиенты"
+              title="Пользователи и тарифы"
+              description="Меняйте тариф вручную, выдавайте премиум, удаляйте тестовые аккаунты и смотрите, у кого сколько проектов."
+            />
+            <UserPlansPanel
+              initialUsers={managedUsers.map((user) => ({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                subscriptionPlan: user.subscriptionPlan,
+                sitesCount: user._count.weddingSites,
+              }))}
+            />
+          </section>
+
+          <section className="admin-tab-panel admin-section-group" data-tab="projects" id="projects">
+            <SectionHeader
+              eyebrow="Проекты"
+              title="Свадебные сайты"
+              description="Открывайте живые ссылки, ищите по email или именам пары, фильтруйте статусы, архивируйте и удаляйте без перезагрузки страницы."
+            />
+            <AdminSitesPanel
+              initialSites={sites.map((site) => ({
+                id: site.id,
+                slug: site.slug,
+                ownerEmail: site.user.email,
+                ownerName: site.user.name,
+                partnerOneName: site.data?.partnerOneName ?? null,
+                partnerTwoName: site.data?.partnerTwoName ?? null,
+                status: site.status,
+                guestsCount: site._count.guests,
+                createdAt: site.createdAt.toLocaleDateString("ru-RU"),
+              }))}
+              statusLabels={statusLabels}
+            />
+          </section>
+
+          <section className="admin-tab-panel admin-section-group" data-tab="settings" id="settings">
+            <SectionHeader
+              eyebrow="Интеграции и тексты"
+              title="Ключи, сервисы и системные сообщения"
+              description="Яндекс, Telegram, почта, SMS, платежи, аналитика и глобальные тексты интерфейса. Секреты хранятся скрыто и перезаписываются при необходимости."
+            />
+            <SystemSettingsPanel
+              initialSettings={settings.map((setting) => {
+                let readableValue = setting.value;
+                if (setting.isSecret) {
+                  try {
+                    readableValue = decryptSetting(setting.value);
+                  } catch {
+                    readableValue = "";
+                  }
+                }
+                return {
+                  key: setting.key,
+                  label: setting.label,
+                  category: setting.category,
+                  maskedValue: setting.isSecret ? maskSetting(readableValue) : readableValue,
+                  isSecret: setting.isSecret,
+                  updatedAt: setting.updatedAt.toISOString(),
+                };
+              })}
+            />
+            <PlatformContentPanel
+              initialContent={
+                (platformContent ?? {
+                  greetingEnabled: true,
+                  timelineEnabled: true,
+                  dressCodeEnabled: true,
+                  mapEnabled: true,
+                  rsvpEnabled: true,
+                  primaryButtonText: "Отправить ответ",
+                  footerText: "Создано на Vowly",
+                  errorText: "Что-то пошло не так. Попробуйте еще раз.",
+                }) satisfies PlatformContentDraft
               }
-            }
-            return {
-              key: setting.key,
-              label: setting.label,
-              category: setting.category,
-              maskedValue: setting.isSecret ? maskSetting(readableValue) : readableValue,
-              isSecret: setting.isSecret,
-              updatedAt: setting.updatedAt.toISOString(),
-            };
-          })}
-        />
-        <PlatformContentPanel
-          initialContent={
-            (platformContent ?? {
-              greetingEnabled: true,
-              timelineEnabled: true,
-              dressCodeEnabled: true,
-              mapEnabled: true,
-              rsvpEnabled: true,
-              primaryButtonText: "Отправить ответ",
-              footerText: "Создано на Vowly",
-              errorText: "Что-то пошло не так. Попробуйте еще раз.",
-            }) satisfies PlatformContentDraft
-          }
-        />
+            />
+          </section>
+
+          <section className="admin-tab-panel admin-section-group" data-tab="logs" id="logs">
+            <SectionHeader
+              eyebrow="Аудит"
+              title="Логи действий и изменений"
+              description="Критичные изменения в платформе фиксируются здесь: настройки, тарифы, каталоги, почтовые шаблоны."
+            />
+            <AuditLogPanel
+              logs={auditLogs.map((log) => ({
+                ...log,
+                createdAt: log.createdAt.toLocaleString("ru-RU"),
+              }))}
+            />
+          </section>
+        </div>
       </section>
     </main>
   );

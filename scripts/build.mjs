@@ -6,6 +6,7 @@ import { localDatabaseEnv } from "./local-postgres.mjs";
 const projectRoot = resolve(import.meta.dirname, "..");
 const prismaBin = join(projectRoot, "node_modules", "prisma", "build", "index.js");
 const nextBin = join(projectRoot, "node_modules", "next", "dist", "bin", "next");
+const encodingCheckScript = join(projectRoot, "scripts", "check-encoding.mjs");
 
 const env =
   process.env.VERCEL || process.env.CI
@@ -28,6 +29,7 @@ function run(command, args) {
   }
 }
 
+run(process.execPath, [encodingCheckScript]);
 run(process.execPath, [prismaBin, "generate"]);
 run(process.execPath, [prismaBin, "migrate", "deploy"]);
 run(process.execPath, [nextBin, "build"]);

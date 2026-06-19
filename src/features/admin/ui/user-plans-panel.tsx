@@ -38,7 +38,7 @@ export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }
       if (!response.ok) {
         throw new Error(result.error || "Не удалось обновить тариф.");
       }
-      setMessage("Тариф пользователя обновлён.");
+      setMessage("Тариф пользователя обновлен.");
     } catch (requestError) {
       setUsers(previousUsers);
       setMessage(
@@ -52,9 +52,7 @@ export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }
   };
 
   const removeUser = async (userId: string) => {
-    if (!window.confirm("Удалить пользователя и все его сайты?")) {
-      return;
-    }
+    if (!window.confirm("Удалить пользователя и все его сайты?")) return;
 
     setDeletingUserId(userId);
     setMessage("");
@@ -90,9 +88,12 @@ export function UserPlansPanel({ initialUsers }: { initialUsers: ManagedUser[] }
         </span>
         <div>
           <span className="text-xs font-bold uppercase tracking-[0.18em] text-stone-400">
-            Монетизация
+            Клиенты и доступ
           </span>
           <h2 className="m-0 text-2xl font-semibold">Тарифы пользователей</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Меняйте тариф вручную, выдавайте VIP и удаляйте тестовые аккаунты.
+          </p>
         </div>
       </header>
 

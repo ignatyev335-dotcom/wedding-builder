@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./design-system.css";
 
 :root {
   --font-sans: "Segoe UI", Arial, sans-serif;
@@ -336,9 +337,85 @@ html {
   background: #272720;
 }
 
+.admin-tab-shell {
+  max-width: 1500px;
+  margin: 24px auto 0;
+}
+
+.admin-tab-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-tab-list {
+  position: sticky;
+  z-index: 20;
+  top: 10px;
+}
+
+.admin-section-nav label {
+  min-height: 42px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: #5e6259;
+  background: #f8f7f2;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 780;
+  transition: 180ms ease;
+  white-space: nowrap;
+}
+
+.admin-section-nav label:hover {
+  color: #252720;
+  background: #ecefe7;
+}
+
+.admin-tab-panels {
+  margin-top: 22px;
+}
+
+.admin-tab-panel {
+  display: none;
+  animation: fadeSlideUp 240ms ease both;
+}
+
+#admin-tab-overview:checked ~ .admin-tab-list label[for="admin-tab-overview"],
+#admin-tab-catalog:checked ~ .admin-tab-list label[for="admin-tab-catalog"],
+#admin-tab-monetization:checked ~ .admin-tab-list label[for="admin-tab-monetization"],
+#admin-tab-email:checked ~ .admin-tab-list label[for="admin-tab-email"],
+#admin-tab-analytics:checked ~ .admin-tab-list label[for="admin-tab-analytics"],
+#admin-tab-users:checked ~ .admin-tab-list label[for="admin-tab-users"],
+#admin-tab-projects:checked ~ .admin-tab-list label[for="admin-tab-projects"],
+#admin-tab-settings:checked ~ .admin-tab-list label[for="admin-tab-settings"],
+#admin-tab-logs:checked ~ .admin-tab-list label[for="admin-tab-logs"] {
+  color: #fff;
+  background: #252720;
+  box-shadow: 0 14px 28px rgba(35, 32, 28, 0.14);
+}
+
+#admin-tab-overview:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="overview"],
+#admin-tab-catalog:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="catalog"],
+#admin-tab-monetization:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="monetization"],
+#admin-tab-email:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="email"],
+#admin-tab-analytics:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="analytics"],
+#admin-tab-users:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="users"],
+#admin-tab-projects:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="projects"],
+#admin-tab-settings:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="settings"],
+#admin-tab-logs:checked ~ .admin-tab-panels .admin-tab-panel[data-tab="logs"] {
+  display: grid;
+}
+
 .admin-section-group {
   max-width: 1500px;
-  margin: 30px auto 0;
+  margin: 0 auto;
   display: grid;
   gap: 18px;
   scroll-margin-top: 92px;
@@ -371,6 +448,286 @@ html {
   color: #696d62;
   font-size: 1rem;
   line-height: 1.55;
+}
+
+.admin-panel-heading {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.admin-panel-heading > span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #252720;
+  border-radius: 16px;
+  flex: 0 0 auto;
+}
+
+.admin-panel-heading small {
+  color: #7d846f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.admin-panel-heading h2 {
+  margin: 4px 0 4px;
+  color: #22251f;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  line-height: 1.05;
+}
+
+.admin-panel-heading p {
+  max-width: 740px;
+  margin: 0;
+  color: #6d7168;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.admin-preset-row {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.admin-preset-row button,
+.admin-primary-button {
+  min-height: 42px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 760;
+  transition: 180ms ease;
+}
+
+.admin-preset-row button {
+  color: #4f5f4b;
+  background: #eef3ea;
+}
+
+.admin-primary-button {
+  color: #fff;
+  background: #252720;
+}
+
+.admin-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-email-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-email-form input,
+.admin-email-form textarea {
+  width: 100%;
+  padding: 13px 15px;
+  color: #252720;
+  background: #fbfaf6;
+  border: 1px solid #dedbd1;
+  border-radius: 16px;
+  font: inherit;
+  outline: none;
+}
+
+.admin-email-form textarea {
+  resize: vertical;
+}
+
+.admin-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #4f574c;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.admin-template-list,
+.audit-log-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-template-list article,
+.audit-log-list article {
+  padding: 14px;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  background: #fbfaf6;
+  border: 1px solid #e4e1d8;
+  border-radius: 18px;
+}
+
+.admin-template-list article {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.admin-template-list strong,
+.audit-log-list strong {
+  display: block;
+  color: #242720;
+}
+
+.admin-template-list small,
+.audit-log-list small {
+  display: block;
+  margin-top: 4px;
+  color: #777c72;
+  line-height: 1.4;
+}
+
+.admin-template-list span {
+  padding: 6px 10px;
+  color: #8a6a4f;
+  background: #f8efe7;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 780;
+}
+
+.admin-template-list span.is-active {
+  color: #4f674d;
+  background: #eef5ec;
+}
+
+.admin-template-list button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: #8f4f4f;
+  background: #fff;
+  border: 1px solid #ead8d3;
+  border-radius: 13px;
+  cursor: pointer;
+}
+
+.admin-form-message,
+.admin-empty-state {
+  margin: 14px 0 0;
+  color: #697064;
+  font-size: 0.94rem;
+}
+
+.analytics-funnel {
+  display: grid;
+  gap: 13px;
+}
+
+.analytics-funnel article {
+  padding: 16px;
+  background: #fbfaf6;
+  border: 1px solid #e4e1d8;
+  border-radius: 20px;
+}
+
+.analytics-funnel article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analytics-funnel strong {
+  color: #252720;
+}
+
+.analytics-funnel span {
+  font-family: var(--font-display), Georgia, serif;
+  color: #53674f;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.analytics-funnel i {
+  height: 9px;
+  margin: 12px 0 8px;
+  display: block;
+  overflow: hidden;
+  background: #ecece5;
+  border-radius: 999px;
+}
+
+.analytics-funnel b {
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, #51664f, #aab89a);
+  border-radius: inherit;
+}
+
+.analytics-funnel small {
+  color: #777c72;
+}
+
+.analytics-signal-grid {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-signal-grid article {
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+  color: #596357;
+  background: #f3f6ef;
+  border-radius: 20px;
+}
+
+.analytics-signal-grid strong {
+  color: #263022;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 2rem;
+}
+
+.analytics-signal-grid p {
+  margin: 0;
+  color: #747b70;
+  font-size: 0.88rem;
+}
+
+.audit-log-list article {
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+}
+
+.audit-log-list time,
+.audit-log-list span {
+  color: #73796f;
+  font-size: 0.82rem;
+}
+
+.audit-log-list span {
+  padding: 6px 10px;
+  background: #f0f2ec;
+  border-radius: 999px;
+  font-weight: 760;
+}
+
+@media (max-width: 760px) {
+  .analytics-signal-grid,
+  .admin-template-list article,
+  .audit-log-list article {
+    grid-template-columns: 1fr;
+  }
 }
 
 body {

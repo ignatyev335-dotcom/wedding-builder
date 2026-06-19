@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { writeAdminAuditLog } from "@/features/admin/server/audit-log";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 
@@ -12,7 +13,8 @@ const trackSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!(await getCurrentAdmin())) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
@@ -49,6 +51,14 @@ export async function POST(request: Request) {
       },
     });
 
+    await writeAdminAuditLog({
+      actor: admin,
+      action: "track.create",
+      targetType: "AudioTrack",
+      targetId: track.id,
+      description: `Добавлен трек ${track.title}`,
+    });
+
     return NextResponse.json({ track }, { status: 201 });
   } catch (error) {
     console.error("Track create failed", error);
@@ -60,7 +70,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  if (!(await getCurrentAdmin())) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
@@ -71,6 +82,13 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.audioTrack.delete({ where: { id } });
+    await writeAdminAuditLog({
+      actor: admin,
+      action: "track.delete",
+      targetType: "AudioTrack",
+      targetId: id,
+      description: "Удален трек из каталога",
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Track delete failed", error);

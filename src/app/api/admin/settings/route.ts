@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { writeAdminAuditLog } from "@/features/admin/server/audit-log";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { encryptSetting } from "@/lib/system-settings";
@@ -48,6 +49,15 @@ export async function POST(request: Request) {
     select: { id: true, key: true, label: true, category: true, updatedAt: true },
   });
 
+  await writeAdminAuditLog({
+    actor: user,
+    action: "setting.upsert",
+    targetType: "SystemSetting",
+    targetId: setting.id,
+    description: `Обновлена настройка ${key}`,
+    metadata: { key, category, isSecret },
+  });
+
   return NextResponse.json({ setting });
 }
 
@@ -63,5 +73,12 @@ export async function DELETE(request: Request) {
   }
 
   await prisma.systemSetting.deleteMany({ where: { key } });
+  await writeAdminAuditLog({
+    actor: user,
+    action: "setting.delete",
+    targetType: "SystemSetting",
+    targetId: key,
+    description: `Удалена настройка ${key}`,
+  });
   return NextResponse.json({ ok: true });
 }

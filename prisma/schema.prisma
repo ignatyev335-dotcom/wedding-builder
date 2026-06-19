@@ -345,6 +345,37 @@ model SystemSetting {
   @@index([category])
 }
 
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  subject     String
+  previewText String   @default("")
+  bodyHtml    String   @db.Text
+  bodyText    String   @default("") @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, updatedAt])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actorEmail  String?
+  action      String
+  targetType  String
+  targetId    String?
+  description String   @default("")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorEmail])
+  @@index([targetType, targetId])
+}
+
 model WeddingData {
   id                  String      @id @default(cuid())
   weddingSiteId       String      @unique

@@ -25,7 +25,7 @@ export function MediaManagerPanel({
   const readFile = (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/") || file.size > 1_500_000) {
-      setMessage("Выберите SVG/PNG/WebP размером до 1,5 МБ.");
+      setMessage("Выберите SVG, PNG или WebP размером до 1,5 МБ.");
       return;
     }
     const reader = new FileReader();
@@ -35,6 +35,8 @@ export function MediaManagerPanel({
 
   const add = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setMessage("");
+
     const response = await fetch("/api/admin/media-assets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,6 +50,7 @@ export function MediaManagerPanel({
       setMessage(result.error || "Не удалось добавить медиа.");
       return;
     }
+
     setAssets((items) => [result.asset!, ...items]);
     setName("");
     setUrl("");
@@ -72,77 +75,81 @@ export function MediaManagerPanel({
             Медиа-менеджер
           </span>
           <h2 className="m-0 text-2xl font-semibold">Иконки и стикеры</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            Загружайте аккуратные SVG/PNG/WebP-элементы для будущих шаблонов и блоков.
+          </p>
         </div>
       </header>
 
       <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" onSubmit={add}>
         <input
           className="min-h-12 rounded-xl border border-stone-200 bg-stone-50 px-4"
-          required
-          placeholder="Название"
           value={name}
           onChange={(event) => setName(event.target.value)}
+          placeholder="Название"
+          required
         />
         <select
           className="min-h-12 rounded-xl border border-stone-200 bg-stone-50 px-4"
           value={type}
           onChange={(event) => setType(event.target.value as AdminMediaAsset["type"])}
         >
-          <option value="ICON">SVG-иконка</option>
-          <option value="STICKER">PNG-стикер</option>
+          <option value="ICON">Иконка</option>
+          <option value="STICKER">Стикер</option>
         </select>
         <input
           className="min-h-12 rounded-xl border border-stone-200 bg-stone-50 px-4"
-          required
-          placeholder="https://... или загрузите файл"
-          value={url}
+          value={url.startsWith("data:") ? "" : url}
           onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://... или /uploads/..."
         />
-        <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 text-sm font-semibold">
-          Загрузить SVG / PNG
+        <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 text-sm font-semibold text-stone-600">
+          Загрузить файл
           <input
             className="hidden"
             type="file"
-            accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
+            accept="image/svg+xml,image/png,image/webp,image/jpeg"
             onChange={(event) => readFile(event.target.files?.[0])}
           />
         </label>
-        <button className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 font-semibold text-white md:col-span-2 xl:col-span-4">
-          <Plus size={17} /> Добавить в библиотеку
+        <button className="admin-primary-button md:col-span-2 xl:col-span-4" type="submit">
+          <Plus size={16} />
+          Добавить медиа
         </button>
       </form>
-      {message && <p className="mt-3 text-sm text-stone-600">{message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {message ? <p className="mt-4 text-sm text-stone-600">{message}</p> : null}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {assets.map((asset) => (
           <article
-            className="relative grid min-h-40 place-items-center rounded-2xl bg-stone-50 p-4 text-center"
+            className="rounded-2xl border border-stone-200 bg-stone-50 p-3"
             key={asset.id}
           >
-            <Image
-              className="h-20 w-20 object-contain"
-              src={asset.url}
-              width={80}
-              height={80}
-              unoptimized
-              alt=""
-            />
-            <div className="min-w-0">
-              <strong className="block truncate text-sm">{asset.name}</strong>
-              <small className="text-stone-500">
-                {asset.type === "ICON" ? "Иконка" : "Стикер"}
-              </small>
+            <div className="relative h-32 overflow-hidden rounded-xl bg-white">
+              <Image src={asset.url} alt={asset.name} fill className="object-contain p-4" unoptimized />
             </div>
-            <button
-              className="absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-white text-red-700 shadow-sm"
-              type="button"
-              aria-label={`Удалить ${asset.name}`}
-              onClick={() => void remove(asset.id)}
-            >
-              <Trash2 size={15} />
-            </button>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <strong className="block truncate">{asset.name}</strong>
+                <small className="text-stone-500">{asset.type === "ICON" ? "Иконка" : "Стикер"}</small>
+              </div>
+              <button
+                className="admin-danger-icon"
+                type="button"
+                onClick={() => void remove(asset.id)}
+                aria-label="Удалить медиа"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           </article>
         ))}
+        {!assets.length ? (
+          <p className="rounded-2xl bg-stone-50 p-5 text-sm text-stone-500">
+            Медиа пока не добавлены.
+          </p>
+        ) : null}
       </div>
     </section>
   );

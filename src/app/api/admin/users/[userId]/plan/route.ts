@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { writeAdminAuditLog } from "@/features/admin/server/audit-log";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 
@@ -12,8 +13,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
   try {
@@ -35,6 +37,15 @@ export async function PATCH(
       }),
     ]);
 
+    await writeAdminAuditLog({
+      actor: admin,
+      action: "user.plan.update",
+      targetType: "User",
+      targetId: userId,
+      description: `Тариф пользователя изменен на ${parsed.data.plan}`,
+      metadata: { plan: parsed.data.plan },
+    });
+
     return NextResponse.json({ user });
   } catch (error) {
     console.error("User plan update failed", error);
@@ -49,7 +60,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  if (!(await getCurrentAdmin())) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
 
@@ -59,6 +71,15 @@ export async function DELETE(
       prisma.order.deleteMany({ where: { userId } }),
       prisma.user.delete({ where: { id: userId } }),
     ]);
+
+    await writeAdminAuditLog({
+      actor: admin,
+      action: "user.delete",
+      targetType: "User",
+      targetId: userId,
+      description: "Удален пользователь",
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("User delete failed", error);

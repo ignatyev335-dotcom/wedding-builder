@@ -5,7 +5,7 @@ import { CookieBanner } from "@/features/legal/ui/cookie-banner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vowly - свадебный сайт за несколько минут",
+  title: "Vowly — свадебный сайт за несколько минут",
   description:
     "Создайте красивое свадебное приглашение без страха чистого листа.",
 };
