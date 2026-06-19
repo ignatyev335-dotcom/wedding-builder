@@ -64,13 +64,7 @@ const packages: Array<{
 
 const currency = new Intl.NumberFormat("ru-RU");
 
-type RequestCodeResponse = {
-  displayValue?: string;
-  devCode?: string;
-  error?: string;
-};
-
-type VerifyCodeResponse = {
+type PasswordAuthResponse = {
   error?: string;
 };
 
@@ -105,11 +99,9 @@ export function PackagesPanel() {
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [authIdentity, setAuthIdentity] = useState("");
-  const [authCode, setAuthCode] = useState("");
-  const [authDisplayValue, setAuthDisplayValue] = useState("");
-  const [authDevCode, setAuthDevCode] = useState("");
-  const [authStep, setAuthStep] = useState<"identity" | "code">("identity");
+  const [authPassword, setAuthPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [botUsername, setBotUsername] = useState("");
@@ -168,53 +160,29 @@ export function PackagesPanel() {
     setPublishSuccess("Ссылка скопирована. Можно отправлять гостям.");
   };
 
-  const requestAuthCode = async (event: React.FormEvent) => {
+  const submitPasswordAuth = async (event: React.FormEvent) => {
     event.preventDefault();
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      const response = await fetch("/api/auth/request-code", {
+      const response = await fetch("/api/auth/password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identity: authIdentity }),
+        body: JSON.stringify({
+          identity: authIdentity,
+          password: authPassword,
+          mode: authMode,
+        }),
       });
-      const payload = (await response.json()) as RequestCodeResponse;
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Не удалось отправить код.");
-      }
-
-      setAuthDisplayValue(payload.displayValue ?? authIdentity);
-      setAuthDevCode(payload.devCode ?? "");
-      setAuthStep("code");
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : "Не удалось отправить код.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const verifyAuthCode = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setAuthLoading(true);
-    setAuthError("");
-
-    try {
-      const response = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identity: authIdentity, code: authCode }),
-      });
-      const payload = (await response.json()) as VerifyCodeResponse;
+      const payload = (await response.json()) as PasswordAuthResponse;
 
       if (!response.ok) {
         throw new Error(payload.error || "Не удалось войти.");
       }
 
       setAuthRequired(false);
-      setAuthCode("");
-      setAuthStep("identity");
+      setAuthPassword("");
       await publishSite();
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Не удалось войти.");
@@ -324,57 +292,60 @@ export function PackagesPanel() {
               </p>
             </div>
 
-            {authStep === "identity" ? (
-              <form className="publish-auth-form" onSubmit={requestAuthCode}>
-                <label>
-                  <span>Почта или телефон</span>
-                  <input
-                    required
-                    value={authIdentity}
-                    placeholder="hello@example.ru или 89091234567"
-                    autoComplete="email tel"
-                    onChange={(event) => setAuthIdentity(event.target.value)}
-                  />
-                </label>
-                <button type="submit" disabled={authLoading}>
-                  {authLoading ? "Отправляем код..." : "Получить код"}
-                </button>
-              </form>
-            ) : (
-              <form className="publish-auth-form" onSubmit={verifyAuthCode}>
-                <label>
-                  <span>Код из сообщения</span>
-                  <input
-                    required
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={authCode}
-                    placeholder="000000"
-                    onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  />
-                </label>
-                <button type="submit" disabled={authLoading || authCode.length !== 6}>
-                  {authLoading ? "Проверяем..." : "Войти и оживить сайт"}
-                </button>
-                <button
-                  className="publish-auth-link"
-                  type="button"
-                  disabled={authLoading}
-                  onClick={() => {
-                    setAuthStep("identity");
-                    setAuthCode("");
-                    setAuthError("");
-                  }}
-                >
-                  Изменить почту или телефон
-                </button>
-                <p>
-                  Код отправлен на <strong>{authDisplayValue}</strong>.
-                  {authDevCode ? <> Для локальной проверки: <strong>{authDevCode}</strong></> : null}
-                </p>
-              </form>
-            )}
+            <div className="auth-mode-tabs" aria-label="Выбор сценария входа">
+              <button
+                className={authMode === "login" ? "is-active" : ""}
+                type="button"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthError("");
+                }}
+              >
+                Войти
+              </button>
+              <button
+                className={authMode === "register" ? "is-active" : ""}
+                type="button"
+                onClick={() => {
+                  setAuthMode("register");
+                  setAuthError("");
+                }}
+              >
+                Зарегистрироваться
+              </button>
+            </div>
+
+            <form className="publish-auth-form" onSubmit={submitPasswordAuth}>
+              <label>
+                <span>Почта или телефон</span>
+                <input
+                  required
+                  value={authIdentity}
+                  placeholder="hello@example.ru или 89091234567"
+                  autoComplete="email tel"
+                  onChange={(event) => setAuthIdentity(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Пароль</span>
+                <input
+                  required
+                  type="password"
+                  minLength={8}
+                  value={authPassword}
+                  placeholder="Минимум 8 символов"
+                  autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={authLoading || authPassword.length < 8}>
+                {authLoading
+                  ? "Сохраняем..."
+                  : authMode === "login"
+                    ? "Войти и оживить сайт"
+                    : "Создать аккаунт и оживить сайт"}
+              </button>
+            </form>
 
             {authError ? <p className="telegram-error">{authError}</p> : null}
             <AuthProviderButtons redirectTo={typeof window !== "undefined" ? window.location.href : "/dashboard"} />

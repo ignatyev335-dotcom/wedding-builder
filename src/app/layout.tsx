@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Vowly — свадебный сайт за несколько минут",
   description:
-    "Создайте красивое свадебное приглашение без страха чистого листа.",
+    "Создайте красивое свадебное приглашение, RSVP и список гостей без страха чистого листа.",
 };
 
 export default function RootLayout({
