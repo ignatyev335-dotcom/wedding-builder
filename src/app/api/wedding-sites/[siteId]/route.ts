@@ -56,6 +56,7 @@ export async function PATCH(
     );
   }
 
+  const origin = new URL(request.url).origin;
   const site = await prisma.weddingSite.update({
     where: { id: siteId },
     data: {
@@ -67,8 +68,11 @@ export async function PATCH(
             ? null
             : undefined,
     },
-    select: { id: true, status: true, publishedAt: true },
+    select: { id: true, slug: true, status: true, publishedAt: true },
   });
 
-  return NextResponse.json(site);
+  return NextResponse.json({
+    ...site,
+    publicUrl: `${origin}/wedding/${site.slug}`,
+  });
 }

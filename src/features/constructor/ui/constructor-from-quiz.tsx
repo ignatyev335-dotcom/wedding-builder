@@ -35,6 +35,7 @@ export function ConstructorFromQuiz() {
     decorativeAsset: null,
     platformContent: defaultPlatformContent,
     fontCode: "PLAYFAIR",
+    customFont: null,
     blockOrder: [
       "COUNTDOWN",
       "TIMELINE",

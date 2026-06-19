@@ -27,8 +27,8 @@ import type {
   CardStyleCode,
   ContentBlockCode,
   CountdownStyleCode,
+  CustomFontOption,
   DesignThemeOption,
-  FontCode,
   InvitationTemplateOption,
   PhotoMaskCode,
 } from "@/entities/wedding/model";
@@ -62,7 +62,7 @@ const tabs: Array<{ id: ConstructorTab; label: string; icon: typeof FileText }> 
   { id: "music", label: "Музыка", icon: Music2 },
   { id: "media", label: "Фото", icon: Images },
   { id: "guests", label: "Гости", icon: UsersRound },
-  { id: "after", label: "После", icon: Heart },
+  { id: "after", label: "После свадьбы", icon: Heart },
   { id: "crew", label: "Команда", icon: Clock3 },
   { id: "publish", label: "Публикация", icon: Upload },
 ];
@@ -124,29 +124,18 @@ const photoMaskOptions: Array<{ code: PhotoMaskCode; title: string }> = [
   { code: "OVAL", title: "Овал" },
 ];
 
-const fontOptions: Array<{
-  code: FontCode;
-  title: string;
-  description: string;
-  sample: string;
-}> = [
-  { code: "CORMORANT", title: "Cormorant", description: "Аристократичная классика", sample: "Александр & Валентина" },
-  { code: "ORANIENBAUM", title: "Oranienbaum", description: "Строгая русская антиква", sample: "Свадебный вечер" },
-  { code: "MARCK", title: "Marck Script", description: "Легкая каллиграфия", sample: "С любовью" },
-  { code: "CAVEAT", title: "Caveat", description: "Живой рукописный акцент", sample: "До встречи!" },
-  { code: "BAD_SCRIPT", title: "Bad Script", description: "Нежная рукописность", sample: "Мы ждем вас" },
-  { code: "PLAYFAIR", title: "Playfair Display", description: "Глянцевая редакционная подача", sample: "Save the Date" },
-  { code: "MONTSERRAT", title: "Montserrat", description: "Чистый современный гротеск", sample: "Vowly" },
-];
-
 const cardStyleOptions: Array<{
   code: CardStyleCode;
   title: string;
   description: string;
 }> = [
   { code: "PLAIN", title: "Классика", description: "Чистые спокойные карточки" },
+  { code: "ROUNDED", title: "Мягкие углы", description: "Большие радиусы и уютная пластика" },
+  { code: "SHARP", title: "Прямые формы", description: "Строгая сетка без скруглений" },
   { code: "GLASS", title: "Матовое стекло", description: "Полупрозрачность и мягкий blur" },
   { code: "LIQUID", title: "Liquid Glass", description: "Прозрачный объем в духе Apple" },
+  { code: "FLOATING", title: "Парящие блоки", description: "Воздух, тени и легкий объем" },
+  { code: "AURORA", title: "Аврора", description: "Мягкое градиентное свечение" },
   { code: "EDITORIAL", title: "Журнал", description: "Крупная типографика и тонкие линии" },
   { code: "SILK", title: "Шелк", description: "Мягкие светлые слои и тени" },
   { code: "MONOGRAM", title: "Вензель", description: "Тонкая рамка с акцентом" },
@@ -183,16 +172,28 @@ export function ConstructorSidebar({
     InvitationTemplateOption[]
   >([]);
   const [catalogThemes, setCatalogThemes] = useState<DesignThemeOption[]>([]);
+  const [catalogFonts, setCatalogFonts] = useState<CustomFontOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [musicError, setMusicError] = useState("");
   const [stylePanelTab, setStylePanelTab] = useState<StylePanelTab>("THEME");
   const [draggedBlock, setDraggedBlock] = useState<ContentBlockCode | null>(null);
+  const normalizeTemplateCategory = (value?: string | null) =>
+    (value ?? "classic").trim().toLowerCase();
+  const templateCategoryAliases: Record<string, string[]> = {
+    classic: ["classic", "классика", "classic_text"],
+    warm: ["warm", "теплые", "тёплые", "heartfelt", "soul"],
+    modern: ["modern", "современные", "fresh", "new", "editorial"],
+    funny: ["funny", "humor", "humour", "с юмором", "шутливые"],
+    minimal: ["minimal", "minimalism", "минимализм"],
+  };
   const filteredTemplates =
     templateCategory === "all"
       ? catalogTemplates
-      : catalogTemplates.filter(
-          (template) => template.category === templateCategory,
+      : catalogTemplates.filter((template) =>
+          (templateCategoryAliases[templateCategory] ?? [templateCategory]).includes(
+            normalizeTemplateCategory(template.category),
+          ),
         );
   const saveExtrasQuietly = () => {
     void persistSiteExtras().catch(() => undefined);
@@ -208,7 +209,7 @@ export function ConstructorSidebar({
     mapLatitude,
     mapLongitude,
     designTheme,
-    fontCode,
+    customFont,
     photoMask,
     cardStyle,
     blockOrder,
@@ -223,8 +224,6 @@ export function ConstructorSidebar({
     colorPalette,
     dressMoodboard,
     faqItems,
-    giftPaymentLink,
-    giftQrCode,
     coordinatorName,
     coordinatorRole,
     coordinatorPhoto,
@@ -256,7 +255,7 @@ export function ConstructorSidebar({
     setVenueAddress,
     setMapCoordinates,
     setDesignTheme,
-    setFontCode,
+    setCustomFont,
     setPhotoMask,
     setCardStyle,
     reorderBlocks,
@@ -277,8 +276,6 @@ export function ConstructorSidebar({
     addFaqItem,
     updateFaqItem,
     removeFaqItem,
-    setGiftPaymentLink,
-    setGiftQrCode,
     setCoordinatorField,
     addCrewTiming,
     updateCrewTiming,
@@ -323,6 +320,7 @@ export function ConstructorSidebar({
           tracks: AudioTrackOption[];
           templates: InvitationTemplateOption[];
           designThemes: DesignThemeOption[];
+          customFonts: CustomFontOption[];
         };
       })
       .then((catalog) => {
@@ -330,6 +328,7 @@ export function ConstructorSidebar({
         setCatalogTracks(catalog.tracks);
         setCatalogTemplates(catalog.templates);
         setCatalogThemes(catalog.designThemes);
+        setCatalogFonts(catalog.customFonts ?? []);
         setCatalogError("");
       })
       .catch(() => {
@@ -573,60 +572,17 @@ export function ConstructorSidebar({
                         />
                         {openSections.includes("WISHLIST") && (
                           <div className="accordion-body wishlist-editor">
-                            <label className="constructor-field">
-                              <span>Ссылка для дистанционного подарка</span>
-                              <input
-                                type="url"
-                                value={giftPaymentLink}
-                                placeholder="https://pay.example.ru/..."
-                                onChange={(event) =>
-                                  setGiftPaymentLink(event.target.value)
-                                }
-                                onBlur={saveExtrasQuietly}
-                              />
-                            </label>
-                            <div className="gift-qr-editor">
+                            <div className="wishlist-intro-card">
+                              <Gift size={18} />
                               <div>
-                                <strong>QR-код для подарка</strong>
-                                <small>Покажем гостю, если он не сможет прийти</small>
+                                <strong>Вишлист без неловкости</strong>
+                                <small>
+                                  Добавьте идеи подарков или впечатлений. Гости увидят аккуратные карточки со ссылками, без QR-кодов и просьб о дистанционном переводе.
+                                </small>
                               </div>
-                              {giftQrCode ? (
-                                <figure>
-                                  <Image
-                                    src={giftQrCode}
-                                    alt="QR-код подарка"
-                                    fill
-                                    unoptimized
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setGiftQrCode(null);
-                                      window.setTimeout(saveExtrasQuietly, 0);
-                                    }}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                </figure>
-                              ) : (
-                                <label>
-                                  <Upload size={16} />
-                                  Загрузить QR
-                                  <input
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    onChange={(event) =>
-                                      void uploadSingleImage(
-                                        event.target.files?.[0],
-                                        setGiftQrCode,
-                                      )
-                                    }
-                                  />
-                                </label>
-                              )}
                             </div>
                             <label className="constructor-field">
-                              <span>Пожелание гостям</span>
+                              <span>Текст перед вишлистом</span>
                               <textarea
                                 value={wishlistText}
                                 onChange={(event) => setWishlistText(event.target.value)}
@@ -688,12 +644,7 @@ export function ConstructorSidebar({
                                 <input
                                   value={item.url}
                                   aria-label="Ссылка на подарок"
-                                  placeholder={
-                                    item.type === "EXPERIENCE"
-                                      ? "Используется общая ссылка"
-                                      : "https://..."
-                                  }
-                                  disabled={item.type === "EXPERIENCE"}
+                                  placeholder="https://..."
                                   onChange={(event) =>
                                     updateWishlistItem(item.id, "url", event.target.value)
                                   }
@@ -717,7 +668,7 @@ export function ConstructorSidebar({
                               disabled={wishlistItems.length >= 8}
                               onClick={addWishlistItem}
                             >
-                              <Plus size={16} /> Добавить ссылку
+                              <Plus size={16} /> Добавить подарок
                             </button>
                           </div>
                         )}
@@ -1037,7 +988,7 @@ export function ConstructorSidebar({
                               </button>
                             ))}
                           </div>
-                          <div className="grid w-full grid-cols-4 justify-items-center gap-3 sm:grid-cols-6 md:grid-cols-8">
+                          <div className="palette-color-grid">
                             {colorPalette.map((color, index) => (
                               <label className="min-w-0 w-full" key={`${index}-${color}`}>
                                 <div className="relative h-12 w-12">
@@ -1088,8 +1039,8 @@ export function ConstructorSidebar({
                           )}
                           <div className="dress-moodboard-editor">
                             <div>
-                              <strong>Мудборд образов</strong>
-                              <small>{dressMoodboard.length} из 4 фотографий</small>
+                              <strong>Примеры образов</strong>
+                              <small>Загрузите до 4 фото, чтобы гостям было проще понять стиль</small>
                             </div>
                             <div className="dress-moodboard-grid">
                               {dressMoodboard.map((photo, index) => (
@@ -1115,7 +1066,7 @@ export function ConstructorSidebar({
                               {dressMoodboard.length < 4 && (
                                 <label>
                                   <Images size={18} />
-                                  <span>Добавить</span>
+                                  <span>Загрузить примеры</span>
                                   <input
                                     type="file"
                                     multiple
@@ -1381,29 +1332,46 @@ export function ConstructorSidebar({
 
             {stylePanelTab === "FONTS" && (
               <div className="style-tab-panel">
+                <style>
+                  {catalogFonts
+                    .map(
+                      (font) =>
+                        `@font-face{font-family:${JSON.stringify(font.family)};src:url(${JSON.stringify(
+                          font.fileUrl,
+                        )}) format(${JSON.stringify(font.format)});font-display:swap;}`,
+                    )
+                    .join("\n")}
+                </style>
                 <div className="editor-section-heading">
-                  <span>Шрифтовая пара</span>
-                  <small>Выберите характер текста: от строгого редакционного до рукописного</small>
+                  <span>Шрифты из админки</span>
+                  <small>Здесь отображаются только те шрифты, которые добавлены в каталог платформы</small>
                 </div>
                 <div className="font-style-picker">
-                  {fontOptions.map((option) => (
+                  {catalogFonts.map((font) => (
                     <button
-                      key={option.code}
+                      key={font.id}
                       type="button"
-                      className={`font-option-card wedding-font-${option.code.toLowerCase()} ${
-                        fontCode === option.code ? "is-selected" : ""
-                      }`}
+                      className={`font-option-card ${customFont?.id === font.id ? "is-selected" : ""}`}
                       onClick={() => {
-                        setFontCode(option.code);
+                        setCustomFont(font);
                         window.setTimeout(saveExtrasQuietly, 0);
                       }}
                     >
-                      <span>{option.sample}</span>
-                      <strong>{option.title}</strong>
-                      <small>{option.description}</small>
+                      <span style={{ fontFamily: `"${font.family}", serif` }}>
+                        Александр & Валентина
+                      </span>
+                      <strong>{font.name}</strong>
+                      <small>
+                        {font.family} · {font.format.toUpperCase()}
+                      </small>
                     </button>
                   ))}
                 </div>
+                {!catalogLoading && catalogFonts.length === 0 && (
+                  <p className="catalog-message">
+                    В админке пока нет шрифтов. Добавьте файл .woff2, .woff, .ttf или .otf, и он появится здесь.
+                  </p>
+                )}
               </div>
             )}
 
@@ -1566,9 +1534,9 @@ export function ConstructorSidebar({
         {activeTab === "after" && (
           <>
             <EditorHeading
-              eyebrow="После свадьбы"
-              title="Благодарность и фотографии"
-              description="Подготовьте спокойную версию сайта заранее: после даты свадьбы гости увидят спасибо, Love Story и ссылку на готовые фотографии."
+              eyebrow="Версия после события"
+              title="Сайт после свадьбы"
+              description="Заранее подготовьте благодарственную версию: после даты свадьбы гости увидят теплый текст, Love Story и ссылку на готовые фотографии."
             />
             <section className="post-wedding-control-card">
               <div className="post-wedding-control-main">

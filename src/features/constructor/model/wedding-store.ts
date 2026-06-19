@@ -9,6 +9,7 @@ import type {
   ContentBlockCode,
   CountdownStyleCode,
   CrewTimingItem,
+  CustomFontOption,
   DesignThemeOption,
   FontCode,
   FaqItem,
@@ -42,6 +43,7 @@ type WeddingStore = WeddingBuilderData & {
   setDesignTheme: (theme: DesignThemeOption | null) => void;
   setDecorativeAsset: (asset: MediaAssetOption | null) => void;
   setFontCode: (fontCode: FontCode) => void;
+  setCustomFont: (customFont: CustomFontOption | null) => void;
   reorderBlocks: (active: ContentBlockCode, over: ContentBlockCode) => void;
   toggleModule: (module: BuilderModule) => void;
   setMusicTrack: (
@@ -169,6 +171,7 @@ const initialState: WeddingBuilderData = {
   decorativeAsset: null,
   platformContent: defaultPlatformContent,
   fontCode: "PLAYFAIR",
+  customFont: null,
   blockOrder: [
     "COUNTDOWN",
     "TIMELINE",
@@ -276,6 +279,7 @@ export const useWeddingStore = create<WeddingStore>()(
       setDesignTheme: (designTheme) => set({ designTheme }),
       setDecorativeAsset: (decorativeAsset) => set({ decorativeAsset }),
       setFontCode: (fontCode) => set({ fontCode }),
+      setCustomFont: (customFont) => set({ customFont }),
       reorderBlocks: (active, over) =>
         set((state) => {
           const from = state.blockOrder.indexOf(active);
@@ -564,6 +568,7 @@ export const useWeddingStore = create<WeddingStore>()(
         decorativeAsset: state.decorativeAsset,
         platformContent: state.platformContent,
         fontCode: state.fontCode,
+        customFont: state.customFont,
         blockOrder: state.blockOrder,
         moduleVisibility: state.moduleVisibility,
           musicTrack: state.musicTrack,

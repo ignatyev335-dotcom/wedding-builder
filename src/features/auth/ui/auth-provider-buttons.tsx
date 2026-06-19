@@ -25,8 +25,21 @@ declare global {
 
 export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const callbackName = `vowlyTelegramLogin_${useId().replaceAll(":", "")}` as const;
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+  const [botUsername, setBotUsername] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    void fetch("/api/runtime-config", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((config: { telegramBotUsername?: string | null }) => {
+        if (isMounted) setBotUsername(config.telegramBotUsername ?? "");
+      })
+      .catch(() => undefined);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     window[callbackName] = (payload) => {

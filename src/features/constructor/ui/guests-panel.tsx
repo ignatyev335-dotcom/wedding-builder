@@ -1,6 +1,17 @@
 "use client";
 
-import { Check, Copy, Plus, Tag, Trash2, UserRoundPlus, Users } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  Plus,
+  Settings2,
+  Tag,
+  Trash2,
+  type LucideIcon,
+  UserRoundPlus,
+  Users,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import type {
@@ -94,23 +105,23 @@ const rsvpQuestionOptions: Array<{
   },
   {
     key: "food",
-    title: "Предпочтения по меню",
-    description: "Мясо, рыба, веганское меню и аллергии.",
+    title: "Меню и аллергии",
+    description: "Мясо, рыба, веганское меню и важные ограничения по еде.",
   },
   {
     key: "alcohol",
     title: "Бар и напитки",
-    description: "Вино, шампанское, крепкий алкоголь или без алкоголя.",
+    description: "Вино, шампанское, крепкий алкоголь или свадьба без алкоголя.",
   },
   {
     key: "transport",
     title: "Трансфер",
-    description: "Понять, кому нужна помощь с дорогой.",
+    description: "Помогает заранее понять, кому нужна помощь с дорогой.",
   },
   {
     key: "music",
     title: "Музыкальное пожелание",
-    description: "Собрать треки, под которые гости хотят танцевать.",
+    description: "Гости смогут предложить трек, под который хотят танцевать.",
   },
 ];
 
@@ -152,7 +163,9 @@ function getInvitationUrl(siteId: string | null | undefined, token: string) {
 }
 
 function toggleTag(tags: GuestTagCode[], tag: GuestTagCode) {
-  return tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag];
+  return tags.includes(tag)
+    ? tags.filter((item) => item !== tag)
+    : [...tags, tag];
 }
 
 function getAlcoholText(values?: AlcoholPreferenceCode[] | null) {
@@ -173,6 +186,49 @@ function getTransportText(value?: TransportPreferenceCode | null) {
 function getLanguageText(value?: string | null) {
   if (!value) return languageLabels.RU;
   return languageLabels[value as LanguageCode] ?? languageLabels.RU;
+}
+
+function downloadCsv(guests: ConstructorGuest[]) {
+  const rows = [
+    [
+      "Имя",
+      "Телефон",
+      "Статус",
+      "Еда",
+      "Аллергии",
+      "Алкоголь",
+      "Транспорт",
+      "Музыка",
+    ],
+    ...guests.map((guest) => [
+      guest.partnerName ? `${guest.name} и ${guest.partnerName}` : guest.name,
+      guest.phone || "",
+      statusLabels[guest.status],
+      getFoodText(guest.foodPreference),
+      guest.allergies || "",
+      getAlcoholText(guest.alcoholPreferences),
+      getTransportText(guest.transportPreference),
+      guest.musicRequest || "",
+    ]),
+  ];
+
+  const csv = rows
+    .map((row) =>
+      row
+        .map((cell) => `"${String(cell).replaceAll('"', '""')}"`)
+        .join(";"),
+    )
+    .join("\n");
+
+  const blob = new Blob([`\uFEFF${csv}`], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "vowly-guests.csv";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export function GuestsPanel() {
@@ -203,12 +259,14 @@ export function GuestsPanel() {
   }, [customQuestions]);
 
   const guestStats = useMemo(() => {
-    const answered = guests.filter((guest) => guest.status !== "PENDING").length;
+    const accepted = guests.filter((guest) => guest.status === "ACCEPTED").length;
+    const declined = guests.filter((guest) => guest.status === "DECLINED").length;
 
     return {
       total: guests.length,
-      answered,
-      pending: guests.length - answered,
+      accepted,
+      declined,
+      pending: guests.length - accepted - declined,
     };
   }, [guests]);
 
@@ -233,7 +291,9 @@ export function GuestsPanel() {
         const data = (await response.json()) as { guests?: ConstructorGuest[] };
         if (!cancelled) setGuests(data.guests ?? []);
       } catch {
-        if (!cancelled) setError("Не удалось загрузить гостей. Попробуйте обновить страницу.");
+        if (!cancelled) {
+          setError("Не удалось загрузить гостей. Попробуйте обновить страницу.");
+        }
       }
     }
 
@@ -304,7 +364,9 @@ export function GuestsPanel() {
   async function updateGuestTags(guest: ConstructorGuest, tag: GuestTagCode) {
     const nextTags = toggleTag(guest.tags ?? [], tag);
     setGuests((items) =>
-      items.map((item) => (item.id === guest.id ? { ...item, tags: nextTags } : item)),
+      items.map((item) =>
+        item.id === guest.id ? { ...item, tags: nextTags } : item,
+      ),
     );
 
     try {
@@ -317,7 +379,7 @@ export function GuestsPanel() {
         }),
       });
     } catch {
-      setError("Теги сохранены локально, но сервер пока не ответил.");
+      setError("Теги обновлены локально, но сервер пока не ответил.");
     }
   }
 
@@ -350,7 +412,10 @@ export function GuestsPanel() {
     }
   }
 
-  async function updateRsvpQuestionSetting(key: RsvpQuestionKey, enabled: boolean) {
+  async function updateRsvpQuestionSetting(
+    key: RsvpQuestionKey,
+    enabled: boolean,
+  ) {
     setRsvpQuestionSetting(key, enabled);
 
     try {
@@ -369,7 +434,9 @@ export function GuestsPanel() {
     }
   }
 
-  function addQuestion(preset?: Pick<CustomQuestion, "title" | "type" | "options">) {
+  function addQuestion(
+    preset?: Pick<CustomQuestion, "title" | "type" | "options">,
+  ) {
     const question: CustomQuestion = {
       id: makeQuestionId(),
       title: preset?.title ?? "Новый вопрос",
@@ -399,8 +466,8 @@ export function GuestsPanel() {
           Ваши любимые гости
         </h1>
         <p className="max-w-2xl text-base leading-7 text-stone-600">
-          Здесь создаются персональные ссылки и настраивается опрос. Подробную
-          аналитику и сводки удобнее смотреть уже в личном кабинете.
+          Добавьте гостей, настройте вопросы и отправьте каждому персональную
+          ссылку. Подробную аналитику будет удобнее смотреть в личном кабинете.
         </p>
       </div>
 
@@ -410,33 +477,24 @@ export function GuestsPanel() {
         </div>
       ) : null}
 
-      <div className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#edf3eb] text-[#51664f]">
-              <Users size={24} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#51664f]">
-                Список приглашений
-              </p>
-              <p className="mt-1 text-base text-stone-600">
-                Добавлено гостей: <b className="text-stone-950">{guestStats.total}</b>
-              </p>
-            </div>
+      <div className="grid gap-3 md:grid-cols-4">
+        {(
+          [
+          ["Всего гостей", guestStats.total, Users],
+          ["Подтвердили", guestStats.accepted, Check],
+          ["Отказались", guestStats.declined, Trash2],
+          ["Ждем ответ", guestStats.pending, Copy],
+          ] as Array<[string, number, LucideIcon]>
+        ).map(([label, value, Icon]) => (
+          <div
+            className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm"
+            key={String(label)}
+          >
+            <Icon className="text-[#51664f]" size={20} />
+            <p className="mt-5 text-3xl font-semibold text-stone-950">{value}</p>
+            <p className="mt-1 text-sm text-stone-500">{label}</p>
           </div>
-
-          <div className="grid grid-cols-2 gap-3 text-center sm:flex sm:items-center">
-            <div className="rounded-2xl bg-stone-50 px-5 py-3">
-              <p className="text-2xl font-semibold text-stone-950">{guestStats.answered}</p>
-              <p className="text-xs uppercase tracking-[0.18em] text-stone-500">ответили</p>
-            </div>
-            <div className="rounded-2xl bg-stone-50 px-5 py-3">
-              <p className="text-2xl font-semibold text-stone-950">{guestStats.pending}</p>
-              <p className="text-xs uppercase tracking-[0.18em] text-stone-500">ждут</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
@@ -447,7 +505,7 @@ export function GuestsPanel() {
           <div>
             <h2 className="text-xl font-semibold text-stone-950">Добавить гостя</h2>
             <p className="mt-1 text-base text-stone-600">
-              Ссылка создастся автоматически. Ее можно сразу отправить в мессенджер.
+              Ссылка создастся автоматически. Ее можно сразу отправить гостю.
             </p>
           </div>
         </div>
@@ -480,7 +538,9 @@ export function GuestsPanel() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1.3fr]">
           <label className="space-y-2">
-            <span className="text-sm font-medium text-stone-600">Язык приглашения</span>
+            <span className="text-sm font-medium text-stone-600">
+              Язык приглашения
+            </span>
             <select
               value={guestForm.inviteLanguage}
               onChange={(event) =>
@@ -596,20 +656,21 @@ export function GuestsPanel() {
       </section>
 
       <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="section-kicker">Умный опрос гостей</p>
             <h2 className="mt-2 text-2xl font-semibold text-stone-950">
-              Какие вопросы задавать
+              Настройки вопросов
             </h2>
             <p className="mt-2 max-w-2xl text-base text-stone-600">
-              Оставьте только то, что действительно нужно вашей свадьбе. Если
-              алкоголя нет, просто выключите этот пункт.
+              Включите только то, что нужно вашей свадьбе. Если алкоголя не будет
+              или меню не выбирается заранее, просто выключите эти вопросы.
             </p>
           </div>
-          {isSavingQuestions ? (
-            <span className="text-sm text-stone-500">Сохраняем...</span>
-          ) : null}
+          <div className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-medium text-stone-600">
+            <Settings2 size={16} />
+            {isSavingQuestions ? "Сохраняем..." : "Гибкая анкета"}
+          </div>
         </div>
 
         <div className="mt-6 grid gap-3">
@@ -622,7 +683,9 @@ export function GuestsPanel() {
                 className="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50 p-4"
               >
                 <div>
-                  <p className="text-base font-semibold text-stone-950">{option.title}</p>
+                  <p className="text-base font-semibold text-stone-950">
+                    {option.title}
+                  </p>
                   <p className="mt-1 text-sm leading-6 text-stone-500">
                     {option.description}
                   </p>
@@ -631,9 +694,7 @@ export function GuestsPanel() {
                   type="button"
                   role="switch"
                   aria-checked={enabled}
-                  onClick={() =>
-                    void updateRsvpQuestionSetting(option.key, !enabled)
-                  }
+                  onClick={() => void updateRsvpQuestionSetting(option.key, !enabled)}
                   className={`switch shrink-0 transition-all duration-200 ${
                     enabled ? "is-on" : ""
                   }`}
@@ -648,11 +709,9 @@ export function GuestsPanel() {
         <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-stone-950">
-                Свои вопросы
-              </h3>
+              <h3 className="text-lg font-semibold text-stone-950">Свои вопросы</h3>
               <p className="mt-1 text-sm text-stone-500">
-                Можно добавить 1-2 вопроса под особенности вашей свадьбы.
+                Добавьте 1-2 вопроса под особенности вашего праздника.
               </p>
             </div>
             <button
@@ -756,29 +815,39 @@ export function GuestsPanel() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                ["ALL", "Все"],
-                ["ACCEPTED", "Придут"],
-                ["DECLINED", "Не придут"],
-                ["PENDING", "Ждем ответ"],
-              ] as Array<[GuestFilter, string]>
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setFilter(value)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                  filter === value
-                    ? "bg-stone-950 text-white"
-                    : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => downloadCsv(guests)}
+            disabled={!guests.length}
+            className="secondary-action whitespace-nowrap"
+          >
+            <Download size={16} />
+            Скачать CSV
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {(
+            [
+              ["ALL", "Все"],
+              ["ACCEPTED", "Придут"],
+              ["DECLINED", "Не придут"],
+              ["PENDING", "Ждем ответ"],
+            ] as Array<[GuestFilter, string]>
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                filter === value
+                  ? "bg-stone-950 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {filteredGuests.length ? (

@@ -47,6 +47,7 @@ export async function persistSiteExtras() {
       rsvpQuestionSettings: state.rsvpQuestionSettings,
       customQuestions: state.customQuestions,
       fontCode: state.fontCode,
+      customFont: state.customFont,
       blockOrder: state.blockOrder,
       ceremonyTime: state.ceremonyTime,
       venueName: state.venueName,

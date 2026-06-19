@@ -11,6 +11,16 @@ export type AdminMediaAsset = {
   url: string;
 };
 
+const maxImageSize = 1_500_000;
+const imageExtensions = [".svg", ".png", ".jpg", ".jpeg", ".webp"];
+
+function isImageFile(file: File) {
+  return (
+    file.type.startsWith("image/") ||
+    imageExtensions.some((extension) => file.name.toLowerCase().endsWith(extension))
+  );
+}
+
 export function MediaManagerPanel({
   initialAssets,
 }: {
@@ -21,11 +31,13 @@ export function MediaManagerPanel({
   const [type, setType] = useState<AdminMediaAsset["type"]>("ICON");
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const readFile = (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 1_500_000) {
-      setMessage("Выберите SVG, PNG или WebP размером до 1,5 МБ.");
+    if (!isImageFile(file) || file.size > maxImageSize) {
+      setMessage("Выберите SVG, PNG, JPG или WebP размером до 1,5 МБ.");
       return;
     }
     const reader = new FileReader();
@@ -36,36 +48,57 @@ export function MediaManagerPanel({
   const add = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
+    setIsSaving(true);
 
-    const response = await fetch("/api/admin/media-assets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type, url }),
-    });
-    const result = (await response.json()) as {
-      error?: string;
-      asset?: AdminMediaAsset;
-    };
-    if (!response.ok || !result.asset) {
-      setMessage(result.error || "Не удалось добавить медиа.");
-      return;
+    try {
+      const response = await fetch("/api/admin/media-assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, type, url }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        asset?: AdminMediaAsset;
+      };
+      if (!response.ok || !result.asset) {
+        throw new Error(result.error || "Не удалось добавить медиа.");
+      }
+
+      setAssets((items) => [result.asset!, ...items]);
+      setName("");
+      setUrl("");
+      setMessage("Медиа добавлено в библиотеку конструктора.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось добавить медиа.");
+    } finally {
+      setIsSaving(false);
     }
-
-    setAssets((items) => [result.asset!, ...items]);
-    setName("");
-    setUrl("");
-    setMessage("Медиа добавлено в библиотеку конструктора.");
   };
 
   const remove = async (id: string) => {
-    const response = await fetch(`/api/admin/media-assets?id=${id}`, {
-      method: "DELETE",
-    });
-    if (response.ok) setAssets((items) => items.filter((item) => item.id !== id));
+    setDeletingId(id);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/media-assets?id=${id}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось удалить медиа.");
+      }
+      setAssets((items) => items.filter((item) => item.id !== id));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось удалить медиа.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
-    <section className="mx-auto mt-8 max-w-[1500px] rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+    <section className="admin-panel">
       <header className="mb-6 flex items-start gap-3">
         <span className="grid h-11 w-11 place-items-center rounded-2xl bg-stone-900 text-white">
           <ImagePlus size={21} />
@@ -108,13 +141,13 @@ export function MediaManagerPanel({
           <input
             className="hidden"
             type="file"
-            accept="image/svg+xml,image/png,image/webp,image/jpeg"
+            accept="image/svg+xml,image/png,image/webp,image/jpeg,.svg,.png,.jpg,.jpeg,.webp"
             onChange={(event) => readFile(event.target.files?.[0])}
           />
         </label>
-        <button className="admin-primary-button md:col-span-2 xl:col-span-4" type="submit">
+        <button className="admin-primary-button md:col-span-2 xl:col-span-4" type="submit" disabled={isSaving}>
           <Plus size={16} />
-          Добавить медиа
+          {isSaving ? "Добавляем..." : "Добавить медиа"}
         </button>
       </form>
 
@@ -138,6 +171,7 @@ export function MediaManagerPanel({
                 className="admin-danger-icon"
                 type="button"
                 onClick={() => void remove(asset.id)}
+                disabled={deletingId === asset.id}
                 aria-label="Удалить медиа"
               >
                 <Trash2 size={16} />

@@ -7,6 +7,7 @@ import {
   type ContentBlockCode,
   type CountdownStyleCode,
   type CustomQuestion,
+  type CustomFontOption,
   type FontCode,
   type FaqItem,
   type RsvpQuestionKey,
@@ -38,6 +39,7 @@ export type SiteExtras = {
   postWeddingPhotoUrl: string;
   postWeddingThankYouText: string;
   fontCode: FontCode;
+  customFont: CustomFontOption | null;
   blockOrder: ContentBlockCode[];
   customMusicDataUrl: string | null;
   customMusicName: string | null;
@@ -67,6 +69,7 @@ export const defaultSiteExtras: SiteExtras = {
   postWeddingThankYouText:
     "Спасибо, что разделили с нами этот день. Мы собрали здесь фотографии, к которым хочется возвращаться снова и снова.",
   fontCode: "PLAYFAIR",
+  customFont: null,
   blockOrder: [...contentBlockCodes],
   customMusicDataUrl: null,
   customMusicName: null,
@@ -187,6 +190,9 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
       fontCode: fontCodes.includes(parsed.fontCode as FontCode)
         ? (parsed.fontCode as FontCode)
         : "PLAYFAIR",
+      customFont: isCustomFontOption(parsed.customFont)
+        ? parsed.customFont
+        : null,
       blockOrder: Array.isArray(parsed.blockOrder)
         ? [
             ...parsed.blockOrder.filter(
@@ -229,6 +235,18 @@ export function parseSiteExtras(value: string | null | undefined): SiteExtras {
   } catch {
     return defaultSiteExtras;
   }
+}
+
+function isCustomFontOption(value: unknown): value is CustomFontOption {
+  if (!value || typeof value !== "object") return false;
+  const font = value as Partial<CustomFontOption>;
+  return (
+    typeof font.id === "string" &&
+    typeof font.name === "string" &&
+    typeof font.family === "string" &&
+    typeof font.fileUrl === "string" &&
+    typeof font.format === "string"
+  );
 }
 
 export function parseCustomQuestions(

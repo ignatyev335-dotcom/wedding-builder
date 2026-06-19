@@ -12,7 +12,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { PackageCode } from "@/entities/wedding/model";
 import { AuthProviderButtons } from "@/features/auth/ui/auth-provider-buttons";
@@ -77,6 +77,7 @@ type VerifyCodeResponse = {
 type PublishResponse = {
   code?: string;
   error?: string;
+  publicUrl?: string;
 };
 
 export function PackagesPanel() {
@@ -111,8 +112,22 @@ export function PackagesPanel() {
   const [authStep, setAuthStep] = useState<"identity" | "code">("identity");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [botUsername, setBotUsername] = useState("");
 
   const selected = packages.find((item) => item.code === selectedPackage) ?? packages[0];
+
+  useEffect(() => {
+    let isMounted = true;
+    void fetch("/api/runtime-config", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((config: { telegramBotUsername?: string | null }) => {
+        if (isMounted) setBotUsername(config.telegramBotUsername ?? "");
+      })
+      .catch(() => undefined);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const saveSettings = () => {
     window.setTimeout(() => {
@@ -125,7 +140,6 @@ export function PackagesPanel() {
   const connectTelegram = async () => {
     setIsConnecting(true);
     setTelegramError("");
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 
     if (!siteId || siteId === "quiz-draft") {
       setTelegramError("Сначала сохраните проект, затем подключите Telegram.");
@@ -134,7 +148,7 @@ export function PackagesPanel() {
     }
 
     if (!botUsername) {
-      setTelegramError("Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME в настройках проекта.");
+      setTelegramError("Укажите username Telegram-бота в админке: Ключи и интеграции.");
       setIsConnecting(false);
       return;
     }
@@ -239,7 +253,7 @@ export function PackagesPanel() {
         throw new Error(payload.error || "Не удалось опубликовать сайт.");
       }
 
-      setPublishedUrl(publicUrl);
+      setPublishedUrl(payload.publicUrl || publicUrl);
       setPublishSuccess("Сайт опубликован. Теперь можно копировать ссылку и отправлять гостям.");
     } catch (error) {
       setPublishError(error instanceof Error ? error.message : "Не удалось оживить сайт.");

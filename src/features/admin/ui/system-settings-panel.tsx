@@ -127,6 +127,11 @@ export function SystemSettingsPanel({
       const data = (await response.json()) as {
         error?: string;
         setting?: Omit<SettingRow, "maskedValue" | "isSecret">;
+        runtime?: {
+          appliedImmediately: boolean;
+          requiresRestart: boolean;
+          message: string;
+        };
       };
       if (!response.ok || !data.setting) {
         throw new Error(data.error ?? "Не удалось сохранить настройку.");
@@ -149,7 +154,10 @@ export function SystemSettingsPanel({
         value: "",
         isSecret: true,
       });
-      setMessage("Настройка сохранена. Telegram, почта, карты и платежные проверки подхватят ее сразу.");
+      setMessage(
+        data.runtime?.message ??
+          "Настройка сохранена. Telegram, почта, карты и платежные проверки подхватят ее сразу.",
+      );
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Не удалось сохранить ключ.",

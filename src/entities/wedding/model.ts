@@ -248,8 +248,12 @@ export type PhotoMaskCode = (typeof photoMaskCodes)[number];
 
 export const cardStyleCodes = [
   "PLAIN",
+  "ROUNDED",
+  "SHARP",
   "GLASS",
   "LIQUID",
+  "FLOATING",
+  "AURORA",
   "EDITORIAL",
   "SILK",
   "MONOGRAM",
@@ -287,6 +291,7 @@ export type WeddingBuilderData = {
   decorativeAsset: MediaAssetOption | null;
   platformContent: PlatformContentConfig;
   fontCode: FontCode;
+  customFont: CustomFontOption | null;
   blockOrder: ContentBlockCode[];
   moduleVisibility: Record<BuilderModule, boolean>;
   musicTrack: string | null;

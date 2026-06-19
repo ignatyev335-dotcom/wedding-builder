@@ -1,4 +1,4 @@
-import { CalendarDays, Heart } from "lucide-react";
+import { CalendarDays, Car, GlassWater, Heart, Utensils } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -16,6 +16,21 @@ const statusLabels = {
   ARCHIVED: "Деактивирован",
 } as const;
 
+const statusLabelsForGuest = {
+  ACCEPTED: "Придет",
+  DECLINED: "Не придет",
+  PENDING: "Ждем ответ",
+} as const;
+
+function parseAlcoholPreferences(value: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(value || "[]") as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user || user.provider === "ANONYMOUS") redirect("/login");
@@ -26,7 +41,21 @@ export default async function AccountPage() {
     orderBy: { updatedAt: "desc" },
     include: {
       data: true,
-      guests: { select: { status: true } },
+      guests: {
+        orderBy: [{ respondedAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          alcoholPreferences: true,
+          foodPreference: true,
+          partnerFoodPreference: true,
+          needsTransport: true,
+          transportPreference: true,
+          respondedAt: true,
+          createdAt: true,
+        },
+      },
       _count: { select: { guests: true } },
     },
   });
@@ -61,6 +90,42 @@ export default async function AccountPage() {
             const responseProgress = site.guests.length
               ? Math.round(((accepted + declined) / site.guests.length) * 100)
               : 0;
+            const pending = site.guests.length - accepted - declined;
+            const wine = site.guests.filter((guest) =>
+              parseAlcoholPreferences(guest.alcoholPreferences).includes("WINE"),
+            ).length;
+            const champagne = site.guests.filter((guest) =>
+              parseAlcoholPreferences(guest.alcoholPreferences).includes("CHAMPAGNE"),
+            ).length;
+            const strongAlcohol = site.guests.filter((guest) =>
+              parseAlcoholPreferences(guest.alcoholPreferences).includes("STRONG"),
+            ).length;
+            const noAlcohol = site.guests.filter((guest) =>
+              parseAlcoholPreferences(guest.alcoholPreferences).includes("NONE"),
+            ).length;
+            const transferCount = site.guests.filter(
+              (guest) =>
+                guest.needsTransport ||
+                guest.transportPreference === "TRANSFER",
+            ).length;
+            const menuStats = site.guests.reduce<Record<string, number>>(
+              (accumulator, guest) => {
+                [guest.foodPreference, guest.partnerFoodPreference]
+                  .filter(Boolean)
+                  .forEach((item) => {
+                    const label = item || "Не выбрано";
+                    accumulator[label] = (accumulator[label] ?? 0) + 1;
+                  });
+                return accumulator;
+              },
+              {},
+            );
+            const topMenu = Object.entries(menuStats)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3);
+            const latestResponses = site.guests
+              .filter((guest) => guest.respondedAt)
+              .slice(0, 4);
             const daysLeft = site.data
               ? Math.max(
                   0,
@@ -115,6 +180,52 @@ export default async function AccountPage() {
                     <strong>{responseProgress}%</strong>
                   </div>
                   <i><b style={{ width: `${responseProgress}%` }} /></i>
+                </div>
+                <div className="account-guest-command">
+                  <article>
+                    <span><Heart size={16} /> Гости</span>
+                    <strong>{site.guests.length}</strong>
+                    <small>{accepted} придут · {declined} отказались · {pending} ждут</small>
+                  </article>
+                  <article>
+                    <span><GlassWater size={16} /> Бар</span>
+                    <strong>{wine + champagne + strongAlcohol}</strong>
+                    <small>
+                      Вино {wine} · Шампанское {champagne} · Крепкое {strongAlcohol} · Не пьют {noAlcohol}
+                    </small>
+                  </article>
+                  <article>
+                    <span><Car size={16} /> Трансфер</span>
+                    <strong>{transferCount}</strong>
+                    <small>гостей отметили, что им нужна помощь с дорогой</small>
+                  </article>
+                  <article>
+                    <span><Utensils size={16} /> Меню</span>
+                    <strong>{topMenu[0]?.[0] ?? "Пока нет"}</strong>
+                    <small>
+                      {topMenu.length
+                        ? topMenu.map(([label, count]) => `${label}: ${count}`).join(" · ")
+                        : "Предпочтения появятся после первых ответов"}
+                    </small>
+                  </article>
+                </div>
+                <div className="account-latest-rsvp">
+                  <div>
+                    <strong>Последние ответы</strong>
+                    <Link href={`/constructor?siteId=${site.id}&tab=guests`}>
+                      Открыть CRM
+                    </Link>
+                  </div>
+                  {latestResponses.length ? (
+                    latestResponses.map((guest) => (
+                      <span key={guest.id}>
+                        <b>{guest.name}</b>
+                        <i>{statusLabelsForGuest[guest.status]}</i>
+                      </span>
+                    ))
+                  ) : (
+                    <p>Когда гости начнут отвечать на приглашения, здесь появится живая лента.</p>
+                  )}
                 </div>
                 <div className="account-project-meta">
                   <span>

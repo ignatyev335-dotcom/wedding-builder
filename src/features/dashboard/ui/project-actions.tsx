@@ -15,6 +15,8 @@ export function ProjectActions({
 }) {
   const [copied, setCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(status);
+  const [error, setError] = useState("");
 
   const copyPublicLink = async () => {
     await navigator.clipboard.writeText(`${window.location.origin}/wedding/${slug}`);
@@ -24,13 +26,33 @@ export function ProjectActions({
 
   const updateStatus = async (nextStatus: "PUBLISHED" | "ARCHIVED") => {
     setIsUpdating(true);
-    const response = await fetch(`/api/wedding-sites/${siteId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    setIsUpdating(false);
-    if (response.ok) window.location.reload();
+    setError("");
+
+    try {
+      const response = await fetch(`/api/wedding-sites/${siteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const payload = (await response.json()) as {
+        status?: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+        error?: string;
+      };
+
+      if (!response.ok || !payload.status) {
+        throw new Error(payload.error || "Не удалось обновить статус сайта.");
+      }
+
+      setCurrentStatus(payload.status);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Не удалось обновить статус сайта.",
+      );
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -45,7 +67,7 @@ export function ProjectActions({
         {copied ? <Check size={16} /> : <Copy size={16} />}
         {copied ? "Ссылка скопирована" : "Скопировать ссылку"}
       </button>
-      {status === "PUBLISHED" ? (
+      {currentStatus === "PUBLISHED" ? (
         <button
           type="button"
           disabled={isUpdating}
@@ -65,6 +87,7 @@ export function ProjectActions({
       <Link className="dashboard-open-site" href={`/wedding/${slug}`} target="_blank">
         <ExternalLink size={16} /> Открыть сайт
       </Link>
+      {error ? <p className="dashboard-action-error">{error}</p> : null}
     </div>
   );
 }

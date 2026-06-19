@@ -4,6 +4,7 @@ import { z } from "zod";
 import { writeAdminAuditLog } from "@/features/admin/server/audit-log";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
+import { settingRequiresServerRestart } from "@/lib/runtime-settings";
 import { encryptSetting } from "@/lib/system-settings";
 
 const settingSchema = z.object({
@@ -58,7 +59,17 @@ export async function POST(request: Request) {
     metadata: { key, category, isSecret },
   });
 
-  return NextResponse.json({ setting });
+  const requiresRestart = settingRequiresServerRestart(key);
+  return NextResponse.json({
+    setting,
+    runtime: {
+      appliedImmediately: !requiresRestart,
+      requiresRestart,
+      message: requiresRestart
+        ? "Настройка сохранена. Для Auth.js/OAuth она применится после перезапуска или нового деплоя."
+        : "Настройка сохранена и уже доступна серверным API.",
+    },
+  });
 }
 
 export async function DELETE(request: Request) {

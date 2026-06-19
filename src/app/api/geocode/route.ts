@@ -5,6 +5,7 @@ import {
   cleanFallbackAddress,
   formatYandexAddress,
 } from "@/features/constructor/lib/format-geocoder-address";
+import { getRuntimeSetting } from "@/lib/runtime-settings";
 
 const querySchema = z.string().trim().min(3).max(200);
 
@@ -16,8 +17,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const suggestions = process.env.YANDEX_GEOCODER_API_KEY
-      ? await getYandexSuggestions(query.data)
+    const apiKey = await getRuntimeSetting("YANDEX_GEOCODER_API_KEY");
+    const suggestions = apiKey
+      ? await getYandexSuggestions(query.data, apiKey)
       : await getOpenStreetMapSuggestions(query.data);
 
     return NextResponse.json({ suggestions });
@@ -26,9 +28,9 @@ export async function GET(request: Request) {
   }
 }
 
-async function getYandexSuggestions(query: string) {
+async function getYandexSuggestions(query: string, apiKey: string) {
   const url = new URL("https://geocode-maps.yandex.ru/v1/");
-  url.searchParams.set("apikey", process.env.YANDEX_GEOCODER_API_KEY!);
+  url.searchParams.set("apikey", apiKey);
   url.searchParams.set("geocode", query);
   url.searchParams.set("format", "json");
   url.searchParams.set("results", "6");

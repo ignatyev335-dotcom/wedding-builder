@@ -65,6 +65,7 @@ export function InvitationPreview({
     decorativeAsset,
     platformContent,
     fontCode,
+    customFont,
     blockOrder,
     moduleVisibility,
     musicTrackUrl,
@@ -225,14 +226,14 @@ export function InvitationPreview({
   const formattedDate = weddingDate
     ? monthFormatter.format(new Date(`${weddingDate}T12:00:00.000Z`))
     : "Дата вашей свадьбы";
-  const customFontFace = getDesignThemeFontFace(designTheme);
+  const customFontFace = getDesignThemeFontFace(designTheme, customFont);
 
   return (
     <article
       className={`wedding-site-preview wedding-theme-${currentTheme.toLowerCase()} wedding-font-${fontCode.toLowerCase()} photo-mask-${photoMask.toLowerCase()} card-style-${cardStyle.toLowerCase()} ${
         designTheme ? "has-dynamic-theme" : ""
       }`}
-      style={getDesignThemeStyle(designTheme)}
+      style={getDesignThemeStyle(designTheme, customFont)}
       onClick={playSelectedTrack}
     >
       {customFontFace && <style>{customFontFace}</style>}

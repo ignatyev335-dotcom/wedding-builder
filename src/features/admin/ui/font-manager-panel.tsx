@@ -8,12 +8,21 @@ import type { CustomFontOption } from "@/entities/wedding/model";
 type FontFormat = "woff2" | "woff" | "truetype" | "opentype";
 type FontSource = "file" | "url";
 
+const maxFontSize = 3 * 1024 * 1024;
+const fontExtensions = [".woff2", ".woff", ".ttf", ".otf"];
+
 function detectFontFormat(value: string): FontFormat {
   const lower = value.toLowerCase();
   if (lower.endsWith(".woff")) return "woff";
   if (lower.endsWith(".ttf")) return "truetype";
   if (lower.endsWith(".otf")) return "opentype";
   return "woff2";
+}
+
+function isFontFile(file: File) {
+  return fontExtensions.some((extension) =>
+    file.name.toLowerCase().endsWith(extension),
+  );
 }
 
 export function FontManagerPanel({
@@ -33,6 +42,13 @@ export function FontManagerPanel({
   const formRef = useRef<HTMLFormElement>(null);
 
   const uploadFont = async (file: File) => {
+    if (!isFontFile(file)) {
+      throw new Error("Загрузите шрифт .woff2, .woff, .ttf или .otf.");
+    }
+    if (file.size > maxFontSize) {
+      throw new Error("Файл шрифта слишком большой. Лимит: 3 МБ.");
+    }
+
     const formData = new FormData();
     formData.append("kind", "font");
     formData.append("file", file);

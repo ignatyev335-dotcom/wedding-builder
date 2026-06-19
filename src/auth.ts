@@ -11,6 +11,7 @@ import {
   verifyTelegramLogin,
 } from "@/lib/auth/telegram";
 import { prisma } from "@/lib/prisma";
+import { getRuntimeSetting } from "@/lib/runtime-settings";
 
 const passwordSchema = z.object({
   email: z.string().trim().email().max(200).transform((value) => value.toLowerCase()),
@@ -142,7 +143,7 @@ const providers: NextAuthConfig["providers"] = [
     async authorize(credentials) {
       try {
         const parsed = telegramSchema.safeParse(credentials);
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const botToken = await getRuntimeSetting("TELEGRAM_BOT_TOKEN");
         if (
           !parsed.success ||
           !botToken ||

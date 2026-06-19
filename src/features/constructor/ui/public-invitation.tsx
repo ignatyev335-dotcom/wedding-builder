@@ -90,7 +90,7 @@ export function PublicInvitation({
       className={`public-invitation preloader-theme-${initialData.currentTheme.toLowerCase()} ${
         initialData.designTheme ? "has-dynamic-theme" : ""
       }`}
-      style={getDesignThemeStyle(initialData.designTheme)}
+      style={getDesignThemeStyle(initialData.designTheme, initialData.customFont)}
       ref={rootRef}
     >
       <div

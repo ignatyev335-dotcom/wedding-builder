@@ -16,12 +16,16 @@ const templateCategories = [
   { value: "minimal", label: "Минимализм" },
 ] as const;
 
+const maxAudioSize = 12 * 1024 * 1024;
+
 export function ContentCatalogPanel({
   initialTracks,
   initialTemplates,
+  mode = "all",
 }: {
   initialTracks: AudioTrackOption[];
   initialTemplates: InvitationTemplateOption[];
+  mode?: "all" | "tracks" | "templates";
 }) {
   const [tracks, setTracks] = useState(initialTracks);
   const [templates, setTemplates] = useState(initialTemplates);
@@ -41,6 +45,13 @@ export function ContentCatalogPanel({
     "min-h-12 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 text-base outline-none transition focus:border-stone-500";
 
   const uploadFile = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".mp3")) {
+      throw new Error("Загрузите именно MP3-файл.");
+    }
+    if (file.size > maxAudioSize) {
+      throw new Error("MP3 слишком большой. Лимит: 12 МБ.");
+    }
+
     const formData = new FormData();
     formData.append("kind", "audio");
     formData.append("file", file);
@@ -166,127 +177,132 @@ export function ContentCatalogPanel({
 
   return (
     <section className="admin-section-grid">
-      <article className="admin-card">
-        <PanelTitle
-          icon={<Music2 size={22} />}
-          eyebrow="Каталог музыки"
-          title="Треки для приглашений"
-          description="Загружайте MP3 с компьютера. После сохранения трек сразу доступен в квизе и конструкторе."
-        />
-        <form className="grid gap-3" onSubmit={addTrack} ref={trackFormRef}>
-          <input
-            className={fieldClass}
-            required
-            placeholder="Название трека"
-            value={trackTitle}
-            onChange={(event) => setTrackTitle(event.target.value)}
+      {(mode === "all" || mode === "tracks") && (
+        <article className="admin-card">
+          <PanelTitle
+            icon={<Music2 size={22} />}
+            eyebrow="Каталог музыки"
+            title="Треки для приглашений"
+            description="Загружайте MP3 с компьютера. После сохранения трек сразу доступен в квизе и конструкторе."
           />
-          <input
-            className={fieldClass}
-            required
-            placeholder="Исполнитель или настроение"
-            value={trackArtist}
-            onChange={(event) => setTrackArtist(event.target.value)}
-          />
-          <input
-            className={fieldClass}
-            required
-            accept="audio/mpeg,audio/mp3,.mp3"
-            type="file"
-            onChange={(event) => setTrackFile(event.target.files?.[0] ?? null)}
-          />
-          <button className="admin-primary-button" disabled={isSavingTrack}>
-            {isSavingTrack ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
-            {isSavingTrack ? "Загружаем..." : "Добавить трек"}
-          </button>
-        </form>
-        <div className="mt-5 grid gap-2">
-          {tracks.map((track) => (
-            <div className="admin-list-row" key={track.id}>
-              <div className="min-w-0 flex-1">
-                <strong className="block truncate">{track.title}</strong>
-                <small className="block truncate text-stone-500">{track.artist}</small>
+          <form className="grid gap-3" onSubmit={addTrack} ref={trackFormRef}>
+            <input
+              className={fieldClass}
+              required
+              placeholder="Название трека"
+              value={trackTitle}
+              onChange={(event) => setTrackTitle(event.target.value)}
+            />
+            <input
+              className={fieldClass}
+              required
+              placeholder="Исполнитель или настроение"
+              value={trackArtist}
+              onChange={(event) => setTrackArtist(event.target.value)}
+            />
+            <input
+              className={fieldClass}
+              required
+              accept=".mp3,audio/mpeg,audio/mp3"
+              type="file"
+              onChange={(event) => setTrackFile(event.target.files?.[0] ?? null)}
+            />
+            <button className="admin-primary-button" disabled={isSavingTrack}>
+              {isSavingTrack ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
+              {isSavingTrack ? "Загружаем..." : "Добавить трек"}
+            </button>
+          </form>
+          <div className="mt-5 grid gap-2">
+            {tracks.map((track) => (
+              <div className="admin-list-row" key={track.id}>
+                <div className="min-w-0 flex-1">
+                  <strong className="block truncate">{track.title}</strong>
+                  <small className="block truncate text-stone-500">{track.artist}</small>
+                </div>
+                <audio className="hidden max-w-56 sm:block" controls preload="none" src={track.fileUrl} />
+                <button
+                  className="admin-danger-icon"
+                  type="button"
+                  aria-label={`Удалить ${track.title}`}
+                  disabled={busyId === track.id}
+                  onClick={() => void removeItem("tracks", track.id)}
+                >
+                  {busyId === track.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                </button>
               </div>
-              <audio className="hidden max-w-56 sm:block" controls preload="none" src={track.fileUrl} />
-              <button
-                className="admin-danger-icon"
-                type="button"
-                aria-label={`Удалить ${track.title}`}
-                disabled={busyId === track.id}
-                onClick={() => void removeItem("tracks", track.id)}
-              >
-                {busyId === track.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
-              </button>
-            </div>
-          ))}
-          {tracks.length === 0 && <p className="admin-muted">Библиотека музыки пока пустая.</p>}
-        </div>
-      </article>
-
-      <article className="admin-card">
-        <PanelTitle
-          icon={<Type size={22} />}
-          eyebrow="Тексты"
-          title="Шаблоны приглашений"
-          description="Разделяйте тексты по тегам: так пользователю проще выбрать тон приглашения."
-        />
-        <form className="grid gap-3" onSubmit={addTemplate}>
-          <input
-            className={fieldClass}
-            required
-            placeholder="Название шаблона"
-            value={templateTitle}
-            onChange={(event) => setTemplateTitle(event.target.value)}
-          />
-          <select
-            className={fieldClass}
-            value={templateCategory}
-            onChange={(event) => setTemplateCategory(event.target.value)}
-          >
-            {templateCategories.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
             ))}
-          </select>
-          <textarea
-            className={`${fieldClass} min-h-36 py-3`}
-            required
-            placeholder="Текст. Можно использовать {names}, {partnerOne}, {partnerTwo}."
-            value={templateContent}
-            onChange={(event) => setTemplateContent(event.target.value)}
+            {tracks.length === 0 && <p className="admin-muted">Библиотека музыки пока пустая.</p>}
+          </div>
+          {mode === "tracks" && message ? <p className="mt-4 text-sm text-stone-600">{message}</p> : null}
+        </article>
+      )}
+
+      {(mode === "all" || mode === "templates") && (
+        <article className="admin-card">
+          <PanelTitle
+            icon={<Type size={22} />}
+            eyebrow="Тексты"
+            title="Шаблоны приглашений"
+            description="Разделяйте тексты по тегам: так пользователю проще выбрать тон приглашения."
           />
-          <button className="admin-primary-button" disabled={isSavingTemplate}>
-            {isSavingTemplate ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
-            {isSavingTemplate ? "Сохраняем..." : "Добавить шаблон"}
-          </button>
-        </form>
-        <div className="mt-5 grid gap-2">
-          {templates.map((template) => (
-            <div className="admin-list-row items-start" key={template.id}>
-              <div className="min-w-0 flex-1">
-                <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500">
-                  <Tag size={12} />
-                  {templateCategories.find((item) => item.value === template.category)?.label ?? "Классические"}
-                </span>
-                <strong className="block">{template.title}</strong>
-                <p className="m-0 mt-1 line-clamp-3 text-sm text-stone-500">{template.content}</p>
+          <form className="grid gap-3" onSubmit={addTemplate}>
+            <input
+              className={fieldClass}
+              required
+              placeholder="Название шаблона"
+              value={templateTitle}
+              onChange={(event) => setTemplateTitle(event.target.value)}
+            />
+            <select
+              className={fieldClass}
+              value={templateCategory}
+              onChange={(event) => setTemplateCategory(event.target.value)}
+            >
+              {templateCategories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            <textarea
+              className={`${fieldClass} min-h-36 py-3`}
+              required
+              placeholder="Текст. Можно использовать {names}, {partnerOne}, {partnerTwo}."
+              value={templateContent}
+              onChange={(event) => setTemplateContent(event.target.value)}
+            />
+            <button className="admin-primary-button" disabled={isSavingTemplate}>
+              {isSavingTemplate ? <Loader2 className="animate-spin" size={17} /> : <Plus size={17} />}
+              {isSavingTemplate ? "Сохраняем..." : "Добавить шаблон"}
+            </button>
+          </form>
+          <div className="mt-5 grid gap-2">
+            {templates.map((template) => (
+              <div className="admin-list-row items-start" key={template.id}>
+                <div className="min-w-0 flex-1">
+                  <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-500">
+                    <Tag size={12} />
+                    {templateCategories.find((item) => item.value === template.category)?.label ?? "Классические"}
+                  </span>
+                  <strong className="block">{template.title}</strong>
+                  <p className="m-0 mt-1 line-clamp-3 text-sm text-stone-500">{template.content}</p>
+                </div>
+                <button
+                  className="admin-danger-icon"
+                  type="button"
+                  aria-label={`Удалить ${template.title}`}
+                  disabled={busyId === template.id}
+                  onClick={() => void removeItem("templates", template.id)}
+                >
+                  {busyId === template.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                </button>
               </div>
-              <button
-                className="admin-danger-icon"
-                type="button"
-                aria-label={`Удалить ${template.title}`}
-                disabled={busyId === template.id}
-                onClick={() => void removeItem("templates", template.id)}
-              >
-                {busyId === template.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
-              </button>
-            </div>
-          ))}
-          {templates.length === 0 && <p className="admin-muted">Шаблоны пока не добавлены.</p>}
-        </div>
-        {message && <p className="mt-4 text-sm text-stone-600">{message}</p>}
-      </article>
+            ))}
+            {templates.length === 0 && <p className="admin-muted">Шаблоны пока не добавлены.</p>}
+          </div>
+          {message && <p className="mt-4 text-sm text-stone-600">{message}</p>}
+        </article>
+      )}
     </section>
   );
 }

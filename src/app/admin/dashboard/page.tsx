@@ -28,11 +28,8 @@ import { AuditLogPanel } from "@/features/admin/ui/audit-log-panel";
 import { AdminInsightsPanel } from "@/features/admin/ui/admin-insights-panel";
 import { AdminLogoutButton } from "@/features/admin/ui/admin-logout-button";
 import { AdminSitesPanel } from "@/features/admin/ui/admin-sites-panel";
-import { ContentCatalogPanel } from "@/features/admin/ui/content-catalog-panel";
-import { DesignThemePanel } from "@/features/admin/ui/design-theme-panel";
+import { CatalogWorkspace } from "@/features/admin/ui/catalog-workspace";
 import { EmailTemplatesPanel } from "@/features/admin/ui/email-templates-panel";
-import { FontManagerPanel } from "@/features/admin/ui/font-manager-panel";
-import { MediaManagerPanel } from "@/features/admin/ui/media-manager-panel";
 import { MonetizationPanel } from "@/features/admin/ui/monetization-panel";
 import {
   PlatformContentPanel,
@@ -56,6 +53,7 @@ const statusLabels = {
 
 const adminSections = [
   { id: "overview", label: "Обзор", icon: Gauge },
+  { id: "operations", label: "Операции", icon: Rocket },
   { id: "catalog", label: "Каталог", icon: LibraryBig },
   { id: "monetization", label: "Монетизация", icon: TicketPercent },
   { id: "email", label: "Почта", icon: Mail },
@@ -406,6 +404,70 @@ export default async function AdminDashboardPage() {
             />
           </section>
 
+          <section className="admin-tab-panel admin-section-group" data-tab="operations" id="operations">
+            <SectionHeader
+              eyebrow="Операционный контур"
+              title="Запуск, качество и быстрые действия"
+              description="Отдельная рабочая зона для контроля готовности платформы: что уже настроено, где риск, что нужно закрыть перед продажами."
+            />
+            <div className="admin-ops-grid">
+              <div className="admin-ops-card">
+                <CardHeading icon={Gauge} title="Здоровье платформы" subtitle="Критичные системы продукта" />
+                <div className="admin-health-list">
+                  {healthItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <label
+                        className={item.ready ? "is-ready" : "is-warning"}
+                        htmlFor={`admin-tab-${item.href.replace("#", "")}`}
+                        key={item.title}
+                      >
+                        <span>
+                          <Icon size={18} />
+                        </span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <small>{item.description}</small>
+                        </div>
+                        {item.ready ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="admin-ops-card">
+                <CardHeading icon={Rocket} title="Чек-лист запуска" subtitle="Минимальный набор для боевого продукта" />
+                <div className="admin-launch-list">
+                  {launchTasks.map((task) => (
+                    <div className={task.done ? "is-done" : ""} key={task.label}>
+                      <span>{task.done ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}</span>
+                      <p>{task.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-ops-card">
+                <CardHeading icon={ShieldCheck} title="Правила взрослого продукта" subtitle="Что держим под контролем всегда" />
+                <div className="admin-launch-list">
+                  {[
+                    "Все изменяемое управляется из админки, а не из кода.",
+                    "Публикация требует входа, чтобы сайт не потерялся.",
+                    "Кодировка проверяется перед каждой сборкой.",
+                    "Публичная ссылка и CRM доступны из личного кабинета.",
+                    "Тарифы и функции можно менять без разработки.",
+                  ].map((item) => (
+                    <div className="is-done" key={item}>
+                      <span><CheckCircle2 size={16} /></span>
+                      <p>{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section className="admin-tab-panel admin-section-group" data-tab="catalog" id="catalog">
             <SectionHeader
               eyebrow="Каталог продукта"
@@ -419,10 +481,13 @@ export default async function AdminDashboardPage() {
               <MiniStat icon={SlidersHorizontal} label="Шрифты" value={customFonts.length} />
               <MiniStat icon={LibraryBig} label="Медиа" value={mediaAssets.length} />
             </div>
-            <ContentCatalogPanel initialTracks={tracks} initialTemplates={templates} />
-            <FontManagerPanel initialFonts={customFonts} />
-            <DesignThemePanel initialThemes={designThemes} customFonts={customFonts} />
-            <MediaManagerPanel initialAssets={mediaAssets} />
+            <CatalogWorkspace
+              tracks={tracks}
+              templates={templates}
+              designThemes={designThemes}
+              customFonts={customFonts}
+              mediaAssets={mediaAssets}
+            />
           </section>
 
           <section className="admin-tab-panel admin-section-group" data-tab="monetization" id="monetization">

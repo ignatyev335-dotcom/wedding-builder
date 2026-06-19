@@ -23,7 +23,7 @@ const assetSchema = z.object({
 
 export async function POST(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
   const parsed = assetSchema.safeParse(await request.json());
   if (!parsed.success) {
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await getCurrentAdmin())) {
-    return NextResponse.json({ error: "Доступ запрещён." }, { status: 403 });
+    return NextResponse.json({ error: "Доступ запрещен." }, { status: 403 });
   }
   const id = new URL(request.url).searchParams.get("id");
   if (!id) {

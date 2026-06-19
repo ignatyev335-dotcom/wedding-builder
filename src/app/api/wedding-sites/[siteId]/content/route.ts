@@ -67,6 +67,16 @@ const contentSchema = z.object({
     music: z.boolean(),
   }),
   fontCode: z.enum(fontCodes),
+  customFont: z
+    .object({
+      id: z.string().max(100),
+      name: z.string().max(100),
+      family: z.string().max(100),
+      fileUrl: z.string().max(2000),
+      format: z.string().max(40),
+    })
+    .nullable()
+    .optional(),
   blockOrder: z.array(z.enum(contentBlockCodes)).length(contentBlockCodes.length),
   ceremonyTime: z.string().regex(/^\d{2}:\d{2}$/),
   venueName: z.string().trim().max(160),
