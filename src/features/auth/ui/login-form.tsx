@@ -36,7 +36,7 @@ export function LoginForm() {
     try {
       const response = await fetch("/api/auth/password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ identity, password, mode }),
       });
       const payload = (await response.json()) as PasswordAuthResponse;

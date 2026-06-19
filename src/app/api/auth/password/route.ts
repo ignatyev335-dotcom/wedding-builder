@@ -155,7 +155,6 @@ export async function POST(request: Request) {
           where: { userId: previousSession.userId },
           data: { userId: user.id },
         }),
-        prisma.user.delete({ where: { id: previousSession.userId } }),
       ]);
     }
   }

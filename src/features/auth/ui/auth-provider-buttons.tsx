@@ -1,9 +1,8 @@
-﻿"use client";
+"use client";
 
 import { Send } from "lucide-react";
 import { signIn } from "next-auth/react";
-import Script from "next/script";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 type TelegramPayload = {
   id: number;
@@ -23,8 +22,17 @@ declare global {
   }
 }
 
+function normalizeTelegramUsername(value?: string | null) {
+  return (value ?? "")
+    .trim()
+    .replace(/^@/, "")
+    .replace(/^https?:\/\/t\.me\//i, "")
+    .replace(/^t\.me\//i, "");
+}
+
 export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
   const callbackName = `vowlyTelegramLogin_${useId().replace(/\W/g, "")}` as const;
+  const telegramContainerRef = useRef<HTMLDivElement | null>(null);
   const [botUsername, setBotUsername] = useState("");
   const [error, setError] = useState("");
 
@@ -34,16 +42,11 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
       .then((response) => response.json())
       .then((config: { telegramBotUsername?: string | null }) => {
         if (isMounted) {
-          setBotUsername(
-            (config.telegramBotUsername ?? "")
-              .trim()
-              .replace(/^@/, "")
-              .replace(/^https?:\/\/t\.me\//i, "")
-              .replace(/^t\.me\//i, ""),
-          );
+          setBotUsername(normalizeTelegramUsername(config.telegramBotUsername));
         }
       })
       .catch(() => undefined);
+
     return () => {
       isMounted = false;
     };
@@ -52,24 +55,51 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
   useEffect(() => {
     window[callbackName] = async (payload) => {
       setError("");
-      const result = await signIn("telegram", {
-        ...Object.fromEntries(
-          Object.entries(payload).map(([key, value]) => [key, String(value)]),
-        ),
-        redirect: false,
-      });
 
-      if (result?.error) {
-        setError("Telegram не подтвердил вход. Проверьте токен бота и домен в BotFather.");
-        return;
+      try {
+        const result = await signIn("telegram", {
+          ...Object.fromEntries(
+            Object.entries(payload).map(([key, value]) => [key, String(value)]),
+          ),
+          redirect: false,
+        });
+
+        if (result?.error) {
+          setError("Telegram не подтвердил вход. Проверьте токен бота и домен в BotFather.");
+          return;
+        }
+
+        window.location.assign(redirectTo);
+      } catch {
+        setError("Telegram не ответил. Попробуйте еще раз или войдите по почте/телефону.");
       }
-
-      window.location.assign(redirectTo);
     };
+
     return () => {
       delete window[callbackName];
     };
   }, [callbackName, redirectTo]);
+
+  useEffect(() => {
+    const container = telegramContainerRef.current;
+    if (!container || !botUsername) return;
+
+    container.innerHTML = "";
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.async = true;
+    script.setAttribute("data-telegram-login", botUsername);
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "12");
+    script.setAttribute("data-request-access", "write");
+    script.setAttribute("data-userpic", "false");
+    script.setAttribute("data-onauth", `window.${callbackName}(user)`);
+    container.appendChild(script);
+
+    return () => {
+      container.innerHTML = "";
+    };
+  }, [botUsername, callbackName]);
 
   const loginWithYandex = async () => {
     setError("");
@@ -91,18 +121,11 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
           <i>Яндекс ID</i>
         </button>
         {botUsername ? (
-          <div className="auth-provider-button telegram-widget">
-            <Script
-              src="https://telegram.org/js/telegram-widget.js?22"
-              strategy="afterInteractive"
-              data-telegram-login={botUsername}
-              data-size="large"
-              data-radius="12"
-              data-request-access="write"
-              data-userpic="false"
-              data-onauth={`window.${callbackName}(user)`}
-            />
-          </div>
+          <div
+            ref={telegramContainerRef}
+            className="auth-provider-button telegram-widget"
+            aria-label="Войти через Telegram"
+          />
         ) : (
           <button className="auth-provider-button telegram" type="button" disabled>
             <span aria-hidden="true">
@@ -112,12 +135,12 @@ export function AuthProviderButtons({ redirectTo = "/dashboard" }: { redirectTo?
           </button>
         )}
       </div>
-      {!botUsername && (
+      {!botUsername ? (
         <small className="telegram-login-note">
           Telegram включится после подключения бота в настройках проекта.
         </small>
-      )}
-      {error && <p className="login-error">{error}</p>}
+      ) : null}
+      {error ? <p className="login-error">{error}</p> : null}
     </section>
   );
 }
