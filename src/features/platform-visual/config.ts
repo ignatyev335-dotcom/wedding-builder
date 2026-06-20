@@ -12,6 +12,20 @@ export type ProductVisualSection = {
   textAlign: "left" | "center" | "right";
   density: "tight" | "normal" | "airy";
   buttonSize: "small" | "normal" | "large";
+  blockWidth: "narrow" | "normal" | "wide" | "full";
+  textScale: "small" | "normal" | "large" | "hero";
+  offsetX: number;
+  offsetY: number;
+};
+
+export type ProductVisualFieldStyle = {
+  color: string;
+  fontSize: number;
+  fontWeight: "regular" | "medium" | "bold";
+  textAlign: "left" | "center" | "right";
+  letterSpacing: number;
+  offsetX: number;
+  offsetY: number;
 };
 
 export type ProductVisualConfig = {
@@ -52,6 +66,7 @@ export type ProductVisualConfig = {
     previewButtonText: string;
     sections: ProductVisualSection[];
   };
+  fieldStyles: Record<string, ProductVisualFieldStyle>;
 };
 
 export const defaultProductVisualConfig: ProductVisualConfig = {
@@ -119,6 +134,7 @@ export const defaultProductVisualConfig: ProductVisualConfig = {
       createSection("publish", "Запуск", 7, "large", "left", "left", "normal", "large"),
     ],
   },
+  fieldStyles: {},
 };
 
 function createSection(
@@ -141,6 +157,10 @@ function createSection(
     textAlign,
     density,
     buttonSize,
+    blockWidth: "normal",
+    textScale: "normal",
+    offsetX: 0,
+    offsetY: 0,
   };
 }
 
@@ -191,8 +211,58 @@ function mergeSections(
         found.buttonSize === "large"
           ? found.buttonSize
           : section.buttonSize,
+      blockWidth:
+        found.blockWidth === "narrow" ||
+        found.blockWidth === "normal" ||
+        found.blockWidth === "wide" ||
+        found.blockWidth === "full"
+          ? found.blockWidth
+          : section.blockWidth,
+      textScale:
+        found.textScale === "small" ||
+        found.textScale === "normal" ||
+        found.textScale === "large" ||
+        found.textScale === "hero"
+          ? found.textScale
+          : section.textScale,
+      offsetX: typeof found.offsetX === "number" ? found.offsetX : section.offsetX,
+      offsetY: typeof found.offsetY === "number" ? found.offsetY : section.offsetY,
     };
   });
+}
+
+function normalizeFieldStyles(incoming: unknown): Record<string, ProductVisualFieldStyle> {
+  if (!isPlainObject(incoming)) return {};
+
+  return Object.entries(incoming).reduce<Record<string, ProductVisualFieldStyle>>(
+    (accumulator, [field, value]) => {
+      if (!isPlainObject(value)) return accumulator;
+
+      accumulator[field] = {
+        color: typeof value.color === "string" ? value.color : "",
+        fontSize: typeof value.fontSize === "number" ? value.fontSize : 100,
+        fontWeight:
+          value.fontWeight === "regular" ||
+          value.fontWeight === "medium" ||
+          value.fontWeight === "bold"
+            ? value.fontWeight
+            : "regular",
+        textAlign:
+          value.textAlign === "left" ||
+          value.textAlign === "center" ||
+          value.textAlign === "right"
+            ? value.textAlign
+            : "center",
+        letterSpacing:
+          typeof value.letterSpacing === "number" ? value.letterSpacing : 0,
+        offsetX: typeof value.offsetX === "number" ? value.offsetX : 0,
+        offsetY: typeof value.offsetY === "number" ? value.offsetY : 0,
+      };
+
+      return accumulator;
+    },
+    {},
+  );
 }
 
 export function parseProductVisualConfig(value: string | null | undefined) {
@@ -252,6 +322,7 @@ export function parseProductVisualConfig(value: string | null | undefined) {
           constructorConfig.sections,
         ),
       },
+      fieldStyles: normalizeFieldStyles(parsed.fieldStyles),
     } satisfies ProductVisualConfig;
   } catch {
     return defaultProductVisualConfig;

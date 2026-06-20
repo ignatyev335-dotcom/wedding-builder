@@ -87,8 +87,17 @@ export default async function HomePage() {
       textAlign: "center",
       density: "normal",
       buttonSize: "normal",
+      blockWidth: "normal",
+      textScale: "normal",
+      offsetX: 0,
+      offsetY: 0,
     };
-  const sectionStyle = (id: string) => ({ order: section(id).order });
+  const sectionStyle = (id: string) =>
+    ({
+      "--product-section-offset-x": `${section(id).offsetX}px`,
+      "--product-section-offset-y": `${section(id).offsetY}px`,
+      order: section(id).order,
+    }) as CSSProperties;
   const sectionClass = (id: string, baseClass: string) => {
     const current = section(id);
     return [
@@ -98,7 +107,28 @@ export default async function HomePage() {
       `product-section-text-${current.textAlign}`,
       `product-section-density-${current.density}`,
       `product-section-button-${current.buttonSize}`,
+      `product-section-width-${current.blockWidth}`,
+      `product-section-text-scale-${current.textScale}`,
     ].join(" ");
+  };
+  const fieldStyle = (field: string) => {
+    const style = visualConfig.fieldStyles[field];
+    if (!style) return undefined;
+
+    return {
+      color: style.color || undefined,
+      display: "inline-block",
+      fontSize: `${style.fontSize}%`,
+      fontWeight:
+        style.fontWeight === "bold"
+          ? 850
+          : style.fontWeight === "medium"
+            ? 650
+            : undefined,
+      letterSpacing: `${style.letterSpacing / 100}em`,
+      textAlign: style.textAlign,
+      transform: `translate(${style.offsetX}px, ${style.offsetY}px)`,
+    } as CSSProperties;
   };
   const [mockupFirstName = "Александр", mockupSecondName = "Валентина"] =
     landing.mockupCouple.split("&").map((part) => part.trim()).filter(Boolean);
@@ -136,18 +166,18 @@ export default async function HomePage() {
         <div className="landing-v2-glow landing-v2-glow-two" />
 
         <div className="landing-v2-hero-copy">
-          {landing.badge ? <span className="landing-v2-pill" data-product-field="landing.badge">
+          {landing.badge ? <span className="landing-v2-pill" data-product-field="landing.badge" style={fieldStyle("landing.badge")}>
             <Sparkles size={15} />
             {landing.badge}
           </span> : null}
-          <h1 data-product-field="landing.title">{landing.title}</h1>
-          <p data-product-field="landing.subtitle">{landing.subtitle}</p>
+          <h1 data-product-field="landing.title" style={fieldStyle("landing.title")}>{landing.title}</h1>
+          <p data-product-field="landing.subtitle" style={fieldStyle("landing.subtitle")}>{landing.subtitle}</p>
           <div className="landing-v2-actions">
-            <Link className="landing-v2-primary" data-product-field="landing.primaryCta" href="/create">
+            <Link className="landing-v2-primary" data-product-field="landing.primaryCta" href="/create" style={fieldStyle("landing.primaryCta")}>
               {landing.primaryCta}
               <ArrowRight size={18} />
             </Link>
-            <a className="landing-v2-secondary" data-product-field="landing.secondaryCta" href="#how-it-works">
+            <a className="landing-v2-secondary" data-product-field="landing.secondaryCta" href="#how-it-works" style={fieldStyle("landing.secondaryCta")}>
               {landing.secondaryCta}
             </a>
           </div>
@@ -187,12 +217,12 @@ export default async function HomePage() {
               <div className="landing-v2-screen-shade" />
               <div className="landing-v2-invite">
                 <span>Приглашение на свадьбу</span>
-                <h2 data-product-field="landing.mockupCouple">
+                <h2 data-product-field="landing.mockupCouple" style={fieldStyle("landing.mockupCouple")}>
                   {mockupFirstName}
                   <i>&</i>
                   {mockupSecondName}
                 </h2>
-                <p data-product-field="landing.mockupDate">{landing.mockupDate}</p>
+                <p data-product-field="landing.mockupDate" style={fieldStyle("landing.mockupDate")}>{landing.mockupDate}</p>
                 <small>Сбор гостей в 17:00 · Усадьба у леса</small>
               </div>
             </div>

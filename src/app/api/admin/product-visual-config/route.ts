@@ -20,6 +20,20 @@ const sectionSchema = z.object({
   textAlign: z.enum(["left", "center", "right"]),
   density: z.enum(["tight", "normal", "airy"]),
   buttonSize: z.enum(["small", "normal", "large"]),
+  blockWidth: z.enum(["narrow", "normal", "wide", "full"]),
+  textScale: z.enum(["small", "normal", "large", "hero"]),
+  offsetX: z.number().int().min(-240).max(240),
+  offsetY: z.number().int().min(-240).max(240),
+});
+
+const fieldStyleSchema = z.object({
+  color: z.string().trim().max(80),
+  fontSize: z.number().int().min(60).max(220),
+  fontWeight: z.enum(["regular", "medium", "bold"]),
+  textAlign: z.enum(["left", "center", "right"]),
+  letterSpacing: z.number().int().min(-8).max(32),
+  offsetX: z.number().int().min(-240).max(240),
+  offsetY: z.number().int().min(-240).max(240),
 });
 
 const productVisualSchema = z.object({
@@ -60,6 +74,7 @@ const productVisualSchema = z.object({
     previewButtonText: z.string().trim().min(1).max(80),
     sections: z.array(sectionSchema),
   }),
+  fieldStyles: z.record(z.string(), fieldStyleSchema),
 });
 
 export async function GET() {

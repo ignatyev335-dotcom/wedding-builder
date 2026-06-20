@@ -13,6 +13,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 import type {
   ProductVisualConfig,
+  ProductVisualFieldStyle,
   ProductVisualSection,
 } from "@/features/platform-visual/config";
 
@@ -42,12 +43,23 @@ export function ProductVisualEditor({
   const [error, setError] = useState("");
   const [previewVersion, setPreviewVersion] = useState(0);
   const [selectedSectionId, setSelectedSectionId] = useState<string>("hero");
+  const [selectedFieldId, setSelectedFieldId] = useState<string>("");
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const previewUrl = useMemo(
     () => `${previewUrls[activeScreen]}?adminPreview=${previewVersion}`,
     [activeScreen, previewVersion],
   );
+
+  const syncPreview = () => {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "VOWLY_PRODUCT_APPLY_CONFIG",
+        config,
+      },
+      window.location.origin,
+    );
+  };
 
   const updateLanding = <Key extends keyof ProductVisualConfig["landing"]>(
     key: Key,
@@ -97,6 +109,34 @@ export function ProductVisualEditor({
         sections: current[screen].sections.map((section) =>
           section.id === sectionId ? { ...section, ...patch } : section,
         ),
+      },
+    }));
+    setMessage("");
+    setError("");
+  };
+
+  const updateFieldStyle = (
+    fieldId: string,
+    patch: Partial<ProductVisualFieldStyle>,
+  ) => {
+    const fallback: ProductVisualFieldStyle = {
+      color: "",
+      fontSize: 100,
+      fontWeight: "regular",
+      textAlign: "center",
+      letterSpacing: 0,
+      offsetX: 0,
+      offsetY: 0,
+    };
+
+    setConfig((current) => ({
+      ...current,
+      fieldStyles: {
+        ...current.fieldStyles,
+        [fieldId]: {
+          ...(current.fieldStyles[fieldId] ?? fallback),
+          ...patch,
+        },
       },
     }));
     setMessage("");
@@ -209,6 +249,10 @@ export function ProductVisualEditor({
         setSelectedSectionId(String(event.data.sectionId || ""));
       }
 
+      if (event.data?.type === "VOWLY_PRODUCT_SELECT_FIELD") {
+        setSelectedFieldId(String(event.data.field || ""));
+      }
+
       if (event.data?.type === "VOWLY_PRODUCT_EDIT_FIELD") {
         const field = String(event.data.field || "");
         const value = String(event.data.value ?? "");
@@ -238,6 +282,7 @@ export function ProductVisualEditor({
         if (field === "constructor.previewButtonText") {
           updateConstructor("previewButtonText", value);
         }
+        setSelectedFieldId(field);
       }
 
       if (event.data?.type === "VOWLY_PRODUCT_MOVE_SECTION") {
@@ -252,6 +297,11 @@ export function ProductVisualEditor({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   });
+
+  useEffect(() => {
+    const frame = window.setTimeout(syncPreview, 60);
+    return () => window.clearTimeout(frame);
+  }, [activeScreen, config]);
 
   return (
     <section className="product-editor">
@@ -304,6 +354,12 @@ export function ProductVisualEditor({
           onSelectSection={setSelectedSectionId}
         />
 
+        <FieldStyleControls
+          fieldId={selectedFieldId}
+          style={selectedFieldId ? config.fieldStyles[selectedFieldId] : undefined}
+          updateFieldStyle={updateFieldStyle}
+        />
+
         <div className="product-editor-save">
           <button type="button" disabled={isSaving} onClick={() => void save()}>
             {isSaving ? <LoaderCircle className="spin" size={17} /> : <Save size={17} />}
@@ -328,6 +384,7 @@ export function ProductVisualEditor({
           ref={iframeRef}
           src={previewUrl}
           title={`Превью: ${screenLabels[activeScreen]}`}
+          onLoad={syncPreview}
         />
       </aside>
     </section>
@@ -508,10 +565,70 @@ function SectionControls({
   onSelectSection: (sectionId: string) => void;
 }) {
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+  const selectedSection =
+    sortedSections.find((section) => section.id === selectedSectionId) ?? sortedSections[0];
 
   return (
     <div className="product-editor-card">
       <h3>Блоки экрана</h3>
+      {selectedSection ? (
+        <div className="product-selected-section">
+          <div>
+            <span>Выбранный блок</span>
+            <strong>{selectedSection.label}</strong>
+          </div>
+          <div className="product-editor-grid">
+            <label className="visual-field">
+              <span>Ширина</span>
+              <select
+                value={selectedSection.blockWidth}
+                onChange={(event) =>
+                  updateSection(screen, selectedSection.id, {
+                    blockWidth: event.target.value as ProductVisualSection["blockWidth"],
+                  })
+                }
+              >
+                <option value="narrow">Узкий</option>
+                <option value="normal">Обычный</option>
+                <option value="wide">Широкий</option>
+                <option value="full">Во всю ширину</option>
+              </select>
+            </label>
+            <label className="visual-field">
+              <span>Размер текста</span>
+              <select
+                value={selectedSection.textScale}
+                onChange={(event) =>
+                  updateSection(screen, selectedSection.id, {
+                    textScale: event.target.value as ProductVisualSection["textScale"],
+                  })
+                }
+              >
+                <option value="small">Меньше</option>
+                <option value="normal">Обычный</option>
+                <option value="large">Крупнее</option>
+                <option value="hero">Героический</option>
+              </select>
+            </label>
+          </div>
+          <div className="product-editor-grid">
+            <RangeField
+              label="Смещение вбок"
+              value={selectedSection.offsetX}
+              onChange={(value) =>
+                updateSection(screen, selectedSection.id, { offsetX: value })
+              }
+            />
+            <RangeField
+              label="Смещение вверх/вниз"
+              value={selectedSection.offsetY}
+              onChange={(value) =>
+                updateSection(screen, selectedSection.id, { offsetY: value })
+              }
+            />
+          </div>
+        </div>
+      ) : null}
       <div className="product-section-list">
         {sortedSections.map((section, index) => (
           <article
@@ -530,6 +647,20 @@ function SectionControls({
               <span>{section.label}</span>
             </label>
             <div className="product-section-settings">
+              <select
+                value={section.blockWidth}
+                title="Ширина блока"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    blockWidth: event.target.value as ProductVisualSection["blockWidth"],
+                  })
+                }
+              >
+                <option value="narrow">Узкий</option>
+                <option value="normal">Обычный</option>
+                <option value="wide">Широкий</option>
+                <option value="full">Полный</option>
+              </select>
               <select
                 value={section.size}
                 title="Размер блока"
@@ -595,6 +726,20 @@ function SectionControls({
                 <option value="normal">Кнопки M</option>
                 <option value="large">Кнопки L</option>
               </select>
+              <select
+                value={section.textScale}
+                title="Размер текста"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    textScale: event.target.value as ProductVisualSection["textScale"],
+                  })
+                }
+              >
+                <option value="small">Текст S</option>
+                <option value="normal">Текст M</option>
+                <option value="large">Текст L</option>
+                <option value="hero">Текст XL</option>
+              </select>
             </div>
             <div>
               <button
@@ -614,6 +759,121 @@ function SectionControls({
             </div>
           </article>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function FieldStyleControls({
+  fieldId,
+  style,
+  updateFieldStyle,
+}: {
+  fieldId: string;
+  style?: ProductVisualFieldStyle;
+  updateFieldStyle: (
+    fieldId: string,
+    patch: Partial<ProductVisualFieldStyle>,
+  ) => void;
+}) {
+  const current: ProductVisualFieldStyle = style ?? {
+    color: "",
+    fontSize: 100,
+    fontWeight: "regular",
+    textAlign: "center",
+    letterSpacing: 0,
+    offsetX: 0,
+    offsetY: 0,
+  };
+
+  if (!fieldId) {
+    return (
+      <div className="product-editor-card product-field-empty">
+        <h3>Текстовый элемент</h3>
+        <p>Кликните по тексту в предпросмотре, чтобы настроить его отдельно.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="product-editor-card">
+      <div className="product-selected-section">
+        <div>
+          <span>Выбранный текст</span>
+          <strong>{fieldId}</strong>
+        </div>
+        <ColorField
+          label="Цвет текста"
+          value={current.color || "#20241f"}
+          onChange={(value) => updateFieldStyle(fieldId, { color: value })}
+        />
+        <div className="product-editor-grid">
+          <RangeField
+            label="Размер текста"
+            max={220}
+            min={60}
+            step={5}
+            unit="%"
+            value={current.fontSize}
+            onChange={(value) => updateFieldStyle(fieldId, { fontSize: value })}
+          />
+          <RangeField
+            label="Межбуквенный интервал"
+            max={32}
+            min={-8}
+            step={1}
+            value={current.letterSpacing}
+            onChange={(value) =>
+              updateFieldStyle(fieldId, { letterSpacing: value })
+            }
+          />
+        </div>
+        <div className="product-editor-grid">
+          <label className="visual-field">
+            <span>Начертание</span>
+            <select
+              value={current.fontWeight}
+              onChange={(event) =>
+                updateFieldStyle(fieldId, {
+                  fontWeight: event.target
+                    .value as ProductVisualFieldStyle["fontWeight"],
+                })
+              }
+            >
+              <option value="regular">Обычное</option>
+              <option value="medium">Плотнее</option>
+              <option value="bold">Жирное</option>
+            </select>
+          </label>
+          <label className="visual-field">
+            <span>Выравнивание</span>
+            <select
+              value={current.textAlign}
+              onChange={(event) =>
+                updateFieldStyle(fieldId, {
+                  textAlign: event.target
+                    .value as ProductVisualFieldStyle["textAlign"],
+                })
+              }
+            >
+              <option value="left">Слева</option>
+              <option value="center">По центру</option>
+              <option value="right">Справа</option>
+            </select>
+          </label>
+        </div>
+        <div className="product-editor-grid">
+          <RangeField
+            label="Сдвиг вбок"
+            value={current.offsetX}
+            onChange={(value) => updateFieldStyle(fieldId, { offsetX: value })}
+          />
+          <RangeField
+            label="Сдвиг вверх/вниз"
+            value={current.offsetY}
+            onChange={(value) => updateFieldStyle(fieldId, { offsetY: value })}
+          />
+        </div>
       </div>
     </div>
   );
@@ -650,6 +910,44 @@ function ColorField({
       <span>{label}</span>
       <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
       <input value={value} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  );
+}
+
+function RangeField({
+  label,
+  max = 180,
+  min = -180,
+  step = 4,
+  unit = "px",
+  value,
+  onChange,
+}: {
+  label: string;
+  max?: number;
+  min?: number;
+  step?: number;
+  unit?: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="visual-field product-range-field">
+      <span>
+        {label}
+        <b>
+          {value}
+          {unit}
+        </b>
+      </span>
+      <input
+        max={max}
+        min={min}
+        step={step}
+        type="range"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
     </label>
   );
 }
