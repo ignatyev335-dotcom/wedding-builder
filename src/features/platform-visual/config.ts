@@ -8,6 +8,10 @@ export type ProductVisualSection = {
   enabled: boolean;
   order: number;
   size: "compact" | "normal" | "large";
+  align: "left" | "center" | "right";
+  textAlign: "left" | "center" | "right";
+  density: "tight" | "normal" | "airy";
+  buttonSize: "small" | "normal" | "large";
 };
 
 export type ProductVisualConfig = {
@@ -53,14 +57,14 @@ export const defaultProductVisualConfig: ProductVisualConfig = {
     mockupCouple: "Александр & Валентина",
     mockupDate: "20 июня 2026",
     sections: [
-      { id: "hero", label: "Первый экран", enabled: true, order: 1, size: "large" },
-      { id: "stats", label: "Короткие факты", enabled: true, order: 2, size: "normal" },
-      { id: "how", label: "Как это работает", enabled: true, order: 3, size: "normal" },
-      { id: "features", label: "Возможности", enabled: true, order: 4, size: "normal" },
-      { id: "designs", label: "Стили", enabled: true, order: 5, size: "normal" },
-      { id: "after", label: "После свадьбы", enabled: true, order: 6, size: "normal" },
-      { id: "faq", label: "FAQ", enabled: true, order: 7, size: "compact" },
-      { id: "final", label: "Финальный CTA", enabled: true, order: 8, size: "normal" },
+      createSection("hero", "Первый экран", 1, "large", "left", "left", "airy", "normal"),
+      createSection("stats", "Короткие факты", 2, "normal", "center", "center", "normal", "normal"),
+      createSection("how", "Как это работает", 3, "normal", "center", "center", "normal", "normal"),
+      createSection("features", "Возможности", 4, "normal", "center", "center", "normal", "normal"),
+      createSection("designs", "Стили", 5, "normal", "left", "left", "normal", "normal"),
+      createSection("after", "После свадьбы", 6, "normal", "left", "left", "normal", "normal"),
+      createSection("faq", "FAQ", 7, "compact", "center", "center", "tight", "normal"),
+      createSection("final", "Финальный CTA", 8, "normal", "center", "center", "normal", "normal"),
     ],
   },
   quiz: {
@@ -78,10 +82,10 @@ export const defaultProductVisualConfig: ProductVisualConfig = {
     finalDescription:
       "Основа готова. В конструкторе вы сможете добавить фото, музыку, гостей, карту и тексты.",
     sections: [
-      { id: "basis", label: "Основа", enabled: true, order: 1, size: "large" },
-      { id: "style", label: "Стиль", enabled: true, order: 2, size: "normal" },
-      { id: "features", label: "Особенности", enabled: true, order: 3, size: "normal" },
-      { id: "summary", label: "Финал", enabled: true, order: 4, size: "normal" },
+      createSection("basis", "Основа", 1, "large", "center", "center", "normal", "normal"),
+      createSection("style", "Стиль", 2, "normal", "center", "center", "normal", "normal"),
+      createSection("features", "Особенности", 3, "normal", "center", "center", "normal", "normal"),
+      createSection("summary", "Финал", 4, "normal", "center", "center", "normal", "large"),
     ],
   },
   constructor: {
@@ -90,16 +94,39 @@ export const defaultProductVisualConfig: ProductVisualConfig = {
     publishButtonText: "Оживить сайт",
     previewButtonText: "Предпросмотр",
     sections: [
-      { id: "content", label: "Сайт", enabled: true, order: 1, size: "large" },
-      { id: "styles", label: "Стиль", enabled: true, order: 2, size: "normal" },
-      { id: "media", label: "Фото", enabled: true, order: 3, size: "normal" },
-      { id: "music", label: "Музыка", enabled: true, order: 4, size: "compact" },
-      { id: "guests", label: "Гости", enabled: true, order: 5, size: "normal" },
-      { id: "after", label: "После", enabled: true, order: 6, size: "compact" },
-      { id: "publish", label: "Запуск", enabled: true, order: 7, size: "large" },
+      createSection("content", "Сайт", 1, "large", "left", "left", "normal", "normal"),
+      createSection("styles", "Стиль", 2, "normal", "left", "left", "normal", "normal"),
+      createSection("media", "Фото", 3, "normal", "left", "left", "normal", "normal"),
+      createSection("music", "Музыка", 4, "compact", "left", "left", "tight", "normal"),
+      createSection("guests", "Гости", 5, "normal", "left", "left", "normal", "normal"),
+      createSection("after", "После", 6, "compact", "left", "left", "tight", "normal"),
+      createSection("publish", "Запуск", 7, "large", "left", "left", "normal", "large"),
     ],
   },
 };
+
+function createSection(
+  id: string,
+  label: string,
+  order: number,
+  size: ProductVisualSection["size"],
+  align: ProductVisualSection["align"],
+  textAlign: ProductVisualSection["textAlign"],
+  density: ProductVisualSection["density"],
+  buttonSize: ProductVisualSection["buttonSize"],
+): ProductVisualSection {
+  return {
+    id,
+    label,
+    enabled: true,
+    order,
+    size,
+    align,
+    textAlign,
+    density,
+    buttonSize,
+  };
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -126,6 +153,28 @@ function mergeSections(
         found.size === "compact" || found.size === "normal" || found.size === "large"
           ? found.size
           : section.size,
+      align:
+        found.align === "left" || found.align === "center" || found.align === "right"
+          ? found.align
+          : section.align,
+      textAlign:
+        found.textAlign === "left" ||
+        found.textAlign === "center" ||
+        found.textAlign === "right"
+          ? found.textAlign
+          : section.textAlign,
+      density:
+        found.density === "tight" ||
+        found.density === "normal" ||
+        found.density === "airy"
+          ? found.density
+          : section.density,
+      buttonSize:
+        found.buttonSize === "small" ||
+        found.buttonSize === "normal" ||
+        found.buttonSize === "large"
+          ? found.buttonSize
+          : section.buttonSize,
     };
   });
 }

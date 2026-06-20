@@ -80,8 +80,23 @@ export default async function HomePage() {
       enabled: true,
       order: 1,
       size: "normal",
+      align: "center",
+      textAlign: "center",
+      density: "normal",
+      buttonSize: "normal",
     };
   const sectionStyle = (id: string) => ({ order: section(id).order });
+  const sectionClass = (id: string, baseClass: string) => {
+    const current = section(id);
+    return [
+      baseClass,
+      `product-section-size-${current.size}`,
+      `product-section-align-${current.align}`,
+      `product-section-text-${current.textAlign}`,
+      `product-section-density-${current.density}`,
+      `product-section-button-${current.buttonSize}`,
+    ].join(" ");
+  };
   const [mockupFirstName = "Александр", mockupSecondName = "Валентина"] =
     landing.mockupCouple.split("&").map((part) => part.trim()).filter(Boolean);
 
@@ -101,15 +116,15 @@ export default async function HomePage() {
         </Link>
       </header>
 
-      {section("hero").enabled && <section className="landing-v2-hero" style={sectionStyle("hero")}>
+      {section("hero").enabled && <section className={sectionClass("hero", "landing-v2-hero")} style={sectionStyle("hero")}>
         <div className="landing-v2-glow landing-v2-glow-one" />
         <div className="landing-v2-glow landing-v2-glow-two" />
 
         <div className="landing-v2-hero-copy">
-          <span className="landing-v2-pill">
+          {landing.badge ? <span className="landing-v2-pill">
             <Sparkles size={15} />
             {landing.badge}
-          </span>
+          </span> : null}
           <h1>{landing.title}</h1>
           <p>{landing.subtitle}</p>
           <div className="landing-v2-actions">
@@ -178,7 +193,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("stats").enabled && <section className="landing-v2-stats" aria-label="Коротко о сервисе" style={sectionStyle("stats")}>
+      {section("stats").enabled && <section className={sectionClass("stats", "landing-v2-stats")} aria-label="Коротко о сервисе" style={sectionStyle("stats")}>
         <article>
           <strong>01</strong>
           <span>одна ссылка вместо десятка сообщений</span>
@@ -193,7 +208,7 @@ export default async function HomePage() {
         </article>
       </section>}
 
-      {section("how").enabled && <section className="landing-v2-section" id="how-it-works" style={sectionStyle("how")}>
+      {section("how").enabled && <section className={sectionClass("how", "landing-v2-section")} id="how-it-works" style={sectionStyle("how")}>
         <div className="landing-v2-section-head">
           <span>Как это работает</span>
           <h2>От первой идеи до аккуратной ссылки для гостей</h2>
@@ -213,7 +228,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("features").enabled && <section className="landing-v2-section landing-v2-feature-section" id="features" style={sectionStyle("features")}>
+      {section("features").enabled && <section className={sectionClass("features", "landing-v2-section landing-v2-feature-section")} id="features" style={sectionStyle("features")}>
         <div className="landing-v2-section-head">
           <span>Все под рукой</span>
           <h2>Все, что обычно расползается по чатам и таблицам</h2>
@@ -233,7 +248,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("designs").enabled && <section className="landing-v2-showcase" id="designs" style={sectionStyle("designs")}>
+      {section("designs").enabled && <section className={sectionClass("designs", "landing-v2-showcase")} id="designs" style={sectionStyle("designs")}>
         <div className="landing-v2-showcase-copy">
           <span>Стили из вашей коллекции</span>
           <h2>Визуал меняется, содержание остается на месте</h2>
@@ -259,7 +274,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("after").enabled && <section className="landing-v2-after" style={sectionStyle("after")}>
+      {section("after").enabled && <section className={sectionClass("after", "landing-v2-after")} style={sectionStyle("after")}>
         <div>
           <span>
             <Gift size={15} />
@@ -278,7 +293,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("faq").enabled && <section className="landing-v2-section landing-v2-faq" id="faq" style={sectionStyle("faq")}>
+      {section("faq").enabled && <section className={sectionClass("faq", "landing-v2-section landing-v2-faq")} id="faq" style={sectionStyle("faq")}>
         <div className="landing-v2-section-head">
           <span>Вопросы</span>
           <h2>Спокойно отвечаем на главное</h2>
@@ -296,7 +311,7 @@ export default async function HomePage() {
         </div>
       </section>}
 
-      {section("final").enabled && <section className="landing-v2-final" style={sectionStyle("final")}>
+      {section("final").enabled && <section className={sectionClass("final", "landing-v2-final")} style={sectionStyle("final")}>
         <ShieldCheck size={24} />
         <h2>Создайте основу сайта сегодня, а детали дополняйте спокойно</h2>
         <p>

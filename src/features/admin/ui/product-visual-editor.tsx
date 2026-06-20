@@ -344,18 +344,73 @@ function SectionControls({
               />
               <span>{section.label}</span>
             </label>
-            <select
-              value={section.size}
-              onChange={(event) =>
-                updateSection(screen, section.id, {
-                  size: event.target.value as ProductVisualSection["size"],
-                })
-              }
-            >
-              <option value="compact">Компактный</option>
-              <option value="normal">Обычный</option>
-              <option value="large">Крупный</option>
-            </select>
+            <div className="product-section-settings">
+              <select
+                value={section.size}
+                title="Размер блока"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    size: event.target.value as ProductVisualSection["size"],
+                  })
+                }
+              >
+                <option value="compact">Компактный</option>
+                <option value="normal">Обычный</option>
+                <option value="large">Крупный</option>
+              </select>
+              <select
+                value={section.align}
+                title="Положение блока"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    align: event.target.value as ProductVisualSection["align"],
+                  })
+                }
+              >
+                <option value="left">Слева</option>
+                <option value="center">По центру</option>
+                <option value="right">Справа</option>
+              </select>
+              <select
+                value={section.textAlign}
+                title="Выравнивание текста"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    textAlign: event.target.value as ProductVisualSection["textAlign"],
+                  })
+                }
+              >
+                <option value="left">Текст слева</option>
+                <option value="center">Текст центр</option>
+                <option value="right">Текст справа</option>
+              </select>
+              <select
+                value={section.density}
+                title="Отступы"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    density: event.target.value as ProductVisualSection["density"],
+                  })
+                }
+              >
+                <option value="tight">Плотно</option>
+                <option value="normal">Нормально</option>
+                <option value="airy">Воздушно</option>
+              </select>
+              <select
+                value={section.buttonSize}
+                title="Размер кнопок"
+                onChange={(event) =>
+                  updateSection(screen, section.id, {
+                    buttonSize: event.target.value as ProductVisualSection["buttonSize"],
+                  })
+                }
+              >
+                <option value="small">Кнопки S</option>
+                <option value="normal">Кнопки M</option>
+                <option value="large">Кнопки L</option>
+              </select>
+            </div>
             <div>
               <button
                 type="button"

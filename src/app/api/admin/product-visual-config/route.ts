@@ -16,11 +16,15 @@ const sectionSchema = z.object({
   enabled: z.boolean(),
   order: z.number().int().min(1).max(99),
   size: z.enum(["compact", "normal", "large"]),
+  align: z.enum(["left", "center", "right"]),
+  textAlign: z.enum(["left", "center", "right"]),
+  density: z.enum(["tight", "normal", "airy"]),
+  buttonSize: z.enum(["small", "normal", "large"]),
 });
 
 const productVisualSchema = z.object({
   landing: z.object({
-    badge: z.string().trim().min(1).max(120),
+    badge: z.string().trim().max(120),
     title: z.string().trim().min(1).max(180),
     subtitle: z.string().trim().min(1).max(500),
     primaryCta: z.string().trim().min(1).max(80),
@@ -30,7 +34,7 @@ const productVisualSchema = z.object({
     sections: z.array(sectionSchema),
   }),
   quiz: z.object({
-    badge: z.string().trim().min(1).max(120),
+    badge: z.string().trim().max(120),
     stepOneTitle: z.string().trim().min(1).max(160),
     stepOneDescription: z.string().trim().min(1).max(500),
     styleTitle: z.string().trim().min(1).max(160),
