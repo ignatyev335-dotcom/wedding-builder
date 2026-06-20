@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DesignThemeOption } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
+import type { ProductVisualConfig } from "@/features/platform-visual/config";
 
 const TOTAL_STEPS = 4;
 
@@ -79,7 +80,11 @@ const featureOptions: Array<{
   },
 ];
 
-export function QuizWizard() {
+export function QuizWizard({
+  visualCopy,
+}: {
+  visualCopy?: ProductVisualConfig["quiz"];
+}) {
   const router = useRouter();
   const store = useQuizStore();
   const [catalog, setCatalog] = useState<Catalog>({ designThemes: [] });
@@ -257,12 +262,13 @@ export function QuizWizard() {
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">Свадебный ассистент</p>
+            <p className="eyebrow">{visualCopy?.badge ?? "Свадебный ассистент"}</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Начнем с основы
+              {visualCopy?.stepOneTitle ?? "Начнем с основы"}
             </h1>
             <p className="step-description">
-              Мне нужны только имена, дата и время. Остальное спокойно настроим потом.
+              {visualCopy?.stepOneDescription ??
+                "Мне нужны только имена, дата и время. Остальное спокойно настроим потом."}
             </p>
             <div className="field-grid">
               <label className="field">
@@ -326,12 +332,13 @@ export function QuizWizard() {
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">Стиль приглашения</p>
+            <p className="eyebrow">{visualCopy?.badge ?? "Стиль приглашения"}</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Какой стиль ближе?
+              {visualCopy?.styleTitle ?? "Какой стиль ближе?"}
             </h1>
             <p className="step-description">
-              Здесь показываются стили из админки. Вы сможете добавлять новые и менять их без кода.
+              {visualCopy?.styleDescription ??
+                "Здесь показываются стили из админки. Вы сможете добавлять новые и менять их без кода."}
             </p>
 
             {catalogLoading && <p className="step-description">Загружаем стили...</p>}
@@ -377,12 +384,13 @@ export function QuizWizard() {
             <span className="step-icon">
               <Globe2 size={22} />
             </span>
-            <p className="eyebrow">Особенности</p>
+            <p className="eyebrow">{visualCopy?.badge ?? "Особенности"}</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Есть что-то особенное?
+              {visualCopy?.featuresTitle ?? "Есть что-то особенное?"}
             </h1>
             <p className="step-description">
-              Отметьте только то, что действительно влияет на сценарий. Если сомневаетесь — просто идем дальше.
+              {visualCopy?.featuresDescription ??
+                "Отметьте только то, что действительно влияет на сценарий. Если сомневаетесь — просто идем дальше."}
             </p>
             <div className="module-list">
               {featureOptions.map((feature) => {
@@ -418,12 +426,13 @@ export function QuizWizard() {
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">Почти готово</p>
+            <p className="eyebrow">{visualCopy?.badge ?? "Почти готово"}</p>
             <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Собираю ваш сайт
+              {visualCopy?.finalTitle ?? "Собираю ваш сайт"}
             </h1>
             <p className="step-description">
-              Основа готова. В конструкторе вы сможете добавить фото, музыку, гостей, карту и тексты.
+              {visualCopy?.finalDescription ??
+                "Основа готова. В конструкторе вы сможете добавить фото, музыку, гостей, карту и тексты."}
             </p>
 
             <div className="module-list">

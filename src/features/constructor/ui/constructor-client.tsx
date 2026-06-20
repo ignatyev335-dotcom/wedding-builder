@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 
 import type { WeddingBuilderData } from "@/entities/wedding/model";
+import type { ProductVisualConfig } from "@/features/platform-visual/config";
 
 const ConstructorShell = dynamic(
   () =>
@@ -23,9 +24,17 @@ const ConstructorShell = dynamic(
 export function ConstructorClient({
   initialData,
   initialTab = "content",
+  visualCopy,
 }: {
   initialData: WeddingBuilderData;
   initialTab?: "content" | "styles" | "music" | "media" | "guests" | "publish";
+  visualCopy?: ProductVisualConfig["constructor"];
 }) {
-  return <ConstructorShell initialData={initialData} initialTab={initialTab} />;
+  return (
+    <ConstructorShell
+      initialData={initialData}
+      initialTab={initialTab}
+      visualCopy={visualCopy}
+    />
+  );
 }

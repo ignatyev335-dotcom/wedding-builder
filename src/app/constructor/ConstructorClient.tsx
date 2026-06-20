@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import type { WeddingBuilderData } from "@/entities/wedding/model";
+import type { ProductVisualConfig } from "@/features/platform-visual/config";
 import { ConstructorClient as BuilderClient } from "@/features/constructor/ui/constructor-client";
 import { ConstructorFromQuiz } from "@/features/constructor/ui/constructor-from-quiz";
 
@@ -15,7 +16,11 @@ type ConstructorTab =
   | "guests"
   | "publish";
 
-export default function ConstructorClient() {
+export default function ConstructorClient({
+  visualCopy,
+}: {
+  visualCopy?: ProductVisualConfig["constructor"];
+}) {
   const searchParams = useSearchParams();
   const siteId = searchParams.get("siteId");
   const requestedTab = searchParams.get("tab");
@@ -69,7 +74,7 @@ export default function ConstructorClient() {
     );
   }
 
-  return <BuilderClient initialData={site} initialTab={initialTab} />;
+  return <BuilderClient initialData={site} initialTab={initialTab} visualCopy={visualCopy} />;
 }
 
 function ConstructorLoading() {

@@ -13,6 +13,7 @@
   Mail,
   MessageCircle,
   Palette,
+  MonitorSmartphone,
   Rocket,
   Settings,
   ShieldCheck,
@@ -38,8 +39,10 @@ import {
 } from "@/features/admin/ui/platform-content-panel";
 import { PromoCodesPanel } from "@/features/admin/ui/promo-codes-panel";
 import { ProductAnalyticsPanel } from "@/features/admin/ui/product-analytics-panel";
+import { ProductVisualEditor } from "@/features/admin/ui/product-visual-editor";
 import { SystemSettingsPanel } from "@/features/admin/ui/system-settings-panel";
 import { UserPlansPanel } from "@/features/admin/ui/user-plans-panel";
+import { parseProductVisualConfig, productVisualSettingKey } from "@/features/platform-visual/config";
 import { getCurrentAdmin } from "@/lib/auth/admin-session";
 import { prisma } from "@/lib/prisma";
 import { decryptSetting, maskSetting } from "@/lib/system-settings";
@@ -55,6 +58,7 @@ const statusLabels = {
 const adminSections = [
   { id: "overview", label: "Обзор", icon: Gauge },
   { id: "operations", label: "Операции", icon: Rocket },
+  { id: "product", label: "Продукт", icon: MonitorSmartphone },
   { id: "catalog", label: "Каталог", icon: LibraryBig },
   { id: "monetization", label: "Монетизация", icon: TicketPercent },
   { id: "email", label: "Почта", icon: Mail },
@@ -90,6 +94,7 @@ export default async function AdminDashboardPage() {
     mediaAssets,
     emailTemplates,
     auditLogs,
+    productVisualSetting,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { subscriptionPlan: { not: "FREE" } } }),
@@ -231,12 +236,17 @@ export default async function AdminDashboardPage() {
         createdAt: true,
       },
     }),
+    prisma.systemSetting.findUnique({
+      where: { key: productVisualSettingKey },
+      select: { value: true },
+    }),
   ]);
 
   const settingKeys = new Set(settings.map((setting) => setting.key));
   const publishRate = sitesCount ? Math.round((publishedCount / sitesCount) * 100) : 0;
   const paidOrderRate = ordersCount ? Math.round((paidOrdersCount / ordersCount) * 100) : 0;
   const recentSites = sites.slice(0, 5);
+  const productVisualConfig = parseProductVisualConfig(productVisualSetting?.value);
 
   const healthItems = [
     {
@@ -470,6 +480,15 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section className="admin-tab-panel admin-section-group" data-tab="product" id="product">
+            <SectionHeader
+              eyebrow="Визуальная система продукта"
+              title="Редактор главной, квиза и конструктора"
+              description="Здесь меняются тексты, порядок, размер и видимость блоков на ключевых экранах. Это не временный предпросмотр, а конфигурация продукта из базы."
+            />
+            <ProductVisualEditor initialConfig={productVisualConfig} />
           </section>
 
           <section className="admin-tab-panel admin-section-group" data-tab="catalog" id="catalog">

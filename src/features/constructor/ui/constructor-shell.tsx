@@ -27,6 +27,7 @@ import {
   type ConstructorTab,
 } from "@/features/constructor/ui/constructor-sidebar";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
+import type { ProductVisualConfig } from "@/features/platform-visual/config";
 
 type MobileStepTab =
   | "content"
@@ -110,9 +111,11 @@ type CompletionMap = Record<MobileStepTab, boolean>;
 export function ConstructorShell({
   initialData,
   initialTab = "content",
+  visualCopy,
 }: {
   initialData: WeddingBuilderData;
   initialTab?: ConstructorTab;
+  visualCopy?: ProductVisualConfig["constructor"];
 }) {
   const initialize = useWeddingStore((state) => state.initialize);
   const partnerOneName = useWeddingStore((state) => state.partnerOneName);
@@ -140,11 +143,22 @@ export function ConstructorShell({
     initialize(initialData);
   }, [initialData, initialize]);
 
+  const visibleMobileSteps = useMemo(() => {
+    if (!visualCopy?.sections?.length) return mobileSteps;
+    const configured = visualCopy.sections
+      .filter((section) => section.enabled)
+      .sort((a, b) => a.order - b.order);
+    const nextSteps = configured
+      .map((section) => mobileSteps.find((step) => step.tab === section.id))
+      .filter((step): step is MobileStep => Boolean(step));
+    return nextSteps.length > 0 ? nextSteps : mobileSteps;
+  }, [visualCopy]);
+
   const mobileStepIndex = Math.max(
     0,
-    mobileSteps.findIndex((step) => step.tab === mobileTab),
+    visibleMobileSteps.findIndex((step) => step.tab === mobileTab),
   );
-  const currentMobileStep = mobileSteps[mobileStepIndex] ?? mobileSteps[0];
+  const currentMobileStep = visibleMobileSteps[mobileStepIndex] ?? visibleMobileSteps[0];
 
   const completedSteps = useMemo<CompletionMap>(
     () => ({
@@ -196,7 +210,10 @@ export function ConstructorShell({
   };
 
   const goNextMobileStep = () => {
-    const next = mobileSteps[Math.min(mobileStepIndex + 1, mobileSteps.length - 1)];
+    const next =
+      visibleMobileSteps[
+        Math.min(mobileStepIndex + 1, visibleMobileSteps.length - 1)
+      ];
     setMobileTab(next.tab);
   };
 
@@ -219,7 +236,7 @@ export function ConstructorShell({
             rel="noreferrer"
           >
             <Smartphone size={15} />
-            Предпросмотр
+            {visualCopy?.previewButtonText ?? "Предпросмотр"}
           </a>
         ) : null}
 
@@ -247,7 +264,7 @@ export function ConstructorShell({
             type="button"
             onClick={() => window.dispatchEvent(new Event("vowly-open-publish"))}
           >
-            Оживить сайт <ExternalLink size={15} />
+            {visualCopy?.publishButtonText ?? "Оживить сайт"} <ExternalLink size={15} />
           </button>
         </div>
       </header>
@@ -262,6 +279,8 @@ export function ConstructorShell({
             currentStep={currentMobileStep}
             completedSteps={completedSteps}
             currentIndex={mobileStepIndex}
+            steps={visibleMobileSteps}
+            visualCopy={visualCopy}
             onSelectTab={setMobileTab}
             onNext={goNextMobileStep}
           />
@@ -302,17 +321,21 @@ function MobileAssistant({
   currentStep,
   completedSteps,
   currentIndex,
+  steps,
+  visualCopy,
   onSelectTab,
   onNext,
 }: {
   currentStep: MobileStep;
   completedSteps: CompletionMap;
   currentIndex: number;
+  steps: MobileStep[];
+  visualCopy?: ProductVisualConfig["constructor"];
   onSelectTab: (tab: ConstructorTab) => void;
   onNext: () => void;
 }) {
   const Icon = currentStep.icon;
-  const isLastStep = currentIndex === mobileSteps.length - 1;
+  const isLastStep = currentIndex === steps.length - 1;
 
   return (
     <section className="mobile-assistant" aria-label="Свадебный ассистент">
@@ -320,17 +343,17 @@ function MobileAssistant({
         <div className="mobile-assistant-top">
           <div>
             <span>
-              <WandSparkles size={14} /> Свадебный ассистент
+              <WandSparkles size={14} /> {visualCopy?.assistantTitle ?? "Свадебный ассистент"}
             </span>
             <strong>{currentStep.title}</strong>
           </div>
           <b>
-            {currentIndex + 1}/{mobileSteps.length}
+            {currentIndex + 1}/{steps.length}
           </b>
         </div>
 
         <div className="mobile-assistant-steps" aria-label="Быстрый переход по шагам">
-          {mobileSteps.map((step, index) => {
+          {steps.map((step, index) => {
             const done = completedSteps[step.tab];
 
             return (
@@ -354,7 +377,7 @@ function MobileAssistant({
         </span>
         <div>
           <strong>{currentStep.title}</strong>
-          <small>{currentStep.description}</small>
+          <small>{visualCopy?.assistantDescription ?? currentStep.description}</small>
         </div>
       </div>
 

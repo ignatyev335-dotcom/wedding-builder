@@ -15,6 +15,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
+import { getProductVisualConfig } from "@/features/platform-visual/config";
+
+export const dynamic = "force-dynamic";
+
 const featureCards = [
   {
     icon: MessageCircle,
@@ -68,9 +72,21 @@ const faqItems = [
   ["Работает ли сайт на телефоне?", "Да. Публичное приглашение и анкета гостей сделаны mobile-first."],
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const visualConfig = await getProductVisualConfig();
+  const landing = visualConfig.landing;
+  const section = (id: string) =>
+    landing.sections.find((item) => item.id === id) ?? {
+      enabled: true,
+      order: 1,
+      size: "normal",
+    };
+  const sectionStyle = (id: string) => ({ order: section(id).order });
+  const [mockupFirstName = "Александр", mockupSecondName = "Валентина"] =
+    landing.mockupCouple.split("&").map((part) => part.trim()).filter(Boolean);
+
   return (
-    <main className="landing landing-v2">
+    <main className="landing landing-v2" style={{ display: "flex", flexDirection: "column" }}>
       <header className="landing-v2-nav">
         <Link className="brand" href="/" aria-label="Vowly">
           vowly
@@ -85,27 +101,24 @@ export default function HomePage() {
         </Link>
       </header>
 
-      <section className="landing-v2-hero">
+      {section("hero").enabled && <section className="landing-v2-hero" style={sectionStyle("hero")}>
         <div className="landing-v2-glow landing-v2-glow-one" />
         <div className="landing-v2-glow landing-v2-glow-two" />
 
         <div className="landing-v2-hero-copy">
           <span className="landing-v2-pill">
             <Sparkles size={15} />
-            Vowly wedding atelier
+            {landing.badge}
           </span>
-          <h1>Свадебный сайт с ощущением дорогой полиграфии</h1>
-          <p>
-            Приглашение, анкета гостей, карта, музыка и тайминг собираются в
-            цельный digital-формат: спокойно, красиво и без ручной рутины.
-          </p>
+          <h1>{landing.title}</h1>
+          <p>{landing.subtitle}</p>
           <div className="landing-v2-actions">
             <Link className="landing-v2-primary" href="/create">
-              Начать создание
+              {landing.primaryCta}
               <ArrowRight size={18} />
             </Link>
             <a className="landing-v2-secondary" href="#how-it-works">
-              Посмотреть возможности
+              {landing.secondaryCta}
             </a>
           </div>
           <div className="landing-v2-trust">
@@ -145,11 +158,11 @@ export default function HomePage() {
               <div className="landing-v2-invite">
                 <span>Приглашение на свадьбу</span>
                 <h2>
-                  Александр
+                  {mockupFirstName}
                   <i>&</i>
-                  Валентина
+                  {mockupSecondName}
                 </h2>
-                <p>20 июня 2026</p>
+                <p>{landing.mockupDate}</p>
                 <small>Сбор гостей в 17:00 · Усадьба у леса</small>
               </div>
             </div>
@@ -163,9 +176,9 @@ export default function HomePage() {
             Музыка, карта и гости
           </div>
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-stats" aria-label="Коротко о сервисе">
+      {section("stats").enabled && <section className="landing-v2-stats" aria-label="Коротко о сервисе" style={sectionStyle("stats")}>
         <article>
           <strong>01</strong>
           <span>одна ссылка вместо десятка сообщений</span>
@@ -178,9 +191,9 @@ export default function HomePage() {
           <strong>∞</strong>
           <span>правки после публикации без пересборки</span>
         </article>
-      </section>
+      </section>}
 
-      <section className="landing-v2-section" id="how-it-works">
+      {section("how").enabled && <section className="landing-v2-section" id="how-it-works" style={sectionStyle("how")}>
         <div className="landing-v2-section-head">
           <span>Как это работает</span>
           <h2>От первой идеи до аккуратной ссылки для гостей</h2>
@@ -198,9 +211,9 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-section landing-v2-feature-section" id="features">
+      {section("features").enabled && <section className="landing-v2-section landing-v2-feature-section" id="features" style={sectionStyle("features")}>
         <div className="landing-v2-section-head">
           <span>Все под рукой</span>
           <h2>Все, что обычно расползается по чатам и таблицам</h2>
@@ -218,9 +231,9 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-showcase" id="designs">
+      {section("designs").enabled && <section className="landing-v2-showcase" id="designs" style={sectionStyle("designs")}>
         <div className="landing-v2-showcase-copy">
           <span>Стили из вашей коллекции</span>
           <h2>Визуал меняется, содержание остается на месте</h2>
@@ -244,9 +257,9 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-after">
+      {section("after").enabled && <section className="landing-v2-after" style={sectionStyle("after")}>
         <div>
           <span>
             <Gift size={15} />
@@ -263,9 +276,9 @@ export default function HomePage() {
           <strong>Спасибо, что были с нами</strong>
           <small>Гости возвращаются к сайту уже как к красивому фотоальбому.</small>
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-section landing-v2-faq" id="faq">
+      {section("faq").enabled && <section className="landing-v2-section landing-v2-faq" id="faq" style={sectionStyle("faq")}>
         <div className="landing-v2-section-head">
           <span>Вопросы</span>
           <h2>Спокойно отвечаем на главное</h2>
@@ -281,9 +294,9 @@ export default function HomePage() {
             </details>
           ))}
         </div>
-      </section>
+      </section>}
 
-      <section className="landing-v2-final">
+      {section("final").enabled && <section className="landing-v2-final" style={sectionStyle("final")}>
         <ShieldCheck size={24} />
         <h2>Создайте основу сайта сегодня, а детали дополняйте спокойно</h2>
         <p>
@@ -294,9 +307,9 @@ export default function HomePage() {
           Создать сайт
           <ArrowRight size={18} />
         </Link>
-      </section>
+      </section>}
 
-      <footer className="landing-v2-footer">
+      <footer className="landing-v2-footer" style={{ order: 99 }}>
         <span className="brand">vowly</span>
         <div>
           <Link href="/login">Личный кабинет</Link>
