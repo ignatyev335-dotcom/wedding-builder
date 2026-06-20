@@ -23,6 +23,14 @@ const sectionSchema = z.object({
 });
 
 const productVisualSchema = z.object({
+  appearance: z.object({
+    backgroundColor: z.string().trim().min(4).max(80),
+    surfaceColor: z.string().trim().min(4).max(80),
+    textColor: z.string().trim().min(4).max(80),
+    accentColor: z.string().trim().min(4).max(80),
+    radius: z.enum(["soft", "rounded", "pill"]),
+    fontScale: z.enum(["compact", "normal", "large"]),
+  }),
   landing: z.object({
     badge: z.string().trim().max(120),
     title: z.string().trim().min(1).max(180),

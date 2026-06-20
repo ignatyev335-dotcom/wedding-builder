@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { WeddingBuilderData } from "@/entities/wedding/model";
@@ -28,6 +29,7 @@ import {
 } from "@/features/constructor/ui/constructor-sidebar";
 import { InvitationPreview } from "@/features/constructor/ui/invitation-preview";
 import type { ProductVisualConfig } from "@/features/platform-visual/config";
+import { ProductPreviewBridge } from "@/features/platform-visual/ui/product-preview-bridge";
 
 type MobileStepTab =
   | "content"
@@ -111,10 +113,12 @@ type CompletionMap = Record<MobileStepTab, boolean>;
 export function ConstructorShell({
   initialData,
   initialTab = "content",
+  visualAppearance,
   visualCopy,
 }: {
   initialData: WeddingBuilderData;
   initialTab?: ConstructorTab;
+  visualAppearance?: ProductVisualConfig["appearance"];
   visualCopy?: ProductVisualConfig["constructor"];
 }) {
   const initialize = useWeddingStore((state) => state.initialize);
@@ -218,7 +222,18 @@ export function ConstructorShell({
   };
 
   return (
-    <main className="constructor-shell min-w-0 pb-0">
+    <main
+      className={`constructor-shell min-w-0 pb-0 product-font-${visualAppearance?.fontScale ?? "normal"} product-radius-${visualAppearance?.radius ?? "rounded"}`}
+      style={
+        {
+          "--product-bg": visualAppearance?.backgroundColor ?? "#f8f5ef",
+          "--product-surface": visualAppearance?.surfaceColor ?? "#ffffff",
+          "--product-text": visualAppearance?.textColor ?? "#20241f",
+          "--product-accent": visualAppearance?.accentColor ?? "#354033",
+        } as CSSProperties
+      }
+    >
+      <ProductPreviewBridge screen="constructor" />
       <header className="constructor-header">
         <div className="constructor-header-start">
           <Link href="/" className="icon-button" aria-label="На главную">
@@ -231,6 +246,7 @@ export function ConstructorShell({
         {initialData.slug ? (
           <a
             className="constructor-header-preview lg:hidden"
+            data-product-field="constructor.previewButtonText"
             href={`/wedding/${initialData.slug}`}
             target="_blank"
             rel="noreferrer"
@@ -261,6 +277,7 @@ export function ConstructorShell({
           </button>
           <button
             className="publish-button flex-shrink-0 whitespace-nowrap"
+            data-product-field="constructor.publishButtonText"
             type="button"
             onClick={() => window.dispatchEvent(new Event("vowly-open-publish"))}
           >
@@ -338,12 +355,12 @@ function MobileAssistant({
   const isLastStep = currentIndex === steps.length - 1;
 
   return (
-    <section className="mobile-assistant" aria-label="Свадебный ассистент">
+    <section className="mobile-assistant" aria-label="Свадебный ассистент" data-product-section={currentStep.tab}>
       <div className="mobile-assistant-sticky">
         <div className="mobile-assistant-top">
           <div>
             <span>
-              <WandSparkles size={14} /> {visualCopy?.assistantTitle ?? "Свадебный ассистент"}
+              <WandSparkles size={14} /> <span data-product-field="constructor.assistantTitle">{visualCopy?.assistantTitle ?? "Свадебный ассистент"}</span>
             </span>
             <strong>{currentStep.title}</strong>
           </div>
@@ -377,7 +394,7 @@ function MobileAssistant({
         </span>
         <div>
           <strong>{currentStep.title}</strong>
-          <small>{visualCopy?.assistantDescription ?? currentStep.description}</small>
+          <small data-product-field="constructor.assistantDescription">{visualCopy?.assistantDescription ?? currentStep.description}</small>
         </div>
       </div>
 

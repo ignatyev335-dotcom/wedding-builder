@@ -24,16 +24,19 @@ const ConstructorShell = dynamic(
 export function ConstructorClient({
   initialData,
   initialTab = "content",
+  visualAppearance,
   visualCopy,
 }: {
   initialData: WeddingBuilderData;
   initialTab?: "content" | "styles" | "music" | "media" | "guests" | "publish";
+  visualAppearance?: ProductVisualConfig["appearance"];
   visualCopy?: ProductVisualConfig["constructor"];
 }) {
   return (
     <ConstructorShell
       initialData={initialData}
       initialTab={initialTab}
+      visualAppearance={visualAppearance}
       visualCopy={visualCopy}
     />
   );

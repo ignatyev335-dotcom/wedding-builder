@@ -5,5 +5,10 @@ export const dynamic = "force-dynamic";
 
 export default async function CreatePage() {
   const visualConfig = await getProductVisualConfig();
-  return <QuizWizard visualCopy={visualConfig.quiz} />;
+  return (
+    <QuizWizard
+      visualAppearance={visualConfig.appearance}
+      visualCopy={visualConfig.quiz}
+    />
+  );
 }

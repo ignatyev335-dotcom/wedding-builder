@@ -8,7 +8,8 @@ import {
   MonitorSmartphone,
   Save,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import type {
   ProductVisualConfig,
@@ -40,6 +41,8 @@ export function ProductVisualEditor({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [previewVersion, setPreviewVersion] = useState(0);
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("hero");
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const previewUrl = useMemo(
     () => `${previewUrls[activeScreen]}?adminPreview=${previewVersion}`,
@@ -96,6 +99,38 @@ export function ProductVisualEditor({
         ),
       },
     }));
+    setMessage("");
+    setError("");
+  };
+
+  const moveSectionToTarget = (
+    screen: ProductScreen,
+    sourceId: string,
+    targetId: string,
+  ) => {
+    setConfig((current) => {
+      const sections = [...current[screen].sections].sort((a, b) => a.order - b.order);
+      const sourceIndex = sections.findIndex((section) => section.id === sourceId);
+      const targetIndex = sections.findIndex((section) => section.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+        return current;
+      }
+
+      const [source] = sections.splice(sourceIndex, 1);
+      sections.splice(targetIndex, 0, source);
+
+      return {
+        ...current,
+        [screen]: {
+          ...current[screen],
+          sections: sections.map((section, index) => ({
+            ...section,
+            order: index + 1,
+          })),
+        },
+      };
+    });
+    setSelectedSectionId(sourceId);
     setMessage("");
     setError("");
   };
@@ -165,6 +200,59 @@ export function ProductVisualEditor({
     }
   };
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data?.type === "VOWLY_PRODUCT_SELECT_SECTION") {
+        setActiveScreen(event.data.screen as ProductScreen);
+        setSelectedSectionId(String(event.data.sectionId || ""));
+      }
+
+      if (event.data?.type === "VOWLY_PRODUCT_EDIT_FIELD") {
+        const field = String(event.data.field || "");
+        const value = String(event.data.value ?? "");
+        if (field === "landing.badge") updateLanding("badge", value);
+        if (field === "landing.title") updateLanding("title", value);
+        if (field === "landing.subtitle") updateLanding("subtitle", value);
+        if (field === "landing.primaryCta") updateLanding("primaryCta", value);
+        if (field === "landing.secondaryCta") updateLanding("secondaryCta", value);
+        if (field === "landing.mockupCouple") updateLanding("mockupCouple", value);
+        if (field === "landing.mockupDate") updateLanding("mockupDate", value);
+        if (field === "quiz.badge") updateQuiz("badge", value);
+        if (field === "quiz.stepOneTitle") updateQuiz("stepOneTitle", value);
+        if (field === "quiz.stepOneDescription") updateQuiz("stepOneDescription", value);
+        if (field === "quiz.styleTitle") updateQuiz("styleTitle", value);
+        if (field === "quiz.styleDescription") updateQuiz("styleDescription", value);
+        if (field === "quiz.featuresTitle") updateQuiz("featuresTitle", value);
+        if (field === "quiz.featuresDescription") updateQuiz("featuresDescription", value);
+        if (field === "quiz.finalTitle") updateQuiz("finalTitle", value);
+        if (field === "quiz.finalDescription") updateQuiz("finalDescription", value);
+        if (field === "constructor.assistantTitle") updateConstructor("assistantTitle", value);
+        if (field === "constructor.assistantDescription") {
+          updateConstructor("assistantDescription", value);
+        }
+        if (field === "constructor.publishButtonText") {
+          updateConstructor("publishButtonText", value);
+        }
+        if (field === "constructor.previewButtonText") {
+          updateConstructor("previewButtonText", value);
+        }
+      }
+
+      if (event.data?.type === "VOWLY_PRODUCT_MOVE_SECTION") {
+        moveSectionToTarget(
+          event.data.screen as ProductScreen,
+          String(event.data.sourceId || ""),
+          String(event.data.targetId || ""),
+        );
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  });
+
   return (
     <section className="product-editor">
       <div className="product-editor-sidebar">
@@ -195,6 +283,8 @@ export function ProductVisualEditor({
           ))}
         </nav>
 
+        <AppearanceControls config={config} setConfig={setConfig} />
+
         {activeScreen === "landing" ? (
           <LandingControls config={config} update={updateLanding} />
         ) : null}
@@ -208,8 +298,10 @@ export function ProductVisualEditor({
         <SectionControls
           sections={config[activeScreen].sections}
           screen={activeScreen}
+          selectedSectionId={selectedSectionId}
           updateSection={updateSection}
           moveSection={moveSection}
+          onSelectSection={setSelectedSectionId}
         />
 
         <div className="product-editor-save">
@@ -231,7 +323,12 @@ export function ProductVisualEditor({
             Открыть отдельно
           </a>
         </div>
-        <iframe key={previewUrl} src={previewUrl} title={`Превью: ${screenLabels[activeScreen]}`} />
+        <iframe
+          key={previewUrl}
+          ref={iframeRef}
+          src={previewUrl}
+          title={`Превью: ${screenLabels[activeScreen]}`}
+        />
       </aside>
     </section>
   );
@@ -259,6 +356,86 @@ function LandingControls({
       <div className="product-editor-grid">
         <TextField label="Имена в мокапе" value={config.landing.mockupCouple} onChange={(value) => update("mockupCouple", value)} />
         <TextField label="Дата в мокапе" value={config.landing.mockupDate} onChange={(value) => update("mockupDate", value)} />
+      </div>
+    </div>
+  );
+}
+
+function AppearanceControls({
+  config,
+  setConfig,
+}: {
+  config: ProductVisualConfig;
+  setConfig: Dispatch<SetStateAction<ProductVisualConfig>>;
+}) {
+  const updateAppearance = <Key extends keyof ProductVisualConfig["appearance"]>(
+    key: Key,
+    value: ProductVisualConfig["appearance"][Key],
+  ) => {
+    setConfig((current) => ({
+      ...current,
+      appearance: { ...current.appearance, [key]: value },
+    }));
+  };
+
+  return (
+    <div className="product-editor-card">
+      <h3>Глобальный стиль</h3>
+      <div className="product-color-grid">
+        <ColorField
+          label="Фон"
+          value={config.appearance.backgroundColor}
+          onChange={(value) => updateAppearance("backgroundColor", value)}
+        />
+        <ColorField
+          label="Карточки"
+          value={config.appearance.surfaceColor}
+          onChange={(value) => updateAppearance("surfaceColor", value)}
+        />
+        <ColorField
+          label="Текст"
+          value={config.appearance.textColor}
+          onChange={(value) => updateAppearance("textColor", value)}
+        />
+        <ColorField
+          label="Акцент"
+          value={config.appearance.accentColor}
+          onChange={(value) => updateAppearance("accentColor", value)}
+        />
+      </div>
+      <div className="product-editor-grid">
+        <label className="visual-field">
+          <span>Скругление</span>
+          <select
+            value={config.appearance.radius}
+            onChange={(event) =>
+              updateAppearance(
+                "radius",
+                event.target.value as ProductVisualConfig["appearance"]["radius"],
+              )
+            }
+          >
+            <option value="soft">Аккуратно</option>
+            <option value="rounded">Мягко</option>
+            <option value="pill">Очень округло</option>
+          </select>
+        </label>
+        <label className="visual-field">
+          <span>Масштаб текста</span>
+          <select
+            value={config.appearance.fontScale}
+            onChange={(event) =>
+              updateAppearance(
+                "fontScale",
+                event.target.value as ProductVisualConfig["appearance"]["fontScale"],
+              )
+            }
+          >
+            <option value="compact">Компактный</option>
+            <option value="normal">Нормальный</option>
+            <option value="large">Крупнее</option>
+          </select>
+        </label>
       </div>
     </div>
   );
@@ -314,17 +491,21 @@ function ConstructorControls({
 function SectionControls({
   sections,
   screen,
+  selectedSectionId,
   updateSection,
   moveSection,
+  onSelectSection,
 }: {
   sections: ProductVisualSection[];
   screen: ProductScreen;
+  selectedSectionId: string;
   updateSection: (
     screen: ProductScreen,
     sectionId: string,
     patch: Partial<ProductVisualSection>,
   ) => void;
   moveSection: (screen: ProductScreen, sectionId: string, direction: -1 | 1) => void;
+  onSelectSection: (sectionId: string) => void;
 }) {
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
@@ -333,7 +514,11 @@ function SectionControls({
       <h3>Блоки экрана</h3>
       <div className="product-section-list">
         {sortedSections.map((section, index) => (
-          <article key={section.id}>
+          <article
+            className={selectedSectionId === section.id ? "is-selected" : ""}
+            key={section.id}
+            onClick={() => onSelectSection(section.id)}
+          >
             <label>
               <input
                 checked={section.enabled}
@@ -446,6 +631,24 @@ function TextField({
   return (
     <label className="visual-field">
       <span>{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="product-color-field">
+      <span>{label}</span>
+      <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
       <input value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );

@@ -17,8 +17,10 @@ type ConstructorTab =
   | "publish";
 
 export default function ConstructorClient({
+  visualAppearance,
   visualCopy,
 }: {
+  visualAppearance?: ProductVisualConfig["appearance"];
   visualCopy?: ProductVisualConfig["constructor"];
 }) {
   const searchParams = useSearchParams();
@@ -74,7 +76,14 @@ export default function ConstructorClient({
     );
   }
 
-  return <BuilderClient initialData={site} initialTab={initialTab} visualCopy={visualCopy} />;
+  return (
+    <BuilderClient
+      initialData={site}
+      initialTab={initialTab}
+      visualAppearance={visualAppearance}
+      visualCopy={visualCopy}
+    />
+  );
 }
 
 function ConstructorLoading() {

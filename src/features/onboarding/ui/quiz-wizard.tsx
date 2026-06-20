@@ -16,11 +16,13 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
 import type { DesignThemeOption } from "@/entities/wedding/model";
 import { quizSchema } from "@/features/onboarding/model/quiz-schema";
 import { useQuizStore } from "@/features/onboarding/model/quiz-store";
 import type { ProductVisualConfig } from "@/features/platform-visual/config";
+import { ProductPreviewBridge } from "@/features/platform-visual/ui/product-preview-bridge";
 
 const TOTAL_STEPS = 4;
 
@@ -81,8 +83,10 @@ const featureOptions: Array<{
 ];
 
 export function QuizWizard({
+  visualAppearance,
   visualCopy,
 }: {
+  visualAppearance?: ProductVisualConfig["appearance"];
   visualCopy?: ProductVisualConfig["quiz"];
 }) {
   const router = useRouter();
@@ -236,7 +240,18 @@ export function QuizWizard({
   };
 
   return (
-    <main className="quiz-layout">
+    <main
+      className={`quiz-layout product-font-${visualAppearance?.fontScale ?? "normal"} product-radius-${visualAppearance?.radius ?? "rounded"}`}
+      style={
+        {
+          "--product-bg": visualAppearance?.backgroundColor ?? "#f8f5ef",
+          "--product-surface": visualAppearance?.surfaceColor ?? "#ffffff",
+          "--product-text": visualAppearance?.textColor ?? "#20241f",
+          "--product-accent": visualAppearance?.accentColor ?? "#354033",
+        } as CSSProperties
+      }
+    >
+      <ProductPreviewBridge screen="quiz" />
       <header className="quiz-header">
         <button
           className="icon-button"
@@ -258,15 +273,15 @@ export function QuizWizard({
 
       <section className="quiz-card">
         {store.step === 1 && (
-          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out" data-product-section="basis">
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">{visualCopy?.badge ?? "Свадебный ассистент"}</p>
-            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <p className="eyebrow" data-product-field="quiz.badge">{visualCopy?.badge ?? "Свадебный ассистент"}</p>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl" data-product-field="quiz.stepOneTitle">
               {visualCopy?.stepOneTitle ?? "Начнем с основы"}
             </h1>
-            <p className="step-description">
+            <p className="step-description" data-product-field="quiz.stepOneDescription">
               {visualCopy?.stepOneDescription ??
                 "Мне нужны только имена, дата и время. Остальное спокойно настроим потом."}
             </p>
@@ -328,15 +343,15 @@ export function QuizWizard({
         )}
 
         {store.step === 2 && (
-          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out" data-product-section="style">
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">{visualCopy?.badge ?? "Стиль приглашения"}</p>
-            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <p className="eyebrow" data-product-field="quiz.badge">{visualCopy?.badge ?? "Стиль приглашения"}</p>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl" data-product-field="quiz.styleTitle">
               {visualCopy?.styleTitle ?? "Какой стиль ближе?"}
             </h1>
-            <p className="step-description">
+            <p className="step-description" data-product-field="quiz.styleDescription">
               {visualCopy?.styleDescription ??
                 "Здесь показываются стили из админки. Вы сможете добавлять новые и менять их без кода."}
             </p>
@@ -380,15 +395,15 @@ export function QuizWizard({
         )}
 
         {store.step === 3 && (
-          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out" data-product-section="features">
             <span className="step-icon">
               <Globe2 size={22} />
             </span>
-            <p className="eyebrow">{visualCopy?.badge ?? "Особенности"}</p>
-            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <p className="eyebrow" data-product-field="quiz.badge">{visualCopy?.badge ?? "Особенности"}</p>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl" data-product-field="quiz.featuresTitle">
               {visualCopy?.featuresTitle ?? "Есть что-то особенное?"}
             </h1>
-            <p className="step-description">
+            <p className="step-description" data-product-field="quiz.featuresDescription">
               {visualCopy?.featuresDescription ??
                 "Отметьте только то, что действительно влияет на сценарий. Если сомневаетесь — просто идем дальше."}
             </p>
@@ -422,15 +437,15 @@ export function QuizWizard({
         )}
 
         {store.step === 4 && (
-          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out">
+          <div className="step-content animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out" data-product-section="summary">
             <span className="step-icon">
               <Sparkles size={22} />
             </span>
-            <p className="eyebrow">{visualCopy?.badge ?? "Почти готово"}</p>
-            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <p className="eyebrow" data-product-field="quiz.badge">{visualCopy?.badge ?? "Почти готово"}</p>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl" data-product-field="quiz.finalTitle">
               {visualCopy?.finalTitle ?? "Собираю ваш сайт"}
             </h1>
-            <p className="step-description">
+            <p className="step-description" data-product-field="quiz.finalDescription">
               {visualCopy?.finalDescription ??
                 "Основа готова. В конструкторе вы сможете добавить фото, музыку, гостей, карту и тексты."}
             </p>

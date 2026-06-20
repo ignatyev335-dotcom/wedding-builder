@@ -10607,6 +10607,55 @@ a {
   gap: 10px;
 }
 
+.product-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.product-color-field {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  background: #f6f7f2;
+  border: 1px solid #dfe3d9;
+  border-radius: 16px;
+}
+
+.product-color-field span {
+  grid-column: 1 / -1;
+  color: #4b5548;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.product-color-field input[type="color"] {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.product-color-field input[type="text"],
+.product-color-field input:not([type]) {
+  min-width: 0;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #2f362d;
+  background: white;
+  border: 1px solid #dfe3d9;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
 .product-section-list {
   display: grid;
   gap: 9px;
@@ -10621,6 +10670,14 @@ a {
   background: white;
   border: 1px solid #dfe3d9;
   border-radius: 16px;
+  cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.product-section-list article.is-selected {
+  background: #eef4ea;
+  border-color: #485d43;
+  box-shadow: 0 0 0 3px rgba(72, 93, 67, 0.12);
 }
 
 .product-section-list label {
@@ -10775,6 +10832,118 @@ a {
   box-shadow: 0 28px 80px rgba(34, 35, 31, 0.16);
 }
 
+.landing-v2,
+.quiz-layout,
+.constructor-shell {
+  --product-bg: #f8f5ef;
+  --product-surface: #ffffff;
+  --product-text: #20241f;
+  --product-accent: #354033;
+  --product-radius-card: 28px;
+  --product-radius-large: 42px;
+  --product-text-scale: 1;
+}
+
+.product-radius-soft {
+  --product-radius-card: 18px;
+  --product-radius-large: 28px;
+}
+
+.product-radius-rounded {
+  --product-radius-card: 28px;
+  --product-radius-large: 42px;
+}
+
+.product-radius-pill {
+  --product-radius-card: 40px;
+  --product-radius-large: 56px;
+}
+
+.product-font-compact {
+  --product-text-scale: 0.94;
+}
+
+.product-font-normal {
+  --product-text-scale: 1;
+}
+
+.product-font-large {
+  --product-text-scale: 1.09;
+}
+
+.landing-v2 {
+  color: var(--product-text);
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--product-surface) 82%, transparent), transparent 26%),
+    radial-gradient(circle at 80% 3%, color-mix(in srgb, var(--product-accent) 18%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--product-bg) 0%, color-mix(in srgb, var(--product-bg) 78%, var(--product-accent)) 38%, var(--product-bg) 100%);
+}
+
+.quiz-layout,
+.constructor-shell {
+  color: var(--product-text);
+  background:
+    radial-gradient(circle at 12% 5%, color-mix(in srgb, var(--product-accent) 12%, transparent), transparent 28rem),
+    var(--product-bg);
+}
+
+.landing-v2 p,
+.landing-v2 a,
+.landing-v2 span,
+.quiz-layout p,
+.quiz-layout input,
+.quiz-layout button,
+.constructor-shell p,
+.constructor-shell input,
+.constructor-shell button,
+.constructor-shell small {
+  font-size: calc(1em * var(--product-text-scale));
+}
+
+.landing-v2-primary,
+.landing-v2-primary.is-dark,
+.publish-button,
+.mobile-assistant-next {
+  background: var(--product-accent);
+}
+
+.landing-v2-secondary,
+.landing-v2-login,
+.landing-v2-stats article,
+.landing-v2-steps article,
+.landing-v2-features article,
+.landing-v2-design-grid article,
+.landing-v2-faq details,
+.product-radius-soft .product-editor-card,
+.product-radius-rounded .product-editor-card,
+.product-radius-pill .product-editor-card {
+  background-color: color-mix(in srgb, var(--product-surface) 78%, transparent);
+}
+
+.landing-v2-stats article,
+.landing-v2-steps article,
+.landing-v2-features article,
+.landing-v2-design-grid article,
+.landing-v2-faq details,
+.landing-v2-showcase,
+.landing-v2-after,
+.landing-v2-final,
+.mobile-assistant,
+.mobile-assistant-focus,
+.constructor-sidebar-panel,
+.constructor-card,
+.builder-card,
+.step-card,
+.product-editor-card {
+  border-radius: var(--product-radius-card);
+}
+
+.landing-v2-showcase,
+.landing-v2-after,
+.landing-v2-final {
+  border-radius: var(--product-radius-large);
+}
+
 .landing-v2 .product-section-size-compact {
   max-width: 900px;
 }
@@ -10850,6 +11019,38 @@ a {
   min-height: 60px;
   padding-inline: 30px;
   font-size: 1.08rem;
+}
+
+.product-preview-editing [data-product-section] {
+  cursor: grab;
+  transition: outline-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.product-preview-editing [data-product-section]:hover {
+  outline: 2px dashed rgba(72, 93, 67, 0.45);
+  outline-offset: 7px;
+}
+
+.product-preview-editing [data-product-section]:active {
+  cursor: grabbing;
+}
+
+.product-preview-editing .product-preview-selected {
+  outline: 3px solid rgba(72, 93, 67, 0.88) !important;
+  outline-offset: 8px !important;
+  box-shadow: 0 0 0 12px rgba(72, 93, 67, 0.12) !important;
+}
+
+.product-preview-editing [data-product-field] {
+  min-width: 1ch;
+  border-radius: 8px;
+  cursor: text;
+}
+
+.product-preview-editing [data-product-field]:hover,
+.product-preview-editing [data-product-field]:focus {
+  outline: 2px dashed rgba(72, 93, 67, 0.55);
+  outline-offset: 4px;
 }
 
 @media (max-width: 1100px) {
@@ -13348,4 +13549,70 @@ table.guest-table tbody tr:last-child td {
   .landing-v2-footer div {
     flex-wrap: wrap;
   }
+}
+
+/* Product visual editor overrides. Keep this block last so admin settings win. */
+.landing-v2 {
+  color: var(--product-text, #20241f);
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--product-surface, #fff) 82%, transparent), transparent 26%),
+    radial-gradient(circle at 80% 3%, color-mix(in srgb, var(--product-accent, #354033) 18%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--product-bg, #f8f5ef) 0%, color-mix(in srgb, var(--product-bg, #f8f5ef) 78%, var(--product-accent, #354033)) 38%, var(--product-bg, #f8f5ef) 100%);
+}
+
+.quiz-layout,
+.constructor-shell {
+  color: var(--product-text, #20241f);
+  background:
+    radial-gradient(circle at 12% 5%, color-mix(in srgb, var(--product-accent, #354033) 12%, transparent), transparent 28rem),
+    var(--product-bg, #f8f5ef);
+}
+
+.landing-v2-primary,
+.landing-v2-primary.is-dark,
+.publish-button,
+.mobile-assistant-next {
+  background: var(--product-accent, #354033);
+}
+
+.landing-v2 h1,
+.landing-v2 h2,
+.landing-v2 h3 {
+  color: var(--product-text, #20241f);
+}
+
+.landing-v2 p,
+.landing-v2 span,
+.landing-v2 small,
+.landing-v2 a,
+.quiz-layout p,
+.quiz-layout button,
+.quiz-layout input,
+.constructor-shell p,
+.constructor-shell button,
+.constructor-shell input,
+.constructor-shell small {
+  font-size: calc(1em * var(--product-text-scale, 1));
+}
+
+.landing-v2-stats article,
+.landing-v2-steps article,
+.landing-v2-features article,
+.landing-v2-design-grid article,
+.landing-v2-faq details,
+.landing-v2-secondary,
+.landing-v2-login,
+.step-card,
+.builder-card,
+.constructor-card,
+.mobile-assistant,
+.mobile-assistant-focus {
+  background-color: color-mix(in srgb, var(--product-surface, #fff) 82%, transparent);
+  border-radius: var(--product-radius-card, 28px);
+}
+
+.landing-v2-showcase,
+.landing-v2-after,
+.landing-v2-final {
+  border-radius: var(--product-radius-large, 42px);
 }

@@ -16,7 +16,10 @@ export default async function ConstructorPage() {
         <p className="constructor-route-loading">Загрузка конструктора...</p>
       }
     >
-      <ConstructorClient visualCopy={visualConfig.constructor} />
+      <ConstructorClient
+        visualAppearance={visualConfig.appearance}
+        visualCopy={visualConfig.constructor}
+      />
     </Suspense>
   );
 }

@@ -15,6 +15,14 @@ export type ProductVisualSection = {
 };
 
 export type ProductVisualConfig = {
+  appearance: {
+    backgroundColor: string;
+    surfaceColor: string;
+    textColor: string;
+    accentColor: string;
+    radius: "soft" | "rounded" | "pill";
+    fontScale: "compact" | "normal" | "large";
+  };
   landing: {
     badge: string;
     title: string;
@@ -47,6 +55,14 @@ export type ProductVisualConfig = {
 };
 
 export const defaultProductVisualConfig: ProductVisualConfig = {
+  appearance: {
+    backgroundColor: "#f8f5ef",
+    surfaceColor: "#ffffff",
+    textColor: "#20241f",
+    accentColor: "#354033",
+    radius: "rounded",
+    fontScale: "normal",
+  },
   landing: {
     badge: "Vowly wedding atelier",
     title: "Свадебный сайт с ощущением дорогой полиграфии",
@@ -189,6 +205,9 @@ export function parseProductVisualConfig(value: string | null | undefined) {
     const landing: Record<string, unknown> = isPlainObject(parsed.landing)
       ? parsed.landing
       : {};
+    const appearance: Record<string, unknown> = isPlainObject(parsed.appearance)
+      ? parsed.appearance
+      : {};
     const quiz: Record<string, unknown> = isPlainObject(parsed.quiz)
       ? parsed.quiz
       : {};
@@ -199,6 +218,22 @@ export function parseProductVisualConfig(value: string | null | undefined) {
       : {};
 
     return {
+      appearance: {
+        ...defaultProductVisualConfig.appearance,
+        ...appearance,
+        radius:
+          appearance.radius === "soft" ||
+          appearance.radius === "rounded" ||
+          appearance.radius === "pill"
+            ? appearance.radius
+            : defaultProductVisualConfig.appearance.radius,
+        fontScale:
+          appearance.fontScale === "compact" ||
+          appearance.fontScale === "normal" ||
+          appearance.fontScale === "large"
+            ? appearance.fontScale
+            : defaultProductVisualConfig.appearance.fontScale,
+      },
       landing: {
         ...defaultProductVisualConfig.landing,
         ...landing,
